@@ -3,171 +3,168 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2C4A52">
+<meta name="theme-color" content="#275D8C">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <title>Manual de RumboAula</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
 <style>
-/* Layout: cabecera con el degradado de la app, menú de módulos como sus botones,
-   y cada apartado como una tarjeta con su icono 3D, texto a la izquierda y captura real a la derecha. */
+/* Layout: como la app, con el estilo de Raíces: cabecera blanca con el logotipo, menú turquesa,
+   y cada apartado como un bloque con título, línea azul y tarjetas con el texto a un lado y la captura real al otro. */
+@font-face { font-family: "Montserrat"; src: url("/fonts/montserrat-variable.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
 :root {
-  --oscuro: #2C4A52;       /* cabecera y títulos */
-  --turquesa: #00B7B5;     /* botones principales */
-  --verde: #44A194;        /* acentos y pasos */
-  --amarillo: #FFE52A;     /* módulo activo */
-  --naranja: #FF7F11;      /* pestañas */
-  --salmon: #EC8F8D;       /* avisos */
-  --crema: #F4F0E4;        /* fondo de la app */
+  --petroleo: #2B647E;   /* títulos y texto */
+  --noche: #16333F;      /* texto sobre colores */
+  --azul: #275D8C;       /* línea de los títulos y botones principales */
+  --turquesa: #65B9C9;   /* menú y bordes */
+  --turquesa-claro: #CDE9ED;
+  --mostaza: #F6C862;    /* avisos */
+  --verde: #63CBA1;      /* hecho */
+  --azul-claro: #DDF0F4;
+  --crema: #FDF1D9;
+  --gris: #EBF0F6;
   --papel: #FFFFFF;
-  --texto: #1f3338;
-  --suave: #5b6b72;
-  --linea: #e6e0cf;
-  --verde-claro: #E8F5F3;
-  --salmon-claro: #FDF0EF;
-  --ambar-claro: #FFF6D6;
-  --display: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --cuerpo: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --titulo: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --cuerpo: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-body { margin: 0; background: var(--crema); color: var(--texto); font-family: var(--cuerpo); font-size: 16.5px; line-height: 1.6; }
+body { margin: 0; background: #F4F7F9; color: var(--noche); font-family: var(--cuerpo); font-size: 17px; line-height: 1.6; }
 img { max-width: 100%; height: auto; display: block; }
-a { color: #007f7d; font-weight: 700; }
-:focus-visible { outline: 3px solid var(--naranja); outline-offset: 2px; border-radius: 6px; }
+a { color: var(--azul); font-weight: 700; }
+:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
 
 /* Aviso de demostración, como en la app */
-.demo { background: #FFF4CC; color: #8a5300; text-align: center; font-weight: 700; font-size: 14px; padding: 6px 16px; border-bottom: 1px solid #f3dd8f; }
+.demo { background: var(--mostaza); color: var(--noche); text-align: center; font-weight: 700; font-size: 14px; padding: 7px 16px; }
+.demo a { color: inherit; }
 
 /* Cabecera */
-.cab { background: linear-gradient(115deg, var(--oscuro) 0%, #1d6f73 55%, var(--turquesa) 100%); color: #fff; padding-inline: 16px; }
-.cab-in { max-width: 1120px; margin: 0 auto; padding-block: 36px 40px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
-.logo { background: #fff; border-radius: 22px; padding: 14px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.18); width: 230px; }
-.cab h1 { font-family: var(--display); font-weight: 900; font-size: clamp(34px, 5vw, 52px); line-height: 1.05; margin: 0 0 8px; text-wrap: balance; letter-spacing: -.01em; }
-.cab p { margin: 0; max-width: 58ch; font-size: 17px; opacity: .92; }
-.cab .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.cab .chip { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 4px 12px; font-size: 13.5px; font-weight: 700; }
-@media (max-width: 640px) { .cab-in { grid-template-columns: 1fr; gap: 18px; padding-block: 24px 28px; } .logo { width: 180px; } }
+.cab { background: #fff; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--turquesa-claro); }
+.cab-in { max-width: 1120px; margin: 0 auto; padding-block: 26px 28px; display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; }
+.logo { width: 240px; }
+.cab h1 { font-family: var(--titulo); font-weight: 400; font-size: clamp(32px, 5vw, 46px); color: var(--petroleo); line-height: 1.05; margin: 0 0 8px; text-wrap: balance; }
+.cab .linea { height: 5px; width: 60%; background: var(--azul); margin: 0 0 12px; }
+.cab p { margin: 0; max-width: 60ch; color: var(--petroleo); }
+@media (max-width: 680px) { .cab-in { grid-template-columns: 1fr; gap: 16px; padding-block: 18px 22px; } .logo { width: 190px; } }
 
-/* Menú: los botones de módulo de la app */
-.menu { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: #f0f4f7; border-bottom: 1px solid #e2e8f0; padding-inline: 16px; }
-.menu-in { max-width: 1120px; margin: 0 auto; display: flex; gap: 8px; padding-block: 10px; overflow-x: auto; scrollbar-width: thin; }
-.menu a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #50606a; background: #fff; border-radius: 10px; padding: 7px 13px; font-family: var(--display); font-weight: 800; font-size: 14.5px; box-shadow: 0 2px 6px rgba(0,0,0,.05); white-space: nowrap; }
-.menu a img { width: 24px; height: 24px; }
-.menu a:hover, .menu a.activo { background: var(--amarillo); color: var(--oscuro); }
+/* Menú: la franja turquesa de la app */
+.menu { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--turquesa); padding-inline: 16px; }
+.menu-in { max-width: 1120px; margin: 0 auto; display: flex; overflow-x: auto; scrollbar-width: thin; }
+.menu a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px; text-decoration: none; color: #fff; font-weight: 400; font-size: 16px; border-right: 1px solid rgba(255,255,255,.6); white-space: nowrap; }
+.menu a::before { content: ""; border-left: 8px solid var(--mostaza); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.menu a:hover, .menu a.activo { box-shadow: inset 0 -5px 0 var(--mostaza); }
 
 /* Contenido */
-main { padding-inline: 16px; }
-.cont { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px; display: grid; gap: 34px; }
-.parte { scroll-margin-top: 80px; }
-.titulo { display: flex; align-items: center; gap: 14px; margin: 0 0 6px; }
-.titulo img { width: 56px; height: 56px; border-radius: 14px; background: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.08); padding: 4px; flex-shrink: 0; }
-.titulo h2 { font-family: var(--display); font-weight: 900; font-size: clamp(26px, 3.4vw, 34px); color: var(--oscuro); margin: 0; line-height: 1.1; text-wrap: balance; }
-.etiqueta { font-family: var(--display); font-weight: 800; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--naranja); border-radius: 6px; padding: 2px 8px; display: inline-block; margin-bottom: 6px; }
-.entrada { color: var(--suave); max-width: 70ch; margin: 4px 0 18px; font-size: 17px; }
+main { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.cont { max-width: 1120px; margin: 0 auto; padding-block: 30px 56px; display: grid; gap: 40px; }
+.parte { scroll-margin-top: 76px; }
+.titulo { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; }
+.titulo h2 { font-family: var(--titulo); font-weight: 400; font-size: clamp(28px, 3.6vw, 36px); color: var(--petroleo); margin: 0; line-height: 1.1; text-wrap: balance; }
+.titulo img { width: 58px; height: 58px; flex-shrink: 0; }
+.titulo + .linea { height: 5px; width: 70%; background: var(--azul); margin: 10px 0 0; }
+.etiqueta { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--azul); display: block; margin-bottom: 4px; }
+.entrada { color: var(--petroleo); max-width: 72ch; margin: 14px 0 18px; }
 
-.tarjeta { background: var(--papel); border-radius: 18px; box-shadow: 0 2px 12px rgba(44,74,82,.07); padding: 22px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 26px; align-items: start; margin-bottom: 16px; }
+.tarjeta { background: var(--papel); border: 1px solid var(--turquesa-claro); padding: 22px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 26px; align-items: start; margin-bottom: 14px; }
 .tarjeta.sola { grid-template-columns: 1fr; }
 .tarjeta.alta { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); }
+.tarjeta.nueva { border-top: 6px solid var(--mostaza); }
 .tarjeta > div { min-width: 0; }
 @media (max-width: 860px) { .tarjeta, .tarjeta.alta { grid-template-columns: 1fr; padding: 18px; } }
-.tarjeta h3 { font-family: var(--display); font-weight: 900; font-size: 21px; color: var(--oscuro); margin: 0 0 8px; display: flex; align-items: center; gap: 10px; text-wrap: balance; }
-.tarjeta h3 img { width: 34px; height: 34px; }
+.tarjeta h3 { font-weight: 700; font-size: 20px; color: var(--petroleo); margin: 0 0 8px; display: flex; align-items: center; gap: 10px; text-wrap: balance; }
+.tarjeta h3 img { width: 36px; height: 36px; flex-shrink: 0; }
 .tarjeta p { margin: 0 0 10px; }
 .tarjeta ul, .tarjeta ol { margin: 0 0 10px; padding-left: 0; list-style: none; display: grid; gap: 8px; }
 .tarjeta ul li { position: relative; padding-left: 20px; }
-.tarjeta ul li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: var(--verde); }
+.tarjeta ul li::before { content: ""; position: absolute; left: 2px; top: .55em; border-left: 9px solid var(--mostaza); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
 .tarjeta ol { counter-reset: paso; }
 .tarjeta ol li { counter-increment: paso; position: relative; padding-left: 38px; min-height: 28px; }
-.tarjeta ol li::before { content: counter(paso); position: absolute; left: 0; top: 0; width: 27px; height: 27px; border-radius: 8px; background: var(--turquesa); color: #fff; font-family: var(--display); font-weight: 900; font-size: 14px; display: grid; place-items: center; }
-b, strong { font-weight: 700; color: var(--oscuro); }
+.tarjeta ol li::before { content: counter(paso); position: absolute; left: 0; top: 0; width: 27px; height: 27px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+b, strong { font-weight: 700; color: var(--noche); }
+.novedad { display: inline-block; background: var(--mostaza); color: var(--noche); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; margin-left: 4px; vertical-align: 2px; }
 
-/* Botones de la app citados en el texto */
-.btn { display: inline; font-family: var(--display); font-weight: 800; font-size: .88em; border-radius: 6px; padding: 1px 7px; line-height: 1.75; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
-.btn.t { background: var(--naranja); color: #fff; }
-.btn.m { background: var(--amarillo); color: var(--oscuro); }
-.btn.p { background: var(--turquesa); color: #fff; }
-.btn.g { background: #fff; color: var(--oscuro); border: 1px solid #cfd6d8; }
+/* Botones y pestañas de la app citados en el texto */
+.btn { display: inline; font-weight: 700; font-size: .9em; border-radius: 4px; padding: 1px 7px; line-height: 1.8; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.btn.p { background: var(--azul); color: #fff; }
+.btn.m { background: var(--turquesa); color: #fff; }
+.btn.t { background: var(--gris); color: var(--petroleo); border: 1px solid #D5DEE2; }
+.btn.g { background: #fff; color: var(--petroleo); border: 2px solid var(--azul); }
+.btn.v { background: var(--verde); color: var(--noche); }
 
-/* Notas */
-.nota { border-radius: 12px; padding: 11px 14px; font-size: 15px; margin: 10px 0 0; }
-.nota.ok { background: var(--verde-claro); border: 1px solid #bfe3dc; }
-.nota.ojo { background: var(--ambar-claro); border: 1px solid #f1d98b; }
-.nota.priv { background: var(--salmon-claro); border: 1px solid #f3c6c4; }
-.nota b { color: inherit; }
+/* Notas, como los avisos de la app: barra de color y fila clara */
+.nota { padding: 10px 14px; font-size: 15.5px; margin: 10px 0 0; border-left: 8px solid; }
+.nota.ok { background: var(--azul-claro); border-color: var(--turquesa); }
+.nota.ojo { background: var(--crema); border-color: var(--mostaza); }
+.nota.priv { background: var(--gris); border-color: var(--azul); }
 
 /* Capturas */
 figure { margin: 0; }
-.cap { display: block; padding: 0; border: 1px solid var(--linea); border-radius: 12px; overflow: hidden; background: var(--crema); cursor: zoom-in; width: 100%; box-shadow: 0 6px 18px rgba(44,74,82,.10); }
+.cap { display: block; padding: 0; border: 1px solid var(--turquesa-claro); overflow: hidden; background: #fff; cursor: zoom-in; width: 100%; box-shadow: 0 6px 18px rgba(22,51,63,.10); }
 .cap img { width: 100%; }
 .cap.limitada img { max-height: 620px; object-fit: cover; object-position: top; }
-figcaption { font-size: 13.5px; color: var(--suave); margin-top: 8px; }
-.movil { max-width: 300px; margin-inline: auto; border-radius: 26px; border: 8px solid var(--oscuro); }
+figcaption { font-size: 14px; color: var(--petroleo); margin-top: 8px; }
+.movil { max-width: 300px; margin-inline: auto; border-radius: 26px; border: 8px solid var(--noche); }
 
 /* Perfiles */
-.perfiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px; }
-@media (max-width: 520px) { .perfiles { grid-template-columns: 1fr 1fr; gap: 10px; } .perfil { padding: 14px; } .perfil img { width: 38px; height: 38px; } .perfil h3 { font-size: 16.5px; } .perfil p { font-size: 13.5px; } }
-.perfil { background: var(--papel); border-radius: 16px; padding: 18px; box-shadow: 0 2px 10px rgba(44,74,82,.06); display: grid; gap: 6px; align-content: start; }
-.perfil img { width: 46px; height: 46px; }
-.perfil h3 { font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--oscuro); margin: 4px 0 0; }
-.perfil p { margin: 0; font-size: 15px; color: var(--suave); }
+.perfiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 12px; margin-top: 14px; }
+.perfil { background: var(--papel); border: 3px solid var(--turquesa); border-radius: 8px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.perfil img { width: 44px; height: 44px; }
+.perfil h3 { font-weight: 700; font-size: 18px; color: var(--petroleo); margin: 2px 0 0; }
+.perfil p { margin: 0; font-size: 15px; }
 
 .tabla { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; }
-th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--linea); vertical-align: top; }
-th { font-family: var(--display); font-weight: 800; color: var(--oscuro); background: #f8f6f0; }
-td.si { color: #0f766e; font-weight: 700; }
-td.no { color: #9aa6ab; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--turquesa-claro); vertical-align: top; }
+th { font-weight: 700; color: #fff; background: var(--azul); }
+td.si { color: var(--azul); font-weight: 700; }
+td.no { color: #6B7579; }
 
 /* Instalación */
 .disp { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 12px; margin-top: 8px; }
-.disp > div { background: #f8f6f0; border-radius: 12px; padding: 14px; }
-.disp h4 { font-family: var(--display); font-weight: 900; font-size: 16px; color: var(--oscuro); margin: 0 0 8px; }
+.disp > div { background: var(--azul-claro); padding: 14px; }
+.disp h4 { font-size: 16px; color: var(--petroleo); margin: 0 0 8px; }
 .disp ol { gap: 6px; font-size: 15px; }
 
 /* Pie */
-footer { background: var(--oscuro); color: #dfeaec; padding-inline: 16px; }
-.pie { max-width: 1120px; margin: 0 auto; padding-block: 26px; display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between; font-size: 14.5px; }
-.pie img { width: 44px; height: 44px; border-radius: 10px; }
-.correo { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: rgba(255,255,255,.12); padding: 2px 8px; border-radius: 6px; user-select: all; color: #fff; }
-.copiar { background: var(--turquesa); color: #fff; border: 0; border-radius: 8px; padding: 5px 10px; font-weight: 800; font-family: var(--display); cursor: pointer; margin-left: 6px; }
+footer { background: var(--petroleo); color: #E6EEF0; padding-inline: 16px; }
+.pie { max-width: 1120px; margin: 0 auto; padding-block: 26px; display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between; font-size: 15px; }
+.pie img { width: 46px; height: 46px; border-radius: 10px; background: #fff; }
+.correo { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: rgba(255,255,255,.14); padding: 2px 8px; user-select: all; color: #fff; }
+.copiar { background: var(--mostaza); color: var(--noche); border: 0; border-radius: 4px; padding: 6px 12px; font-weight: 700; cursor: pointer; margin-left: 6px; min-height: 36px; }
 
 /* Ampliar captura */
 dialog { border: 0; padding: 0; background: transparent; max-width: min(1400px, 96vw); max-height: 94vh; }
-dialog::backdrop { background: rgba(20,35,40,.82); }
-dialog img { max-height: 90vh; width: auto; margin: 0 auto; border-radius: 10px; }
-dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color: var(--oscuro); border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 900; font-family: var(--display); cursor: pointer; }
+dialog::backdrop { background: rgba(22,51,63,.85); }
+dialog img { max-height: 90vh; width: auto; margin: 0 auto; }
+dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color: var(--petroleo); border: 0; border-radius: 4px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
 
-
-<div class="demo">⚠️ Versión de demostración: todos los datos son ficticios. · <a href="/" style="color:inherit">Abrir RumboAula →</a></div>
+<div class="demo">⚠️ Versión de demostración: todos los datos son ficticios. · <a href="/">Abrir RumboAula →</a></div>
 
 <header class="cab">
   <div class="cab-in">
-    <img class="logo" src="ico/logo.webp" alt="RumboAula" width="520" height="271">
+    <img class="logo" src="/logo-rumboaula-completo.png" alt="RumboAula · Sistema para la Gestión de Centro" width="900" height="353">
     <div>
       <h1>Manual de uso</h1>
-      <p>Cómo poner partes, organizar las guardias y avisar a tus compañeros con RumboAula, paso a paso y con las pantallas reales de la aplicación.</p>
-      <div class="chips"><span class="chip">Profesorado</span><span class="chip">Tutoría</span><span class="chip">Jefatura de Estudios</span><span class="chip">Administración</span></div>
+      <div class="linea" aria-hidden="true"></div>
+      <p>Cómo poner partes y medidas correctoras, organizar las guardias, avisar a tus compañeros y preparar la app para tu centro, paso a paso y con las pantallas reales.</p>
     </div>
   </div>
 </header>
 
 <nav class="menu" aria-label="Apartados del manual">
   <div class="menu-in">
-    <a href="#empezar"><img src="ico/como-se-usa.webp" alt="">Primeros pasos</a>
-    <a href="#partes"><img src="ico/partes.webp" alt="">Partes</a>
-    <a href="#guardias"><img src="ico/guardias.webp" alt="">Guardias</a>
-    <a href="#galvangram"><img src="ico/mensajes.webp" alt="">Galvángram</a>
-    <a href="#tutoria"><img src="ico/tutor.webp" alt="">Tutoría</a>
-    <a href="#jefatura"><img src="ico/cargo-jefatura.webp" alt="">Jefatura</a>
-    <a href="#administracion"><img src="ico/cargo-administracion.webp" alt="">Administración</a>
-    <a href="#ayuda"><img src="ico/aviso.webp" alt="">Ayuda y datos</a>
+    <a href="#empezar">Primeros pasos</a>
+    <a href="#partes">Partes</a>
+    <a href="#medidas">Medidas correctoras</a>
+    <a href="#guardias">Guardias</a>
+    <a href="#galvangram">Galvángram</a>
+    <a href="#tutoria">Tutoría</a>
+    <a href="#jefatura">Jefatura</a>
+    <a href="#administracion">Administración</a>
+    <a href="#ayuda">Ayuda y datos</a>
   </div>
 </nav>
 
@@ -177,52 +174,53 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ PRIMEROS PASOS ═══════════ -->
 <section class="parte" id="empezar">
   <span class="etiqueta">Para todos</span>
-  <div class="titulo"><img src="ico/como-se-usa.webp" alt=""><h2>Primeros pasos</h2></div>
-  <p class="entrada">RumboAula tiene tres módulos: <b>Partes</b> (convivencia), <b>Guardias</b> y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">RumboAula tiene tres módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b> y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
 
   <div class="perfiles">
-    <div class="perfil"><img src="ico/cargo-profesor.webp" alt=""><h3>Profesor/a</h3><p>Pone partes, registra salidas al baño, ve sus guardias, notifica ausencias y envía avisos.</p></div>
-    <div class="perfil"><img src="ico/tutor.webp" alt=""><h3>Tutor/a</h3><p>Lo mismo que el profesorado y, además, los partes de su grupo y el contacto de sus familias.</p></div>
-    <div class="perfil"><img src="ico/cargo-jefatura.webp" alt=""><h3>Jefatura y Dirección</h3><p>Convivencia de todo el centro, alertas, informes, cuadrante de guardias y cobertura de clases.</p></div>
-    <div class="perfil"><img src="ico/cargo-administracion.webp" alt=""><h3>Administración</h3><p>Alumnado, profesorado, tutorías y cargos. Importa los listados de Raíces.</p></div>
+    <div class="perfil"><img src="/iconos/cargo-profesor.svg" alt=""><h3>Profesor/a</h3><p>Pone partes y medidas en las faltas leves, registra salidas al baño, ve sus guardias, notifica ausencias y envía avisos.</p></div>
+    <div class="perfil"><img src="/iconos/tutor.svg" alt=""><h3>Tutor/a</h3><p>Lo mismo que el profesorado y, además, los partes de su grupo y el contacto de sus familias.</p></div>
+    <div class="perfil"><img src="/iconos/cargo-jefatura.svg" alt=""><h3>Jefatura y Dirección</h3><p>Convivencia del centro, medidas correctoras, alertas, informes, cuadrante de guardias y cobertura de clases.</p></div>
+    <div class="perfil"><img src="/iconos/cargo-administracion.svg" alt=""><h3>Administración</h3><p>Datos, horario y zonas del centro, alumnado, profesorado, tutorías y cargos.</p></div>
   </div>
 
-  <div class="tarjeta" style="margin-top:16px">
+  <div class="tarjeta nueva" style="margin-top:16px">
     <div>
-      <h3><img src="ico/cargo-profesor.webp" alt="">Entrar en la demostración</h3>
+      <h3><img src="/iconos/inicio.svg" alt="">Entrar <span class="novedad">Nuevo</span></h3>
+      <p>La portada tiene en el centro la tarjeta <b>Acceso</b>.</p>
       <ol>
-        <li>Abre <b>rumboaula.vercel.app</b> en el navegador del móvil o del ordenador.</li>
-        <li>Pulsa <span class="btn p">▶ Empezar (cargar los datos de ejemplo)</span>.</li>
-        <li>Elige un perfil: <b>Profesor/a</b>, <b>Tutor/a</b>, <b>Jefatura</b> o <b>Administración</b>. No hace falta nombre ni clave.</li>
-        <li>Dentro, muévete con los botones amarillos y blancos de <b>módulo</b> y con las <b>pestañas naranjas</b>.</li>
-        <li>Para cambiar de perfil, pulsa <span class="btn g">Salir</span> y vuelve a elegir.</li>
+        <li><b>En la demostración</b>, pulsa uno de los cuatro perfiles: <b>Profesor/a</b>, <b>Tutor/a de un grupo</b>, <b>Jefatura y Dirección</b> o <b>Administración</b>. Se cargan los datos de ejemplo y entras, sin nombre ni clave.</li>
+        <li>Para ver cómo le llega un mensaje a un compañero, usa <b>«Entrar como otro profe del claustro…»</b>: arriba salen quienes tienen mensajes sin leer.</li>
+        <li><b>En el centro</b>, cada docente pulsa <b>Entrar con nombre y clave</b>, escribe su nombre y su clave. La primera vez crea su clave; con <b>«Mostrar la clave»</b> puede comprobar que la ha escrito bien.</li>
+        <li>Dentro, cambia de módulo en la franja turquesa y de pantalla en las pestañas grises. En el ordenador, módulos y pestañas están en el menú de la izquierda.</li>
+        <li>Para cambiar de perfil, pulsa el botón redondo de salir, arriba a la derecha.</li>
       </ol>
-      <p class="nota ok">Para ver cómo le llega un mensaje a otro compañero, usa <b>«Entrar como otro profe del claustro»</b>: arriba aparecen quienes tienen mensajes sin leer.</p>
-      <p class="nota ojo">En el centro, cada docente entrará con su nombre y su clave. La primera vez, crea su propia clave.</p>
+      <p class="nota ojo">Si alguien olvida su clave, pulsa <b>«¿Has olvidado tu clave?»</b>: Administración la restablece y la persona crea una nueva al entrar.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/entrada.webp" aria-label="Ampliar: pantalla de entrada"><img src="img/entrada.webp" alt="Pantalla de entrada con los datos de ejemplo cargados y los cuatro perfiles" loading="lazy" width="1500" height="1562"></button>
-      <figcaption>Pantalla de entrada de la demostración.</figcaption>
+      <button class="cap" data-ampliar="img/entrada.webp" aria-label="Ampliar: portada"><img src="img/entrada.webp" alt="Portada con la tarjeta de acceso y los cuatro perfiles de la demostración" loading="lazy" width="1500" height="891"></button>
+      <figcaption>La portada de la demostración.</figcaption>
     </figure>
   </div>
 
   <div class="tarjeta sola">
     <div>
-      <h3><img src="ico/icono.webp" alt="">Instalarla en el móvil o en el ordenador</h3>
-      <p>No es obligatorio: funciona en el navegador. Instalarla solo sirve para tenerla con su icono, como cualquier otra aplicación.</p>
+      <h3><img src="/iconos/importar.svg" alt="">Instalarla en el móvil o en el ordenador</h3>
+      <p>No es obligatorio: funciona en el navegador. Instalarla sirve para tenerla con su icono, como cualquier otra aplicación.</p>
       <div class="disp">
         <div><h4>Android (Chrome)</h4><ol><li>Toca el menú ⋮.</li><li>Elige «Instalar aplicación» o «Añadir a pantalla de inicio».</li><li>Confirma.</li></ol></div>
         <div><h4>iPhone o iPad (Safari)</h4><ol><li>Toca el botón Compartir (cuadrado con flecha).</li><li>Elige «Añadir a pantalla de inicio».</li><li>Toca «Añadir».</li></ol></div>
         <div><h4>Ordenador (Chrome o Edge)</h4><ol><li>Pulsa el icono de instalar a la derecha de la barra de direcciones.</li><li>O en el menú: «Instalar página como aplicación».</li><li>Se abre en su propia ventana.</li></ol></div>
       </div>
-      <p class="nota ok">En la app, <span class="btn g">❓ Preguntas</span> → «¿Cómo instalo RumboAula…?» muestra estos pasos para tu dispositivo y, si el navegador lo permite, un botón <b>«Instalar ahora»</b>.</p>
+      <p class="nota ok">En la portada, <b>Instalar la app</b> muestra estos pasos para tu dispositivo y, si el navegador lo permite, un botón <b>«Instalar ahora»</b>.</p>
     </div>
   </div>
 
   <div class="tarjeta sola">
     <div>
-      <h3><img src="ico/como-se-usa.webp" alt="">Ayuda en cada pantalla</h3>
-      <p>Cada pantalla empieza con un recuadro <b>«Cómo se usa»</b> con sus pasos. Pulsa <span class="btn p">Entendido</span> para recogerlo y <b>«Cómo se usa»</b> para volver a verlo.</p>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">Ayuda en cada pantalla</h3>
+      <p>Cada pantalla empieza con un recuadro <b>«Cómo se usa»</b> con sus pasos. Pulsa <span class="btn g">Entendido</span> para recogerlo y <b>«Cómo se usa ▷»</b> para volver a verlo.</p>
     </div>
   </div>
 </section>
@@ -230,15 +228,16 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ PARTES ═══════════ -->
 <section class="parte" id="partes">
   <span class="etiqueta">Profesorado</span>
-  <div class="titulo"><img src="ico/partes.webp" alt=""><h2>Partes y convivencia</h2></div>
-  <p class="entrada">Módulo <span class="btn m">Partes</span>. Las faltas siguen la tipificación del Decreto 32/2019 de convivencia de la Comunidad de Madrid.</p>
+  <div class="titulo"><h2>Partes y convivencia</h2><img src="/iconos/partes.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Módulo <span class="btn m">Partes</span>. Las faltas siguen la tipificación del Decreto 32/2019 de convivencia de la Comunidad de Madrid. La gravedad se distingue por color: <b>verde</b> leve, <b>mostaza</b> grave y <b>azul</b> muy grave.</p>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/nuevo-parte.webp" alt="">Poner un parte</h3>
+      <h3><img src="/iconos/nuevo-parte.svg" alt="">Poner un parte</h3>
       <ol>
         <li>En <span class="btn t">Nuevo Parte</span>, escribe el nombre o el curso del alumno y elígelo de la lista.</li>
-        <li>Elige la <b>hora</b>, el <b>tipo</b> y la <b>gravedad</b>: leve, grave o muy grave.</li>
+        <li>Elige la <b>hora</b>, el <b>tipo</b> y la <b>gravedad</b>.</li>
         <li>Elige la <b>falta tipificada</b> de la lista oficial.</li>
         <li>Describe lo ocurrido con hechos concretos. Las <b>frases rápidas</b> te ayudan a empezar.</li>
         <li>Pulsa <span class="btn p">Generar Parte</span>.</li>
@@ -246,67 +245,122 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       <p class="nota priv">Verás el curso, el tutor/a y <b>los partes que le has puesto tú</b>. El contacto de la familia y el total de partes solo los ve su tutor/a.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/parte-nuevo.webp" aria-label="Ampliar: nuevo parte"><img src="img/parte-nuevo.webp" alt="Formulario de nuevo parte con alumna, gravedad y tipificación" loading="lazy" width="1500" height="1269"></button>
-      <figcaption>Nuevo parte para Lucía Martínez García, grave, con su tipificación.</figcaption>
+      <button class="cap limitada" data-ampliar="img/parte-nuevo.webp" aria-label="Ampliar: nuevo parte"><img src="img/parte-nuevo.webp" alt="Formulario de nuevo parte con alumna, gravedad y tipificación" loading="lazy" width="1200" height="1400"></button>
+      <figcaption>Nuevo parte para Lucía Martínez García.</figcaption>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/generar.webp" alt="">Avisar a la familia y a jefatura</h3>
-      <p>Al generar el parte aparece <b>«Cómo avisar a la familia y a jefatura»</b>:</p>
+      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Avisar a la familia y a Jefatura</h3>
+      <p>Al generar el parte aparece <b>«Cómo avisar a la familia y a Jefatura»</b>:</p>
       <ul>
-        <li><span class="btn g">Ver</span> y <span class="btn g">Descargar PDF</span>: el parte listo para firmar.</li>
-        <li><b>Copiar texto</b>: el correo ya redactado.</li>
-        <li><b>Copiar correos</b>: las direcciones de la familia, del tutor/a y de jefatura.</li>
+        <li><span class="btn p">Descargar PDF</span>: el parte listo para adjuntar o firmar.</li>
+        <li><span class="btn g">Copiar texto</span>: el correo ya redactado.</li>
+        <li><b>¿A quién se lo envías?</b>: marca familia, tutor/a, Jefatura u otros, y pulsa <span class="btn p">Abrir en mi correo</span>.</li>
       </ul>
-      <p class="nota ojo">El correo se envía <b>desde tu cuenta de EducaMadrid</b>: pega el texto y adjunta el PDF.</p>
+      <p class="nota ojo">La app no envía correos: se mandan <b>desde tu cuenta del centro</b>, que es el canal oficial.</p>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/parte-generado.webp" aria-label="Ampliar: parte generado"><img src="img/parte-generado.webp" alt="Parte generado con las opciones para avisar a la familia" loading="lazy" width="1500" height="775"></button>
+      <button class="cap" data-ampliar="img/parte-generado.webp" aria-label="Ampliar: cómo avisar"><img src="img/parte-generado.webp" alt="Recuadro para avisar a la familia y a Jefatura con destinatarios" loading="lazy" width="1200" height="870"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/grupos.webp" alt="">Parte de grupo</h3>
+      <h3><img src="/iconos/grupos.svg" alt="">Parte de grupo</h3>
       <ol>
         <li>En <span class="btn t">Parte de Grupo</span>, elige el grupo.</li>
-        <li>Quita a los alumnos que no estuvieron implicados.</li>
+        <li>Pulsa en los alumnos que no estuvieron implicados para excluirlos.</li>
         <li>Elige gravedad y falta, y escribe una sola descripción.</li>
         <li>Pulsa <span class="btn p">Generar Parte para N alumnos</span>: se crea un parte para cada uno.</li>
       </ol>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/parte-grupo.webp" aria-label="Ampliar: parte de grupo"><img src="img/parte-grupo.webp" alt="Parte de grupo para 2º ESO A con la lista de alumnos incluidos" loading="lazy" width="1500" height="1187"></button>
+      <button class="cap limitada" data-ampliar="img/parte-grupo.webp" aria-label="Ampliar: parte de grupo"><img src="img/parte-grupo.webp" alt="Parte de grupo con la lista de alumnos incluidos" loading="lazy" width="1200" height="1380"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/banos.webp" alt="">Salidas al baño</h3>
+      <h3><img src="/iconos/banos.svg" alt="">Salidas al baño</h3>
       <ol>
         <li>En <span class="btn t">Baños</span>, busca al alumno y pulsa <span class="btn p">Registrar Salida</span>.</li>
-        <li>Cuando vuelva, pulsa <b>✅ Regresó</b> en «Fuera ahora».</li>
+        <li>Cuando vuelva, pulsa <span class="btn v">✅ Regresó</span> en «Fuera ahora».</li>
       </ol>
-      <p>Si un alumno sale demasiadas veces, jefatura recibe un aviso automático.</p>
+      <p>Si un alumno sale demasiadas veces, Jefatura recibe un aviso automático.</p>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/banos.webp" aria-label="Ampliar: baños"><img src="img/banos.webp" alt="Control de salidas al baño con un alumno fuera" loading="lazy" width="1500" height="611"></button>
+      <button class="cap" data-ampliar="img/banos.webp" aria-label="Ampliar: baños"><img src="img/banos.webp" alt="Control de salidas al baño con un alumno fuera" loading="lazy" width="1200" height="886"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/documentos.webp" alt="">Mis partes y estadísticas</h3>
+      <h3><img src="/iconos/estadisticas.svg" alt="">Mis partes y estadísticas</h3>
       <ul>
-        <li><span class="btn t">Mis Partes</span>: los partes que has puesto, con <b>Ver</b> y <b>PDF</b>.</li>
+        <li><span class="btn t">Mis Partes</span>: los partes que has puesto, con <b>Ver</b>, <b>PDF</b> y el estado de sus medidas correctoras.</li>
         <li><span class="btn t">Estadísticas</span>: tus partes por día, semana, quincena o mes, y los avisos de alumnado con <b>3 o más partes</b> en el trimestre.</li>
-        <li>En cada aviso: <b>Avisar a la familia</b> (informe en PDF y correo redactado) y, después, <b>✅ Ya he avisado</b>.</li>
+        <li>En cada aviso: <b>Avisar a la familia</b> (informe en PDF y correo redactado) y, después, <span class="btn v">✅ Ya he avisado</span>.</li>
       </ul>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/estadisticas-profe.webp" aria-label="Ampliar: estadísticas del profesorado"><img src="img/estadisticas-profe.webp" alt="Estadísticas con avisos de alumnado con tres o más partes" loading="lazy" width="1500" height="1250"></button>
+      <button class="cap limitada" data-ampliar="img/estadisticas-profe.webp" aria-label="Ampliar: estadísticas"><img src="img/estadisticas-profe.webp" alt="Estadísticas con avisos a familias" loading="lazy" width="1200" height="1500"></button>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════ MEDIDAS ═══════════ -->
+<section class="parte" id="medidas">
+  <span class="etiqueta">Profesorado, guardias y Jefatura · Nuevo</span>
+  <div class="titulo"><h2>Medidas correctoras</h2><img src="/iconos/tipificacion.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Igual que en el papel de siempre: quien pone el parte indica la medida, Jefatura pone el día y el aula, y quien está de guardia en esa zona comprueba si el alumno o alumna ha venido.</p>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/nuevo-parte.svg" alt="">1. El profesor o la profesora indica la medida</h3>
+      <ol>
+        <li>Tras generar un parte <b>leve</b>, pulsa <span class="btn g">➕ Poner medida correctora</span>.</li>
+        <li>Elige la medida: <b>Aula de convivencia</b>, <b>Supresión del recreo</b> o <b>Una hora más al final del día</b>.</li>
+        <li>Elige <b>cuántas veces</b> y, si quieres, añade observaciones. Pulsa <span class="btn p">Guardar medida</span>.</li>
+      </ol>
+      <p class="nota ojo">Las medidas de las faltas <b>graves y muy graves</b> las pone Jefatura de Estudios. También se puede poner una medida más tarde desde la ventana del parte.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/parte-medida.webp" aria-label="Ampliar: poner medida"><img src="img/parte-medida.webp" alt="Formulario para poner una medida correctora: supresión del recreo, dos veces" loading="lazy" width="1200" height="656"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/cargo-jefatura.svg" alt="">2. Jefatura pone el día y el aula</h3>
+      <p>En <span class="btn m">Partes &amp; Alumnos</span> › <span class="btn t">Medidas</span> (el número indica cuántas hay que atender):</p>
+      <ul>
+        <li><b>Por programar</b>: las medidas del profesorado. Pulsa <span class="btn p">Poner día y aula</span>, elige los días, la hora si es aula de convivencia y el lugar (una zona del cuadrante, como «Aula de convivencia»), y pulsa <b>Programar</b>.</li>
+        <li><b>Hoy</b>: la lista del día con hora, lugar, quién está de guardia allí y el botón <span class="btn g">📄 Descargar la lista de hoy</span>.</li>
+        <li><b>Sin cumplir</b>: si alguien no se presentó, pásala a otro día o pulsa <span class="btn p">Poner parte por no cumplirla</span> (falta 9L, se crea sola).</li>
+        <li><b>Programadas y en curso</b> y <b>Cumplidas</b>, para el seguimiento.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/medidas-jefatura.webp" aria-label="Ampliar: medidas en Jefatura"><img src="img/medidas-jefatura.webp" alt="Pestaña Medidas de Jefatura con por programar, hoy y sin cumplir" loading="lazy" width="1200" height="1620"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/guardias.svg" alt="">3. La guardia marca si ha venido</h3>
+      <p>El <b>aula de convivencia</b> es una zona más del cuadrante de guardias. Quien está de guardia en esa zona y a esa hora ve, en <span class="btn t">Mi Guardia Hoy</span>, el recuadro <b>«Alumnado con medida correctora»</b>.</p>
+      <ul>
+        <li>Pulsa <span class="btn v">✓ Ha venido</span> o <span class="btn g">✗ No se ha presentado</span>.</li>
+        <li>Jefatura lo ve al momento, con quién lo marcó, y puede corregirlo.</li>
+        <li>Si no se presenta, Jefatura recibe una alerta <b>«Medida sin cumplir»</b>.</li>
+      </ul>
+      <p class="nota ok">El estado de cada medida (por programar, pendiente, en curso, cumplida o no cumplida) se ve también en el parte y en «Mis Partes».</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/guardia-convivencia.webp" aria-label="Ampliar: guardia del aula de convivencia"><img src="img/guardia-convivencia.webp" alt="Guardia del aula de convivencia con el alumnado que tiene medida" loading="lazy" width="1142" height="763"></button>
     </figure>
   </div>
 </section>
@@ -314,12 +368,13 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ GUARDIAS ═══════════ -->
 <section class="parte" id="guardias">
   <span class="etiqueta">Profesorado</span>
-  <div class="titulo"><img src="ico/guardias.webp" alt=""><h2>Guardias</h2></div>
+  <div class="titulo"><h2>Guardias</h2><img src="/iconos/guardias.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Módulo <span class="btn m">Guardias</span>. Cada zona tiene un <b>titular</b>, un <b>apoyo (pareja)</b> y un <b>sustituto</b>, que entra si falta uno de los dos o si sale a cubrir una clase.</p>
 
   <div class="tarjeta alta">
     <div>
-      <h3><img src="ico/hora-reloj.webp" alt="">Ahora: la hora en curso de un vistazo</h3>
+      <h3><img src="/iconos/hora-reloj.svg" alt="">Ahora: la hora en curso de un vistazo</h3>
       <ul>
         <li>Reloj, minutos que quedan de la hora y cuál viene después. Se actualiza solo.</li>
         <li><b>Te toca guardia</b>: tu zona, tu papel y por quién entras, con la tarea que ha dejado el ausente.</li>
@@ -327,42 +382,43 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Las <b>clases sin su profesor/a</b> y quién las cubre.</li>
         <li>Con los botones de horas puedes mirar cualquier otra hora del día.</li>
       </ul>
-      <p class="nota ok">Si jefatura te asigna cubrir una clase, verás en azul <b>«Jefatura te ha asignado: cubres la clase de…»</b>, con el aula y la tarea.</p>
+      <p class="nota ok">Si Jefatura te asigna cubrir una clase, lo verás destacado con el aula y la tarea.</p>
     </div>
     <figure>
-      <button class="cap movil" data-ampliar="img/movil-ahora.webp" aria-label="Ampliar: vista Ahora en el móvil"><img src="img/movil-ahora.webp" alt="Vista Ahora en el móvil: te toca guardia como sustituta" loading="lazy" width="585" height="1266"></button>
-      <figcaption>«Ahora» en el móvil: Carmen entra de sustituta por Marta Rubio.</figcaption>
+      <button class="cap movil" data-ampliar="img/movil-ahora.webp" aria-label="Ampliar: vista Ahora en el móvil"><img src="img/movil-ahora.webp" alt="Vista Ahora en el móvil" loading="lazy" width="1082" height="2202"></button>
+      <figcaption>«Ahora» en el móvil.</figcaption>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/firmar.webp" alt="">Mi guardia hoy: firmar y pasar lista</h3>
+      <h3><img src="/iconos/firmar.svg" alt="">Mi guardia hoy: firmar y pasar lista</h3>
       <ol>
         <li>En <span class="btn t">Mi Guardia Hoy</span> ves cada guardia del día con tu papel y tu equipo.</li>
         <li>Cuando empiece, pulsa <span class="btn p">Firmar guardia</span>.</li>
         <li>Si cubres una clase, pulsa <span class="btn p">Pasar lista</span> y marca solo a quien falta.</li>
+        <li>Si estás en el aula de convivencia, marca al alumnado con medida correctora.</li>
       </ol>
       <p>El calendario de arriba muestra tus guardias de los próximos días.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/mi-guardia.webp" aria-label="Ampliar: mi guardia hoy"><img src="img/mi-guardia.webp" alt="Mi guardia hoy con calendario, papel en cada guardia y botones de firmar y pasar lista" loading="lazy" width="1500" height="1437"></button>
+      <button class="cap limitada" data-ampliar="img/mi-guardia.webp" aria-label="Ampliar: mi guardia hoy"><img src="img/mi-guardia.webp" alt="Mi guardia hoy con calendario y guardias del día" loading="lazy" width="1200" height="1560"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/profe-ausente.webp" alt="">Notificar una ausencia</h3>
+      <h3><img src="/iconos/profe-ausente.svg" alt="">Notificar una ausencia</h3>
       <ol>
         <li>En <span class="btn t">Notificar Ausencia</span>, elige la fecha y marca las horas.</li>
         <li>Indica el <b>edificio</b>, el <b>aula</b> y la <b>asignatura</b>.</li>
         <li>Deja la <b>tarea</b> y dónde está el material.</li>
         <li>Pulsa <span class="btn p">Notificar Ausencia a Jefatura</span>.</li>
       </ol>
-      <p class="nota ojo">Completa, no sustituye, el correo de EducaMadrid y la llamada al instituto.</p>
+      <p class="nota ojo">Completa, no sustituye, el aviso oficial al centro.</p>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/notificar-ausencia.webp" aria-label="Ampliar: notificar ausencia"><img src="img/notificar-ausencia.webp" alt="Formulario para notificar una ausencia con horas, aula y tarea" loading="lazy" width="1500" height="789"></button>
+      <button class="cap limitada" data-ampliar="img/notificar-ausencia.webp" aria-label="Ampliar: notificar ausencia"><img src="img/notificar-ausencia.webp" alt="Formulario para notificar una ausencia" loading="lazy" width="1200" height="1122"></button>
     </figure>
   </div>
 </section>
@@ -370,56 +426,53 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ GALVÁNGRAM ═══════════ -->
 <section class="parte" id="galvangram">
   <span class="etiqueta">Todos</span>
-  <div class="titulo"><img src="ico/mensajes.webp" alt=""><h2>Galvángram</h2></div>
-  <p class="entrada">Mensajes rápidos entre profesorado y jefatura. El orden es: <b>qué pasa → dónde estás → a quién avisar</b>.</p>
+  <div class="titulo"><h2>Galvángram</h2><img src="/iconos/mensajes.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Mensajes rápidos entre profesorado y Jefatura. El orden es: <b>qué pasa → dónde estás → a quién avisar</b>.</p>
 
   <div class="tarjeta alta">
     <div>
-      <h3><img src="ico/emergencia.webp" alt="">Enviar un aviso</h3>
+      <h3><img src="/iconos/emergencia.svg" alt="">Enviar un aviso</h3>
       <ol>
         <li>Toca un mensaje rápido (<b>Alumno enfermo</b>, <b>Emergencia</b>, <b>Falta material</b>…) o escribe el tuyo.</li>
-        <li>En <b>📍 ¿Dónde estás?</b>, deja que se rellene <b>según tu horario</b> o escribe a mano el aula, el edificio y el grupo. En los avisos urgentes es obligatorio.</li>
+        <li>En <b>📍 ¿Dónde estás?</b>, deja que se rellene <b>según tu horario</b> o escríbelo a mano. En los avisos urgentes es obligatorio.</li>
         <li>En <b>¿A quién avisar?</b> aparecen los profes de guardia de esa hora por zonas, primero los de tu edificio (⭐). Toca un nombre o <b>📣 Avisar a la zona</b>.</li>
         <li>Pulsa <span class="btn p">Enviar Mensaje</span>.</li>
       </ol>
       <p class="nota priv">Cada uno ve solo los mensajes que envía y recibe.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/galvangram.webp" aria-label="Ampliar: enviar un aviso"><img src="img/galvangram.webp" alt="Aviso de emergencia con el lugar según el horario y los profes de guardia por zonas" loading="lazy" width="1500" height="1277"></button>
+      <button class="cap limitada" data-ampliar="img/galvangram.webp" aria-label="Ampliar: enviar un aviso"><img src="img/galvangram.webp" alt="Aviso de emergencia con el lugar y los profes de guardia por zonas" loading="lazy" width="1200" height="1566"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/alertas.webp" alt="">Recibir un aviso urgente</h3>
+      <h3><img src="/iconos/alertas.svg" alt="">Recibir un aviso urgente</h3>
       <ul>
         <li>Sale <b>a pantalla completa</b> en cualquier pantalla, con sonido y vibración si el dispositivo lo permite.</li>
         <li>Muestra el <b>lugar</b>, el mensaje, a quién más se ha avisado y quién va ya.</li>
         <li>Responde con <span class="btn p">🏃 Voy</span> o <span class="btn g">✋ No puedo</span>.</li>
       </ul>
       <p>Quien lo envió ve tu respuesta al momento, y en su historial el estado: enviado, <b>✓✓ leído</b> o la respuesta.</p>
+      <figure style="margin-top:12px">
+        <button class="cap" data-ampliar="img/respuesta.webp" aria-label="Ampliar: respuesta recibida"><img src="img/respuesta.webp" alt="Aviso: Laura Torres va de camino" loading="lazy" width="672" height="86"></button>
+        <figcaption>Quien envió el aviso ve: «Laura Torres va de camino».</figcaption>
+      </figure>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/aviso-urgente.webp" aria-label="Ampliar: aviso urgente"><img src="img/aviso-urgente.webp" alt="Aviso urgente a pantalla completa con los botones Voy y No puedo" loading="lazy" width="1500" height="1125"></button>
+      <button class="cap" data-ampliar="img/aviso-urgente.webp" aria-label="Ampliar: aviso urgente"><img src="img/aviso-urgente.webp" alt="Aviso urgente a pantalla completa con los botones Voy y No puedo" loading="lazy" width="1500" height="1080"></button>
       <figcaption>Laura Torres recibe el aviso de Carmen López.</figcaption>
     </figure>
   </div>
-
-  <div class="tarjeta sola">
-    <div>
-      <figure>
-        <button class="cap" data-ampliar="img/respuesta.webp" aria-label="Ampliar: respuesta recibida"><img src="img/respuesta.webp" alt="Aviso a Carmen: Laura Torres va de camino" loading="lazy" width="1500" height="250"></button>
-        <figcaption>Carmen ve la respuesta: «Laura Torres va de camino».</figcaption>
-      </figure>
-      <p class="nota ojo" style="margin-top:14px"><b>En una emergencia, sigue el protocolo del centro</b>: llama a conserjería o a jefatura y avisa en persona si hace falta. Galvángram ayuda a avisar más rápido, pero no lo sustituye.</p>
-    </div>
-  </div>
+  <p class="nota ojo"><b>En una emergencia, sigue el protocolo del centro</b>: llama a conserjería o a Jefatura y avisa en persona si hace falta. Galvángram ayuda a avisar más rápido, pero no lo sustituye.</p>
 </section>
 
 <!-- ═══════════ TUTORÍA ═══════════ -->
 <section class="parte" id="tutoria">
   <span class="etiqueta">Tutor/a</span>
-  <div class="titulo"><img src="ico/tutor.webp" alt=""><h2>Tutoría</h2></div>
+  <div class="titulo"><h2>Tutoría</h2><img src="/iconos/tutor.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
   <p class="entrada">El tutor/a usa el perfil de profesorado y, además, ve lo de su grupo.</p>
   <div class="tarjeta sola">
     <div>
@@ -436,12 +489,13 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ JEFATURA ═══════════ -->
 <section class="parte" id="jefatura">
   <span class="etiqueta">Jefatura y Dirección</span>
-  <div class="titulo"><img src="ico/cargo-jefatura.webp" alt=""><h2>Jefatura de Estudios</h2></div>
-  <p class="entrada">Dos módulos: <span class="btn m">Partes &amp; Alumnos</span> y <span class="btn m">Guardias &amp; Ausencias</span>.</p>
+  <div class="titulo"><h2>Jefatura de Estudios</h2><img src="/iconos/cargo-jefatura.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Dos módulos: <span class="btn m">Partes &amp; Alumnos</span> y <span class="btn m">Guardias &amp; Ausencias</span>. Las medidas correctoras están explicadas en <a href="#medidas">su apartado</a>.</p>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/dashboard.webp" alt="">Panel y partes del centro</h3>
+      <h3><img src="/iconos/dashboard.svg" alt="">Panel y partes del centro</h3>
       <ul>
         <li><span class="btn t">Dashboard</span>: partes por gravedad, alumnado fuera del aula, profesorado ausente y alertas.</li>
         <li><span class="btn t">Por Curso</span> y <span class="btn t">Por Alumno</span>: el historial completo, con gravedad y tipificación.</li>
@@ -450,27 +504,27 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       </ul>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/jefatura-panel.webp" aria-label="Ampliar: panel de jefatura"><img src="img/jefatura-panel.webp" alt="Panel de jefatura con el estado general" loading="lazy" width="1500" height="1250"></button>
+      <button class="cap limitada" data-ampliar="img/jefatura-panel.webp" aria-label="Ampliar: panel de Jefatura"><img src="img/jefatura-panel.webp" alt="Panel de Jefatura con el estado general" loading="lazy" width="1200" height="1500"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/alertas.webp" alt="">Alertas, informes y estadísticas</h3>
+      <h3><img src="/iconos/alertas.svg" alt="">Alertas, informes y estadísticas</h3>
       <ul>
-        <li><span class="btn t">Alertas</span>: avisos automáticos por acumulación de leves, 3 partes de un alumno, partes fuera del horario del centro y salidas al baño repetidas. Pulsa una para marcarla como leída.</li>
-        <li><span class="btn t">Informe</span>: elige partes o salidas al baño, filtra y pulsa el botón del informe. Se abre la vista previa con <b>Descargar PDF</b>. Con <b>Limpiar filtros</b> vuelves a todos.</li>
+        <li><span class="btn t">Alertas</span>: avisos automáticos por acumulación de leves, 3 partes de un alumno, partes fuera del horario del centro, salidas al baño repetidas y <b>medidas sin cumplir</b>. Pulsa una para marcarla como leída.</li>
+        <li><span class="btn t">Informe</span>: elige partes o salidas al baño, filtra y pulsa el botón del informe. Se abre la vista previa con <b>Descargar PDF</b>.</li>
         <li><span class="btn t">Estadísticas</span>: cifras y gráficas por periodo, informes en PDF y descarga en Excel.</li>
       </ul>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/alertas.webp" aria-label="Ampliar: alertas"><img src="img/alertas.webp" alt="Lista de alertas automáticas" loading="lazy" width="1500" height="812"></button>
+      <button class="cap limitada" data-ampliar="img/alertas.webp" aria-label="Ampliar: alertas"><img src="img/alertas.webp" alt="Lista de alertas automáticas" loading="lazy" width="1200" height="1200"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/hora-reloj.webp" alt="">Cubrir clases sin profesor</h3>
+      <h3><img src="/iconos/hora-reloj.svg" alt="">Cubrir clases sin profesor</h3>
       <p>En <span class="btn t">Ahora</span> y en <span class="btn t">Coordinación Diaria</span>, cada clase sin profesor muestra quién puede cubrirla, por este orden:</p>
       <ol>
         <li>Quien está de guardia en aula.</li>
@@ -481,28 +535,28 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       <p>Dentro de cada grupo, primero quien lleva menos clases cubiertas y guardias ese día. Pulsa <span class="btn p">Asignar</span> y el profe lo verá en su pantalla. Nunca deja una zona vacía.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/ahora-jefatura.webp" aria-label="Ampliar: cubrir clases"><img src="img/ahora-jefatura.webp" alt="Clase sin profesor con candidatos ordenados y botón Asignar" loading="lazy" width="1500" height="1094"></button>
+      <button class="cap limitada" data-ampliar="img/ahora-jefatura.webp" aria-label="Ampliar: cubrir clases"><img src="img/ahora-jefatura.webp" alt="Vista Ahora de Jefatura con clases sin profesor y candidatos" loading="lazy" width="1200" height="1560"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/horario.webp" alt="">Cuadrante de guardias</h3>
+      <h3><img src="/iconos/horario.svg" alt="">Cuadrante de guardias</h3>
       <ol>
         <li>En <span class="btn t">Cuadrante</span>, elige el profesor y el inicio de la quincena.</li>
-        <li>En cada día y hora, elige la zona de la que es titular.</li>
-        <li>Asigna el apoyo y el sustituto. Lo que falta sale en rojo.</li>
+        <li>En cada día y hora, elige la zona de la que es titular. Las zonas salen agrupadas por edificio, incluida el <b>aula de convivencia</b>.</li>
+        <li>Asigna el apoyo y el sustituto. Lo que falta se marca.</li>
       </ol>
       <p>Nadie puede tener más de 4 guardias al día; entre paréntesis, las que ya tiene cada uno. <b>Copiar de la quincena anterior</b> evita empezar de cero.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/cuadrante.webp" aria-label="Ampliar: cuadrante"><img src="img/cuadrante.webp" alt="Cuadrante quincenal de guardias de una profesora" loading="lazy" width="1500" height="1250"></button>
+      <button class="cap limitada" data-ampliar="img/cuadrante.webp" aria-label="Ampliar: cuadrante"><img src="img/cuadrante.webp" alt="Cuadrante quincenal de guardias de un profesor" loading="lazy" width="1200" height="1500"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/firmar.webp" alt="">Ausencias, firmas y listas</h3>
+      <h3><img src="/iconos/firmar.svg" alt="">Ausencias, firmas y listas</h3>
       <ul>
         <li><span class="btn t">Ausencias de Profesores</span>: las que notifica el profesorado. Si alguien llama, pulsa <b>Registrar una ausencia comunicada por teléfono</b>.</li>
         <li><span class="btn t">Parte del Día</span>: el estado de todas las zonas de hoy.</li>
@@ -510,7 +564,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       </ul>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/firmas.webp" aria-label="Ampliar: firmas de guardia"><img src="img/firmas.webp" alt="Firmas de guardia del día con hora de cada firma" loading="lazy" width="1500" height="1062"></button>
+      <button class="cap limitada" data-ampliar="img/firmas.webp" aria-label="Ampliar: firmas de guardia"><img src="img/firmas.webp" alt="Firmas de guardia del día con hora de cada firma" loading="lazy" width="1200" height="1380"></button>
     </figure>
   </div>
 </section>
@@ -518,12 +572,43 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ ADMINISTRACIÓN ═══════════ -->
 <section class="parte" id="administracion">
   <span class="etiqueta">Administración</span>
-  <div class="titulo"><img src="ico/cargo-administracion.webp" alt=""><h2>Administración</h2></div>
-  <p class="entrada">Para Secretaría, Dirección y Coordinación TIC.</p>
+  <div class="titulo"><h2>Administración</h2><img src="/iconos/cargo-administracion.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Para Secretaría, Dirección y Coordinación TIC. Desde aquí se adapta RumboAula a cada centro, sin tocar nada técnico.</p>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/edificio.svg" alt="">Datos y horario del centro <span class="novedad">Nuevo</span></h3>
+      <p>En <span class="btn m">Alumnos</span>, arriba del todo. Los cambios se guardan solos.</p>
+      <ul>
+        <li><b>Datos del centro</b>: nombre y localidad. Salen en la portada, la cabecera, los PDF y los correos a las familias («Les escribimos desde el…»).</li>
+        <li><b>Logotipo para los documentos</b>: sube una imagen PNG o JPG y saldrá al pie de cada página de todos los PDF. Usa solo imágenes que el centro tenga permiso para usar.</li>
+        <li><b>Horario del centro</b>: hora de inicio y de fin de cada franja (1ª a 7ª hora y recreo). Se usa en los partes, en «Ahora», en las guardias y en las medidas. Si una franja acaba antes de empezar, avisa y no se usa. <b>Volver al horario inicial</b> lo deshace todo.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/admin-centro.webp" aria-label="Ampliar: datos y horario del centro"><img src="img/admin-centro.webp" alt="Datos del centro, logotipo y horario en Administración" loading="lazy" width="1200" height="1986"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/guardias.svg" alt="">Zonas de guardia <span class="novedad">Nuevo</span></h3>
+      <ul>
+        <li>Las zonas salen agrupadas por edificio. Cambia el <b>nombre</b> o el <b>edificio</b> de cualquiera.</li>
+        <li><b>Añadir una zona</b>: nombre y edificio. Si el edificio es nuevo, aparece como grupo nuevo en el cuadrante.</li>
+        <li><span class="btn g">Ocultar</span> quita una zona del cuadrante; <span class="btn g">Mostrar</span> la recupera. Las zonas no se borran, para no perder las guardias ya hechas.</li>
+        <li>«Aula — Sustitución de clase» y «Aula de convivencia» se pueden renombrar, pero no ocultar: la app las necesita.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/admin-zonas.webp" aria-label="Ampliar: zonas de guardia"><img src="img/admin-zonas.webp" alt="Zonas de guardia por edificio con botones para ocultar" loading="lazy" width="1200" height="1200"></button>
+    </figure>
+  </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/importar.webp" alt="">Alumnado y tutorías</h3>
+      <h3><img src="/iconos/importar.svg" alt="">Alumnado y tutorías</h3>
       <ol>
         <li>Exporta el listado de <b>Raíces</b> a CSV o Excel.</li>
         <li>En <span class="btn m">Alumnos</span> → <b>Importar CSV/Excel</b>, arrástralo, revisa la vista previa y confirma. Si importas el mismo archivo dos veces, no se duplica nadie.</li>
@@ -532,13 +617,13 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       </ol>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/admin-alumnos.webp" aria-label="Ampliar: alumnado y tutorías"><img src="img/admin-alumnos.webp" alt="Tutorías de grupo y gestión de alumnos" loading="lazy" width="1500" height="1062"></button>
+      <button class="cap limitada" data-ampliar="img/admin-alumnos.webp" aria-label="Ampliar: alumnado y tutorías"><img src="img/admin-alumnos.webp" alt="Tutorías de grupo y gestión de alumnos" loading="lazy" width="1200" height="1380"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="ico/profesorado.webp" alt="">Profesorado y cargos</h3>
+      <h3><img src="/iconos/profesorado.svg" alt="">Profesorado y cargos</h3>
       <ul>
         <li>Añade a cada profesor con su nombre completo y su correo.</li>
         <li>Marca sus <b>cargos</b>: deciden a qué perfiles entra. Jefatura y Orientación abren «Jefatura y Dirección»; Secretaría y Coordinación TIC abren Administración.</li>
@@ -547,7 +632,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       </ul>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/admin-profesores.webp" aria-label="Ampliar: profesorado"><img src="img/admin-profesores.webp" alt="Gestión del profesorado con cargos" loading="lazy" width="1500" height="1062"></button>
+      <button class="cap limitada" data-ampliar="img/admin-profesores.webp" aria-label="Ampliar: profesorado"><img src="img/admin-profesores.webp" alt="Gestión del profesorado con cargos" loading="lazy" width="1200" height="1380"></button>
     </figure>
   </div>
 </section>
@@ -555,23 +640,24 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <!-- ═══════════ AYUDA ═══════════ -->
 <section class="parte" id="ayuda">
   <span class="etiqueta">Para todos</span>
-  <div class="titulo"><img src="ico/aviso.webp" alt=""><h2>Ayuda y protección de datos</h2></div>
+  <div class="titulo"><h2>Ayuda y protección de datos</h2><img src="/iconos/aviso.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
 
-  <div class="tarjeta">
+  <div class="tarjeta" style="margin-top:16px">
     <div>
-      <h3><img src="ico/como-se-usa.webp" alt="">Preguntas frecuentes</h3>
-      <p>Pulsa <span class="btn g">❓ Preguntas</span>, arriba junto a «Salir», o el enlace de la pantalla de entrada. Responde a dudas como dónde se guardan los datos, por qué no llega un mensaje o qué hacer en una emergencia.</p>
-      <h3 style="margin-top:16px"><img src="ico/aviso.webp" alt="">Si algo falla</h3>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">Preguntas frecuentes</h3>
+      <p>En la portada, <b>Preguntas frecuentes</b>; dentro de la app, el botón redondo <b>?</b> de arriba a la derecha. Responde a dudas como dónde se guardan los datos, por qué no llega un mensaje o qué hacer en una emergencia.</p>
+      <h3 style="margin-top:16px"><img src="/iconos/aviso.svg" alt="">Si algo falla</h3>
       <p>Pulsa <b>⚠️ Informar de un problema</b>, abajo a la izquierda, y cuenta qué ha pasado. Si una pantalla se rompe, la propia app te ofrecerá avisar. El informe incluye la pantalla, tu perfil, la hora y el error técnico, <b>nunca datos del alumnado</b>.</p>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/preguntas.webp" aria-label="Ampliar: preguntas frecuentes"><img src="img/preguntas.webp" alt="Ventana de preguntas frecuentes" loading="lazy" width="1500" height="1125"></button>
+      <button class="cap" data-ampliar="img/preguntas.webp" aria-label="Ampliar: preguntas frecuentes"><img src="img/preguntas.webp" alt="Ventana de preguntas frecuentes" loading="lazy" width="1500" height="1080"></button>
     </figure>
   </div>
 
   <div class="tarjeta sola">
     <div>
-      <h3><img src="ico/titular.webp" alt="">Quién ve qué</h3>
+      <h3><img src="/iconos/titular.svg" alt="">Quién ve qué</h3>
       <div class="tabla">
         <table>
           <thead><tr><th scope="col">Dato</th><th scope="col">Profesor/a</th><th scope="col">Tutor/a del grupo</th><th scope="col">Jefatura</th></tr></thead>
@@ -579,12 +665,13 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
             <tr><td>Partes que ha puesto</td><td class="si">Sí</td><td class="si">Sí</td><td class="si">Sí</td></tr>
             <tr><td>Todos los partes de un alumno</td><td class="no">No</td><td class="si">Sí, de su grupo</td><td class="si">Sí</td></tr>
             <tr><td>Contacto de la familia</td><td>Al poner un parte</td><td class="si">Sí, de su grupo</td><td class="si">Sí</td></tr>
+            <tr><td>Medidas correctoras</td><td>Las de sus partes y las de su guardia</td><td>Las de sus partes y las de su guardia</td><td class="si">Todas, y las programa</td></tr>
             <tr><td>Mensajes de Galvángram</td><td>Solo los suyos</td><td>Solo los suyos</td><td>Solo los suyos</td></tr>
             <tr><td>Guardias y cobertura de clases</td><td class="si">Sí</td><td class="si">Sí</td><td class="si">Sí, y asigna</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="nota priv">RumboAula está <b>diseñada para cumplir</b> el RGPD, la Ley Orgánica 3/2018 de Protección de Datos y la normativa de protección de menores. Antes de usarla con datos reales, se someterá a la aprobación del equipo directivo y de la Delegación de Protección de Datos de la Consejería de Educación. Cuando funcione en el centro, los datos estarán solo en un servidor del centro o de EducaMadrid.</p>
+      <p class="nota priv">RumboAula está <b>diseñada para cumplir</b> el RGPD, la Ley Orgánica 3/2018 de Protección de Datos y la normativa de protección de menores. Antes de usarla con datos reales, se someterá a la aprobación del equipo directivo y de la Delegación de Protección de Datos de la Consejería de Educación.</p>
       <p class="nota ojo"><b>En esta versión de demostración</b>, cada dispositivo guarda sus propios datos: lo que hagas en el móvil no aparece en el ordenador, y un mensaje no sale del dispositivo donde se escribe.</p>
     </div>
   </div>
@@ -595,7 +682,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 
 <footer>
   <div class="pie">
-    <div style="display:flex;gap:12px;align-items:center"><img src="ico/icono.webp" alt=""><div><b style="color:#fff">RumboAula</b><br>Todo lo que importa en tu aula · Versión de demostración</div></div>
+    <div style="display:flex;gap:12px;align-items:center"><img src="/icono-192.png" alt=""><div><b style="color:#fff">RumboAula</b><br>Todo lo que importa en tu aula · Versión de demostración</div></div>
     <div>Dudas y fallos: <span class="correo" id="correo">mtgonzalezmunoz@educa.madrid.org</span><button class="copiar" id="copiar" type="button">Copiar</button></div>
   </div>
 </footer>
