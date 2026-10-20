@@ -634,7 +634,7 @@ function CopyBtn({ getText, label = "📋 Copiar texto" }) {
       });
   }
   return (
-    <button onClick={copy} style={{ background: ok ? C.teal : C.cream, color: ok ? C.white : C.dark, border: `1px solid ${ok ? C.teal : "#ccc"}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 700, fontSize: 13, transition: "all .2s" }}>
+    <button onClick={copy} style={{ background: ok ? R.verde : C.white, color: ok ? R.noche : R.petroleo, border: `2px solid ${ok ? R.verde : R.azul}`, borderRadius: 6, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 17, transition: "all .2s" }}>
       {ok ? "✅ ¡Copiado!" : label}
     </button>
   );
@@ -1202,24 +1202,25 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
 // ─── Cómo avisar a la familia y a Jefatura ─────────────────────────────────
 // La app no envía correos: el profesor lo manda desde su correo del centro.
 function ComoAvisar({ parte }) {
-  const btn = { border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13 };
   return (
-    <div style={{ marginTop: 14, background: "#FFFBEB", border: "1px solid #fcd34d", borderRadius: 10, padding: 14, textAlign: "left" }}>
-      <div style={{ fontWeight: 700, color: C.dark, fontSize: 14, marginBottom: 6 }}><Ic n="mensaje-enviar" tam={20} />Cómo avisar a la familia y a Jefatura</div>
-      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>
+    <div style={{ marginTop: 14, textAlign: "left", border: `1px solid ${R.turquesaClaro}`, background: C.white }}>
+      <div style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="mensaje-enviar" tam={34} />Cómo avisar a la familia y a Jefatura</div>
+      <div style={{ background: R.crema, padding: "12px 14px", fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>
         Elige abajo a quién se lo envías y pulsa «Abrir en mi correo». Para el contenido, elige una de estas dos formas:
-        <ol style={{ margin: "6px 0 10px", paddingLeft: 20 }}>
+        <ol style={{ margin: "6px 0 0", paddingLeft: 22 }}>
           <li><strong>Descarga el PDF</strong> y adjúntalo al correo.</li>
           <li><strong>Copia el texto</strong> del parte y pégalo en el cuerpo del correo.</li>
         </ol>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={() => pdfParte(parte)} style={{ ...btn, background: "#16a34a", color: "#fff" }}>⬇️ Descargar PDF</button>
-        <CopyBtn getText={() => textoParte(parte)} label="📋 Copiar texto" />
+      <div style={{ padding: 14 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={() => pdfParte(parte)} style={{ background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 17 }}>⬇️ Descargar PDF</button>
+          <CopyBtn getText={() => textoParte(parte)} label="📋 Copiar texto" />
+        </div>
+        <ElegirDestinatarios alumno={{ nombre: parte.alumno, email: parte.email }} tutorNombre={parte.tutor} tutorEmail={parte.tutorEmail}
+          asunto={`Parte de incidencia · ${parte.alumno} (${parte.curso}) · PARTE-${parte.id}`} cuerpo={textoParte(parte)} porDefecto={["familia", "tutor", "jefatura"]} C={C} />
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>La app no envía correos: se mandan desde tu correo del centro, que es el canal oficial.</div>
       </div>
-      <ElegirDestinatarios alumno={{ nombre: parte.alumno, email: parte.email }} tutorNombre={parte.tutor} tutorEmail={parte.tutorEmail}
-        asunto={`Parte de incidencia · ${parte.alumno} (${parte.curso}) · PARTE-${parte.id}`} cuerpo={textoParte(parte)} porDefecto={["familia", "tutor", "jefatura"]} C={C} />
-      <div style={{ fontSize: 11, color: C.gray, marginTop: 8 }}>La app no envía correos: se mandan desde tu correo del centro, que es el canal oficial.</div>
     </div>
   );
 }
@@ -4926,24 +4927,24 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
   const mailto = `mailto:${unicos.map(encodeURIComponent).join(",")}?subject=${encodeURIComponent(asunto || "")}&body=${encodeURIComponent(cuerpoCorto)}`;
   const copiar = async () => { try { await navigator.clipboard.writeText(unicos.join(", ")); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { window.prompt("Copia los correos:", unicos.join(", ")); } };
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 12, marginTop: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Ic n="selecciona-profesor" tam={22} />¿A quién se lo envías?</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 6 }}>
+    <div style={{ background: R.azulClaro, padding: 12, marginTop: 14 }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: R.petroleo, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="selecciona-profesor" tam={32} />¿A quién se lo envías?</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
         {opciones.map(o => {
           const ok = correoValido(o.email);
           return (
-            <label key={o.id} title={ok ? o.email : "Sin correo registrado"} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, border: `1px solid ${marcados.includes(o.id) && ok ? C.teal : "#e5e7eb"}`, background: marcados.includes(o.id) && ok ? "#F0FAF7" : "#fff", cursor: ok ? "pointer" : "not-allowed", opacity: ok ? 1 : .55 }}>
-              <input type="checkbox" checked={ok && marcados.includes(o.id)} disabled={!ok} onChange={() => cambia(o.id)} />
-              <Icono nombre={o.icono} tam={26} />
-              <span style={{ fontSize: 12, lineHeight: 1.25 }}><b style={{ color: C.dark }}>{o.label}</b><br /><span style={{ color: C.gray }}>{ok ? o.email : DESTINOS_CENTRO.some(d => d.id === o.id) ? "Sin correo: añádelo en Administración" : "Sin correo registrado"}</span></span>
+            <label key={o.id} title={ok ? o.email : "Sin correo registrado"} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 56, padding: "8px 10px", borderRadius: 6, border: `2px solid ${marcados.includes(o.id) && ok ? R.turquesa : C.white}`, background: C.white, cursor: ok ? "pointer" : "not-allowed", opacity: ok ? 1 : .55 }}>
+              <input type="checkbox" checked={ok && marcados.includes(o.id)} disabled={!ok} onChange={() => cambia(o.id)} style={{ width: 22, height: 22, accentColor: R.azul, flexShrink: 0 }} />
+              <Icono nombre={o.icono} tam={32} />
+              <span style={{ fontSize: 15, lineHeight: 1.3, minWidth: 0 }}><b style={{ color: R.petroleo }}>{o.label}</b><br /><span style={{ color: R.petroleo, fontSize: 14 }}>{ok ? <>{o.email.split("@")[0]}@<wbr />{o.email.split("@").slice(1).join("@")}</> : DESTINOS_CENTRO.some(d => d.id === o.id) ? "Sin correo: añádelo en Administración" : "Sin correo registrado"}</span></span>
             </label>
           );
         })}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-        <Icono nombre="selecciona-profesor" tam={26} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+        <Icono nombre="anadir-profesor" tam={32} />
         <select value="" aria-label="Añadir a otro profesor/a" onChange={e => { const n = e.target.value; if (n) setProfesElegidos(prev => prev.includes(n) ? prev : [...prev, n]); }}
-          style={{ flex: "1 1 220px", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12, background: "#fff" }}>
+          style={{ flex: "1 1 0", minWidth: 0, minHeight: 48, padding: "8px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
           <option value="">Añadir a otro profesor/a…</option>
           {[...profes].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(p => (
             <option key={p.nombre} value={p.nombre} disabled={!correoValido(p.email) || profesElegidos.includes(p.nombre)}>
@@ -4955,26 +4956,26 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
       {profesElegidos.length > 0 && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
           {profesElegidos.map(n => (
-            <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#EEF5F8", color: C.dark, borderRadius: 20, padding: "4px 6px 4px 10px", fontSize: 12, fontWeight: 600 }}>
+            <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.white, color: R.petroleo, border: `2px solid ${R.turquesa}`, borderRadius: 22, padding: "4px 4px 4px 12px", fontSize: 15, fontWeight: 700 }}>
               {n}
               <button aria-label={`Quitar a ${n}`} onClick={() => setProfesElegidos(prev => prev.filter(x => x !== n))}
-                style={{ border: "none", background: "#fff", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontWeight: 800, color: C.gray, lineHeight: "18px", padding: 0 }}>×</button>
+                style={{ border: "none", background: R.azulClaro, borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontWeight: 700, fontSize: 18, color: R.petroleo, lineHeight: "30px", padding: 0 }}>×</button>
             </span>
           ))}
         </div>
       )}
       <input value={otro} onChange={e => setOtro(e.target.value)} placeholder="Otro correo (opcional): PTSC, familia separada…" aria-label="Otro correo"
-        style={{ width: "100%", marginTop: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12, boxSizing: "border-box" }} />
+        style={{ width: "100%", marginTop: 10, minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box" }} />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
         <a href={unicos.length ? mailto : undefined} onClick={e => { if (!unicos.length) e.preventDefault(); }}
-          style={{ flex: "1 1 200px", textAlign: "center", textDecoration: "none", padding: "10px 12px", borderRadius: 10, background: unicos.length ? C.teal : "#cbd5e1", color: "#fff", fontWeight: 800, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: unicos.length ? "pointer" : "not-allowed" }}>
-          <Icono nombre="boton-enviar" tam={24} />Abrir en mi correo ({unicos.length})
+          style={{ flex: "1 1 200px", textAlign: "center", textDecoration: "none", minHeight: 48, padding: "8px 12px", borderRadius: 6, background: unicos.length ? R.azul : R.gris, color: unicos.length ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 17, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: unicos.length ? "pointer" : "not-allowed" }}>
+          <Icono nombre="boton-enviar" tam={30} />Abrir en mi correo ({unicos.length})
         </a>
-        <button onClick={copiar} disabled={!unicos.length} style={{ flex: "1 1 160px", padding: "10px 12px", borderRadius: 10, border: `2px solid ${C.teal}`, background: "#F0FAF7", color: C.dark, fontWeight: 700, fontSize: 12, cursor: unicos.length ? "pointer" : "not-allowed" }}>
+        <button onClick={copiar} disabled={!unicos.length} style={{ flex: "1 1 160px", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontWeight: 700, fontSize: 16, cursor: unicos.length ? "pointer" : "not-allowed" }}>
           {copiado ? "✅ Correos copiados" : "Copiar solo los correos"}
         </button>
       </div>
-      <div style={{ fontSize: 11, color: C.gray, marginTop: 6 }}>Se abre tu programa de correo con los destinatarios, el asunto y el texto. Revisa y adjunta el PDF antes de enviarlo.</div>
+      <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>Se abre tu programa de correo con los destinatarios, el asunto y el texto. Revisa y adjunta el PDF antes de enviarlo.</div>
     </div>
   );
 }
