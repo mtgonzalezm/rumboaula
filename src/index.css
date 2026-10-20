@@ -1,3 +1,13 @@
+/* Letra de los títulos, servida desde la propia app (licencia SIL OFL en public/fonts).
+   El texto usa Helvetica o Arial, como Raíces */
+@font-face {
+  font-family: "Montserrat";
+  src: url("/fonts/montserrat-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root {

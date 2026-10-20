@@ -7,11 +7,59 @@ const APP = "RumboAula";
 const CENTRO = "Centro educativo";
 const CIUDAD = "Madrid";
 
+// Colores con los que se pinta toda la app. Los nombres son los de siempre, pero los valores
+// son ya los de Raíces (petróleo, azul, gris azulado, crema), con contraste suficiente para leer.
 const C = {
-  cream: "#F4F0E4", teal: "#44A194", blue: "#00B7B5", salmon: "#EC8F8D",
-  dark: "#2C4A52", white: "#FFFFFF", gray: "#64748b", light: "#F8F6F0",
-  amber: "#d97706", amberBg: "#fef3c7",
+  cream: "#EBF0F6", teal: "#275D8C", blue: "#2B647E", salmon: "#275D8C",
+  dark: "#2B647E", white: "#FFFFFF", gray: "#2B647E", light: "#EBF0F6",
+  amber: "#2B647E", amberBg: "#FDF1D9",
 };
+
+// Letra del texto como la de Raíces; los títulos van en Montserrat (guardada en public/fonts, ver index.css)
+const FUENTE = `"Helvetica Neue", Helvetica, Arial, sans-serif`;
+
+// Paleta de Raíces (medida en sus pantallas).
+// Sobre turquesa, mostaza y verde el texto va en «noche»: en blanco no se leería.
+const R = {
+  petroleo: "#2B647E", noche: "#16333F", azul: "#275D8C", turquesa: "#65B9C9", turquesaClaro: "#CDE9ED",
+  mostaza: "#F6C862", verde: "#63CBA1", azulClaro: "#DDF0F4", crema: "#FDF1D9", gris: "#EBF0F6",
+};
+// Gravedad de menos a más intensa, con colores de Raíces
+const COLOR_GRAVEDAD = { leve: R.verde, grave: R.mostaza, muy_grave: R.azul };
+const TITULO = `"Montserrat", "Segoe UI", system-ui, sans-serif`;
+
+// Título de bloque como los de Raíces: título grande, subtítulo, dibujo a la derecha y línea azul debajo
+const TituloBloque = ({ titulo, sub, icono, nivel = "h2" }) => {
+  const Tag = nivel;
+  return (
+    <div style={{ marginBottom: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <Tag className="gd-titulo-bloque" style={{ margin: 0, fontFamily: TITULO, fontWeight: 400, fontSize: 34, lineHeight: 1.1, color: R.petroleo, textWrap: "balance" }}>{titulo}</Tag>
+          {sub && <div style={{ fontSize: 17, color: R.petroleo, marginTop: 6 }}>{sub}</div>}
+        </div>
+        {icono && <Icono nombre={icono} tam={56} />}
+      </div>
+      <div aria-hidden="true" style={{ height: 5, background: R.azul, width: "70%", marginTop: 10 }} />
+    </div>
+  );
+};
+
+// Logotipo de RumboAula (public/logo-rumboaula-completo.png y, sin el texto de arriba, logo-rumboaula-nombre.png).
+// En la cabecera, las pantallas estrechas muestran la versión corta (ver la regla .gd-logo-corto).
+const Logo = ({ alto = 64, corto = false }) => (
+  <span style={{ display: "inline-flex", flexShrink: 0 }}>
+    <img className={corto ? "gd-logo-grande" : undefined} src="/logo-rumboaula-completo.png" alt={`${APP} · Sistema para la Gestión de Centro`}
+      style={{ height: alto, width: "auto", maxWidth: "100%", display: "block" }} />
+    {corto && <img className="gd-logo-corto" src="/logo-rumboaula-nombre.png" alt={APP} style={{ height: Math.round(alto * 0.5), width: "auto", display: "none" }} />}
+  </span>
+);
+
+// Enlace «Ver todos ▷» de Raíces: texto azul con triángulo mostaza
+const triangulo = { display: "inline-block", width: 0, height: 0, borderLeft: `11px solid ${R.mostaza}`, borderTop: "8px solid transparent", borderBottom: "8px solid transparent" };
+
+// Caja de aviso: fondo blanco, contorno del color del aviso y franja más gruesa a la izquierda
+const caja = color => ({ background: C.white, border: `3px solid ${color}`, borderLeftWidth: 12 });
 
 // ─── Datos demo ──────────────────────────────────────────────────────────────
 const DEMO_ALUMNOS = [
@@ -34,10 +82,11 @@ const DEMO_PROFESORES = [
   "Inés Prieto", "Álvaro Cano", "Marta Rubio", "David Ibáñez",
 ];
 
+// color: relleno de la gravedad (verde, mostaza y azul de Raíces); texto: color de la letra sobre ese relleno
 const GRAVEDAD = [
-  { id: "leve",      label: "🟡 Leve",      color: C.teal,   bg: "#E8F5F3", desc: "Reglamento de Centro" },
-  { id: "grave",     label: "⚠️ Grave",     color: C.amber,  bg: C.amberBg, desc: "Normativa CAM" },
-  { id: "muy_grave", label: "🔴 Muy Grave", color: C.salmon, bg: "#FDF0EF", desc: "Normativa CAM (nivel superior)" },
+  { id: "leve",      label: "🟡 Leve",      color: R.verde,   texto: R.noche, desc: "Reglamento de Centro" },
+  { id: "grave",     label: "⚠️ Grave",     color: R.mostaza, texto: R.noche, desc: "Normativa CAM" },
+  { id: "muy_grave", label: "🔴 Muy Grave", color: R.azul,    texto: "#fff",  desc: "Normativa CAM (nivel superior)" },
 ];
 
 // ─── Tipificación normativa ───────────────────────────────────────────────────
@@ -295,23 +344,24 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil");
   }
 
-  const inp = { width: "100%", padding: "12px 14px", borderRadius: 10, border: `2px solid ${C.cream}`, fontSize: 15, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 };
-  const lbl = { display: "block", fontSize: 13, fontWeight: 600, color: C.dark, marginBottom: 8 };
-  const btnPrincipal = { display: "block", width: "100%", padding: "14px 20px", marginTop: 6, background: C.teal, color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 700 };
-  const enlace = { background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 13, fontWeight: 600, marginTop: 14, padding: 0 };
+  // Como el acceso a Raíces: campos con borde turquesa y botón grande
+  const inp = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box", marginBottom: 10 };
+  const lbl = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 8 };
+  const btnPrincipal = { display: "block", width: "100%", minHeight: 52, padding: "0 20px", marginTop: 6, background: R.azul, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 19, fontWeight: 700 };
+  const enlace = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 14, minHeight: 32, padding: 0 };
 
-  const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? C.teal : "#cbd5e1", color: "#fff", fontSize: 13, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
+  const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? R.azul : R.gris, color: activo ? "#fff" : R.petroleo, fontSize: 14, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
   const tutora = tutoraDemo || { nombre: "Carmen López", curso: "1º ESO A" };
   const accesoDemo = MODO_DEMO ? (
-    <div style={{ background: "#F0FAF7", border: `2px solid ${C.teal}`, borderRadius: 12, padding: 14, marginBottom: 22 }}>
+    <div style={{ background: R.azulClaro, border: `3px solid ${R.verde}`, borderLeftWidth: 12, padding: 14, marginBottom: 22 }}>
       <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>{pasoNum(1, !ejemploListo)} Carga los datos de ejemplo</div>
       {ejemploListo
-        ? <div style={{ background: "#dcfce7", color: "#166534", borderRadius: 10, padding: "10px 12px", fontSize: 13, fontWeight: 700, marginBottom: 14 }}>✅ Datos de ejemplo cargados. Ahora, el paso 2.</div>
-        : <button onClick={cargarEjemplo} style={{ width: "100%", background: C.teal, color: "#fff", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
+        ? <div style={{ background: "#DDF0F4", color: "#16333F", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 700, marginBottom: 14 }}>✅ Datos de ejemplo cargados. Ahora, el paso 2.</div>
+        : <button onClick={cargarEjemplo} style={{ width: "100%", background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
             🧪 Pulsa aquí para cargar los datos de ejemplo
           </button>}
       <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 2 }}>{pasoNum(2, ejemploListo)} Elige qué quieres probar</div>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 10, marginLeft: 32 }}>Pulsa uno. No hace falta nombre ni clave.</div>
+      <div style={{ fontSize: 14, color: C.gray, marginBottom: 10, marginLeft: 32 }}>Pulsa uno. No hace falta nombre ni clave.</div>
       {[
         { txt: "👨‍🏫 Profesor/a", sub: `Entras como ${nombreSugerido || "María Fernández"}: poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
         { txt: "🏫 Tutor/a de un grupo", sub: `Entras como ${tutora.nombre}, tutor/a de ${tutora.curso}: estadísticas de su grupo e informes para las familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]), tutora: true },
@@ -319,9 +369,9 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         { txt: "⚙️ Administración", sub: "Entras como Elena Vega: alumnado, profesorado, tutorías y cargos", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
       ].map(b => (
         <button key={b.txt} onClick={() => { if (!ejemploListo) cargarEjemplo(); b.accion(); }}
-          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", marginBottom: 8, background: C.cream, border: `2px solid ${C.teal}`, borderRadius: 10, cursor: "pointer" }}>
+          style={{ display: "block", width: "100%", textAlign: "left", minHeight: 56, padding: "10px 14px", marginBottom: 8, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><ConIcono texto={b.txt} tam={26} /></div>
-          <div style={{ fontSize: 11, color: C.gray }}>{b.sub}</div>
+          <div style={{ fontSize: 13, color: C.gray }}>{b.sub}</div>
         </button>
       ))}
       {/* Demo: entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
@@ -330,11 +380,11 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         const resto = profesores.filter(p => !sinLeerPor[p]).sort((a, b) => a.localeCompare(b));
         const etiqueta = p => { const n = sinLeerPor[p]; return n ? `${p} · ${n.urgentes ? "🚨" : "🔔"} ${n.total} mensaje(s) nuevo(s)` : p; };
         return (
-          <div style={{ background: C.cream, border: `2px dashed ${C.teal}`, borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
+          <div style={{ background: C.white, border: `3px dashed ${R.turquesa}`, borderRadius: 6, padding: "10px 14px", marginBottom: 8 }}>
             <label htmlFor="gd-otro-profe" style={{ fontSize: 14, fontWeight: 700, color: C.dark, display: "block" }}>👥 Entrar como otro profe del claustro</label>
-            <div style={{ fontSize: 11, color: C.gray, marginBottom: 6 }}>Para ver un mensaje de Galvángram, entra como quien lo ha recibido.</div>
+            <div style={{ fontSize: 13, color: C.gray, marginBottom: 6 }}>Para ver un mensaje de Galvángram, entra como quien lo ha recibido.</div>
             <select id="gd-otro-profe" value="" onChange={e => { if (e.target.value) onEntrar(e.target.value, PERFILES[0], { otro: true }); }}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.teal}`, fontSize: 14, background: "#fff" }}>
+              style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
               <option value="">— Elige un profe —</option>
               {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
               <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
@@ -343,7 +393,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         );
       })()}
       <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, margin: "8px 0 2px" }}>{pasoNum(3, false)} Dentro, usa los botones de arriba</div>
-      <div style={{ fontSize: 12, color: C.gray, marginLeft: 32 }}>Los botones de colores cambian de pantalla. Para cambiar de perfil, pulsa «Salir» y vuelves aquí.</div>
+      <div style={{ fontSize: 14, color: C.gray, marginLeft: 32 }}>Los botones de colores cambian de pantalla. Para cambiar de perfil, pulsa «Salir» y vuelves aquí.</div>
       <button onClick={() => setGlobo(true)} style={{ ...enlace, marginTop: 10, marginLeft: 32 }}>❓ Ver otra vez las instrucciones</button>
       <button onClick={() => abrirPreguntas("instalar")} style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block" }}>📲 Cómo instalarla en el móvil o el ordenador · Preguntas frecuentes</button>
       <a href="/manual/" target="_blank" rel="noopener" style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block", textDecoration: "none" }}>📘 Manual de uso</a>
@@ -353,10 +403,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const globoBienvenida = MODO_DEMO && globo ? (
     <div role="dialog" aria-modal="true" aria-labelledby="gd-globo-titulo" onClick={cerrarGlobo}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 20, maxWidth: 460, width: "100%", padding: "28px 26px", textAlign: "left", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 12, maxWidth: 460, width: "100%", padding: "28px 26px", textAlign: "left", borderTop: `8px solid ${R.mostaza}` }}>
         <Icono nombre="saludo" tam={64} style={{ margin: "0 auto" }} />
-        <h2 id="gd-globo-titulo" style={{ color: C.dark, textAlign: "center", margin: "6px 0 4px", fontSize: 22 }}>Bienvenida/o a la demostración</h2>
-        <p style={{ color: C.gray, textAlign: "center", fontSize: 13, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
+        <h2 id="gd-globo-titulo" style={{ color: R.petroleo, textAlign: "center", margin: "6px 0 4px", fontSize: 26, fontFamily: TITULO, fontWeight: 400 }}>Bienvenida/o a la demostración</h2>
+        <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
           ["Carga los datos de ejemplo", "El botón verde de abajo lo hace por ti."],
           ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura o Administración. Solo tienes que pulsar. No escribas nombre ni clave."],
@@ -365,7 +415,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         ].map(([t, d], i) => (
           <div key={t} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
             {pasoNum(i + 1, true)}
-            <div><div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}>{t}</div><div style={{ fontSize: 12, color: C.gray }}>{d}</div></div>
+            <div><div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}>{t}</div><div style={{ fontSize: 14, color: C.gray }}>{d}</div></div>
           </div>
         ))}
         <button autoFocus onClick={() => { if (!ejemploListo) cargarEjemplo(); cerrarGlobo(); }} style={{ ...btnPrincipal, marginTop: 14 }}>▶ Empezar (cargar los datos de ejemplo)</button>
@@ -375,25 +425,25 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   ) : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg,${C.dark},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif", padding: 20 }}>
+    <div style={{ minHeight: "100vh", background: C.white, color: R.petroleo, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE, padding: 20 }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }`}</style>
-      <div style={{ background: C.white, borderRadius: 20, padding: "36px 32px", maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <h1 style={{ margin: "0 0 6px" }}><img src="/logo-rumboaula.png" alt={APP} style={{ width: 260, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }} /></h1>
-        <div style={{ fontSize: 11, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
-        <p style={{ color: C.gray, marginBottom: 20, fontSize: 13 }}>Todo lo que importa en tu aula</p>
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderRadius: 12, padding: "32px 28px", maxWidth: 440, width: "100%", textAlign: "center" }}>
+        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo alto={110} /></h1>
+        <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
+        <p style={{ color: R.petroleo, marginBottom: 20, fontSize: 16 }}>Todo lo que importa en tu aula</p>
         <AvisoDemo />
         {globoBienvenida}
 
         {paso === "nombre" && (
           <div style={{ textAlign: "left" }}>
             {accesoDemo}
-            {MODO_DEMO && <div style={{ fontSize: 12, color: C.gray, marginBottom: 8 }}>En el centro, cada docente entrará con su nombre y su clave:</div>}
+            {MODO_DEMO && <div style={{ fontSize: 14, color: C.gray, marginBottom: 8 }}>En el centro, cada docente entrará con su nombre y su clave:</div>}
             <label style={lbl} htmlFor="gd-nombre">¿Quién eres?</label>
             <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
               onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={inp} />
             <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
             <small style={{ color: C.gray, display: "block", marginBottom: 8 }}>Escribe y elige tu nombre de la lista.</small>
-            {error && <div role="alert" style={{ color: "#9f1239", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
+            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
             <button onClick={continuar} style={btnPrincipal}>Continuar</button>
           </div>
         )}
@@ -401,7 +451,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         {paso === "clave" && (
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.dark }}>Hola, {nombre}</div>
-            <div style={{ fontSize: 12, color: C.gray, marginBottom: 16 }}>Cargo: {cargo.label}</div>
+            <div style={{ fontSize: 14, color: C.gray, marginBottom: 16 }}>Cargo: {cargo.label}</div>
             {tieneClave ? (
               <>
                 <label style={lbl} htmlFor="gd-clave">Tu clave</label>
@@ -410,7 +460,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
               </>
             ) : (
               <>
-                <div style={{ background: "#EEF5F8", borderRadius: 10, padding: "10px 12px", fontSize: 13, color: C.blue, marginBottom: 12 }}>
+                <div style={{ background: "#DDF0F4", borderRadius: 10, padding: "10px 12px", fontSize: 14, color: C.blue, marginBottom: 12 }}>
                   Es la primera vez que entras. Crea tu clave personal (mínimo {MIN_CLAVE} caracteres).
                 </div>
                 <label style={lbl} htmlFor="gd-clave">Nueva clave</label>
@@ -420,15 +470,15 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
                   onChange={e => { setClave2(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={inp} />
               </>
             )}
-            {error && <div role="alert" style={{ color: "#9f1239", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
+            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
             <button onClick={entrar} style={btnPrincipal}>Entrar</button>
             {MODO_DEMO && (
               <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }}
-                style={{ display: "block", width: "100%", padding: "12px 20px", marginTop: 10, background: C.cream, color: C.dark, border: `2px solid ${C.teal}`, borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>
+                style={{ display: "block", width: "100%", minHeight: 48, padding: "0 20px", marginTop: 10, background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
                 🧪 Entrar sin clave (solo en la demostración)
               </button>
             )}
-            {tieneClave && <div style={{ fontSize: 12, color: C.gray, marginTop: 10 }}>¿Has olvidado tu clave? Pide a Administración que la restablezca.</div>}
+            {tieneClave && <div style={{ fontSize: 14, color: C.gray, marginTop: 10 }}>¿Has olvidado tu clave? Pide a Administración que la restablezca.</div>}
             <button onClick={() => { setPaso("nombre"); setClave(""); setClave2(""); setError(""); }} style={enlace}>← No soy {nombre}</button>
           </div>
         )}
@@ -436,10 +486,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         {paso === "perfil" && (
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 4 }}>¿Con qué perfil entras?</div>
-            <div style={{ fontSize: 12, color: C.gray, marginBottom: 14 }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div>
+            <div style={{ fontSize: 14, color: C.gray, marginBottom: 14 }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div>
             {permitidos.map(p => (
               <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
-                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 16px", marginBottom: 12, background: C.cream, border: `2px solid ${C.teal}`, borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
+                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "8px 16px", marginBottom: 12, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
                 <Icono nombre={iconoPerfil(p)} tam={44} />{sinEmoji1(p.label)}
               </button>
             ))}
@@ -452,8 +502,8 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 }
 const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
   <div role="note" style={compacto
-    ? { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 600, textAlign: "center", padding: "6px 12px", borderBottom: "1px solid #fbbf24" }
-    : { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 600, borderRadius: 10, padding: "10px 12px", marginBottom: 20, border: "1px solid #fbbf24", lineHeight: 1.4 }}>
+    ? { background: R.mostaza, color: R.noche, fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px" }
+    : { background: "#FDF1D9", color: "#16333F", fontSize: 14, fontWeight: 600, borderRadius: 10, padding: "10px 12px", marginBottom: 20, border: "1px solid #F6C862", lineHeight: 1.4 }}>
     ⚠️ Versión de demostración: no introducir datos reales de alumnos ni familias.
     {!compacto && <div style={{ marginTop: 6, fontWeight: 500 }}>Sigue los pasos <b>1</b> y <b>2</b> del recuadro verde de abajo. No necesitas nombre ni clave.</div>}
   </div>
@@ -483,15 +533,16 @@ function guardarSesion(sesion) {
 }
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
-const Btn = ({ onClick, disabled, children, color = C.dark, style = {} }) => (
+// Botón principal: azul de Raíces con texto blanco
+const Btn = ({ onClick, disabled, children, style = {} }) => (
   <button onClick={onClick} disabled={disabled}
-    style={{ background: disabled ? "#94a3b8" : color, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", cursor: disabled ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 14, transition: "opacity .15s", ...style }}>
+    style={{ background: disabled ? R.gris : R.azul, color: disabled ? R.petroleo : "#fff", opacity: disabled ? .7 : 1, border: "none", borderRadius: 6, minHeight: 48, padding: "0 20px", cursor: disabled ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 17, transition: "opacity .15s", ...style }}>
     {children}
   </button>
 );
 
 const Card = ({ children, style = {} }) => (
-  <div style={{ background: C.white, borderRadius: 14, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", marginBottom: 14, ...style }}>{children}</div>
+  <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 20, marginBottom: 14, ...style }}>{children}</div>
 );
 
 // ─── Iconos de la app (public/iconos) ───────────────────────────────────────
@@ -513,7 +564,7 @@ function iconoDe(texto) {
   return icono ? { icono, resto } : { icono: null, resto: texto };
 }
 const Icono = ({ nombre, tam = 24, style = {} }) => (
-  <img src={`/iconos/${nombre}.png`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: Math.round(tam * 0.22), flexShrink: 0, display: "block", ...style }} />
+  <img src={`/iconos/${nombre}.svg`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: "50%", flexShrink: 0, display: "block", ...style }} />
 );
 function ConIcono({ texto, tam = 24, gap = 8 }) {
   const { icono, resto } = iconoDe(texto);
@@ -524,7 +575,7 @@ function ConIcono({ texto, tam = 24, gap = 8 }) {
 
 // Icono pequeño dentro de un texto, y texto que cambia sus emojis por iconos
 const EMOJI_EN_TEXTO = { "⚠️": "aviso", "⚠": "aviso", "🛡️": "titular", "🛡": "titular", "👥": "apoyo", "🔁": "sustituto", "📚": "deberes", "🏫": "aula", "👤": "titular", "📍": "edificio", "📌": "material", "✍️": "firmar", "✍": "firmar", "📋": "pasar-lista", "🕐": "hora-reloj", "⏰": "hora-reloj", "📅": "fecha-hora", "📝": "ejercicios", "📞": "profe-ausente", "📢": "profe-ausente", "🚻": "banos", "🔄": "guardias", "🔔": "alertas" };
-const Ic = ({ n, tam = 20 }) => <img src={`/iconos/${n}.png`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: Math.round(tam * 0.22), display: "inline-block", verticalAlign: "middle", margin: "0 4px 2px 0" }} />;
+const Ic = ({ n, tam = 20 }) => <img src={`/iconos/${n}.svg`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: "50%", display: "inline-block", verticalAlign: "middle", margin: "0 4px 2px 0" }} />;
 const RE_EMOJI_TEXTO = new RegExp("(" + Object.keys(EMOJI_EN_TEXTO).sort((a, b) => b.length - a.length).map(e => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\s?", "u");
 function partirEmojis(texto, tam) {
   const trozos = String(texto).split(RE_EMOJI_TEXTO);
@@ -554,15 +605,15 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setAbierto(v => !v)} aria-haspopup="listbox" aria-expanded={abierto} title="Cambiar de perfil"
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "4px 10px 4px 4px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-        <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 10 }}>▼</span>
+        style={{ display: "flex", alignItems: "center", gap: 8, background: R.azulClaro, border: "none", color: R.petroleo, borderRadius: 22, minHeight: 44, padding: "4px 14px 4px 6px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
+        <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 13 }}>▼</span>
       </button>
       {abierto && (
         <div role="listbox" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#fff", borderRadius: 12, boxShadow: "0 12px 30px rgba(0,0,0,0.2)", padding: 6, zIndex: 300, minWidth: 240 }}>
-          {cargos && <div style={{ padding: "6px 10px 8px", fontSize: 11, color: "#64748b", borderBottom: "1px solid #eef2f4", marginBottom: 4, maxWidth: 280 }}>Tus cargos: <b style={{ color: "#2C4A52" }}>{cargos}</b></div>}
+          {cargos && <div style={{ padding: "6px 10px 8px", fontSize: 13, color: "#2B647E", borderBottom: "1px solid #eef2f4", marginBottom: 4, maxWidth: 280 }}>Tus cargos: <b style={{ color: "#2C4A52" }}>{cargos}</b></div>}
           {perfiles.map(p => (
             <button key={p.key || p.id} role="option" aria-selected={igual(p, a)} onClick={() => { setAbierto(false); onCambiar(p.key || p.id); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "8px 10px", border: "none", borderRadius: 8, background: igual(p, a) ? "#E8F5F3" : "transparent", color: "#2C4A52", cursor: "pointer", fontSize: 14, fontWeight: igual(p, a) ? 700 : 500 }}>
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "8px 10px", border: "none", borderRadius: 8, background: igual(p, a) ? "#DDF0F4" : "transparent", color: "#2C4A52", cursor: "pointer", fontSize: 14, fontWeight: igual(p, a) ? 700 : 500 }}>
               <Icono nombre={iconoPerfil(p)} tam={34} /><span style={{ flex: 1, whiteSpace: "nowrap" }}>{sinEmoji1(p.label)}</span>{igual(p, a) ? "✓" : ""}
             </button>
           ))}
@@ -574,13 +625,13 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
 
 const Badge = ({ g }) => {
   const gv = gObj(g);
-  return <span style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 10px 3px 4px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center" }}><ConIcono texto={gv.label} tam={20} gap={5} /></span>;
+  return <span style={{ background: gv.color, color: gv.texto, borderRadius: 4, padding: "4px 10px 4px 4px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center" }}><ConIcono texto={gv.label} tam={20} gap={5} /></span>;
 };
 
 const InfoRow = ({ label, value }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 14 }}>
-    <span style={{ color: C.gray, fontWeight: 600, minWidth: 140 }}>{label}</span>
-    <span style={{ color: C.dark, textAlign: "right" }}>{value}</span>
+  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 16 }}>
+    <span style={{ color: R.petroleo, fontWeight: 700, minWidth: 140 }}>{label}</span>
+    <span style={{ color: R.noche, textAlign: "right", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
   </div>
 );
 
@@ -598,7 +649,7 @@ function CopyBtn({ getText, label = "📋 Copiar texto" }) {
       });
   }
   return (
-    <button onClick={copy} style={{ background: ok ? C.teal : C.cream, color: ok ? C.white : C.dark, border: `1px solid ${ok ? C.teal : "#ccc"}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 700, fontSize: 13, transition: "all .2s" }}>
+    <button onClick={copy} style={{ background: ok ? R.verde : C.white, color: ok ? R.noche : R.petroleo, border: `2px solid ${ok ? R.verde : R.azul}`, borderRadius: 6, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 17, transition: "all .2s" }}>
       {ok ? "✅ ¡Copiado!" : label}
     </button>
   );
@@ -654,8 +705,8 @@ export function VisorDocumentos() {
     window.addEventListener("keydown", f, true); return () => window.removeEventListener("keydown", f, true);
   });
   if (!pdf && !excel) return null;
-  const barra = { position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
-  const bb = { background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13 };
+  const barra = { position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
+  const bb = { background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 14 };
   const fondo = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "2vh 2vw", fontFamily: "system-ui,sans-serif" };
   const caja = { background: C.white, borderRadius: 14, width: "100%", maxWidth: 1200, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" };
 
@@ -665,7 +716,7 @@ export function VisorDocumentos() {
         <div style={barra}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 16 }}><Ic n="buscar" tam={20} />Vista previa</div>
-            <div style={{ fontSize: 12, opacity: .85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pdf.archivo} · {pdf.paginas} página(s)</div>
+            <div style={{ fontSize: 14, opacity: .85, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pdf.archivo} · {pdf.paginas} página(s)</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button style={{ ...bb, background: "#fff", color: C.dark }} onClick={() => descargarURL(pdf.url, pdf.archivo)}>⬇️ Descargar PDF</button>
@@ -675,7 +726,7 @@ export function VisorDocumentos() {
           </div>
         </div>
         <iframe ref={marco} title="Vista previa del informe" src={pdf.url} style={{ flex: 1, width: "100%", border: "none", background: "#525659", minHeight: "70vh" }} />
-        <div style={{ fontSize: 11, color: C.gray, padding: "6px 14px", background: C.light }}>Si en tu móvil o tablet solo ves la primera página, pulsa «Abrir en otra pestaña».</div>
+        <div style={{ fontSize: 13, color: C.gray, padding: "6px 14px", background: C.light }}>Si en tu móvil o tablet solo ves la primera página, pulsa «Abrir en otra pestaña».</div>
       </div>
     </div>
   );
@@ -690,29 +741,29 @@ export function VisorDocumentos() {
         <div style={barra}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 16 }}><Ic n="buscar" tam={20} />Vista previa del Excel</div>
-            <div style={{ fontSize: 12, opacity: .85 }}>{excel.archivo} · {excel.hojas.length} hojas</div>
+            <div style={{ fontSize: 14, opacity: .85 }}>{excel.archivo} · {excel.hojas.length} hojas</div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ ...bb, background: "#fff", color: C.dark }} onClick={excel.descargar}>⬇️ Descargar Excel</button>
             <button style={bb} onClick={cerrar} aria-label="Cerrar">✕</button>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, padding: "10px 14px 0", flexWrap: "wrap", background: C.light, borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ display: "flex", gap: 6, padding: "10px 14px 0", flexWrap: "wrap", background: C.light, borderBottom: "1px solid #CDE9ED" }}>
           {excel.hojas.map((x, i) => (
             <button key={x.nombre} onClick={() => setHojaSel(i)}
-              style={{ padding: "8px 12px", border: "1px solid #e2e8f0", borderBottom: "none", borderRadius: "8px 8px 0 0", background: i === hojaSel ? C.white : "transparent", fontWeight: i === hojaSel ? 800 : 500, color: C.dark, cursor: "pointer", fontSize: 13, marginBottom: -1 }}>
+              style={{ padding: "8px 12px", border: "1px solid #CDE9ED", borderBottom: "none", borderRadius: "8px 8px 0 0", background: i === hojaSel ? C.white : "transparent", fontWeight: i === hojaSel ? 800 : 500, color: C.dark, cursor: "pointer", fontSize: 14, marginBottom: -1 }}>
               {x.nombre} <span style={{ color: C.gray, fontWeight: 500 }}>({x.filas.length})</span>
             </button>
           ))}
         </div>
         <div style={{ padding: "10px 14px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔎 Buscar en esta hoja (nombre, grupo, falta…)" aria-label="Buscar en la hoja"
-            style={{ flex: "1 1 260px", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14 }} />
-          <span style={{ fontSize: 12, color: C.gray }}>{filas.length} fila(s){filas.length > LIMITE ? ` · se ven las ${LIMITE} primeras; el Excel las tiene todas` : ""}</span>
+            style={{ flex: "1 1 260px", padding: "9px 12px", borderRadius: 8, border: "1px solid #EBF0F6", fontSize: 14 }} />
+          <span style={{ fontSize: 14, color: C.gray }}>{filas.length} fila(s){filas.length > LIMITE ? ` · se ven las ${LIMITE} primeras; el Excel las tiene todas` : ""}</span>
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: "0 14px 14px" }}>
           {filas.length === 0 ? <div style={{ padding: 30, textAlign: "center", color: C.gray }}>Sin datos.</div> : (
-            <table style={{ borderCollapse: "collapse", fontSize: 12, width: "max-content", minWidth: "100%" }}>
+            <table style={{ borderCollapse: "collapse", fontSize: 14, width: "max-content", minWidth: "100%" }}>
               <thead><tr>{h.cabecera.map(c => <th key={c} style={{ position: "sticky", top: 0, background: C.dark, color: "#fff", padding: "8px 10px", textAlign: "left", whiteSpace: "nowrap", fontWeight: 700 }}>{c}</th>)}</tr></thead>
               <tbody>{filas.slice(0, LIMITE).map((f, i) => (
                 <tr key={i} style={{ background: i % 2 ? "#F8F6F0" : C.white }}>
@@ -726,7 +777,7 @@ export function VisorDocumentos() {
     </div>
   );
 }
-const estiloTabla = { styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 16 } };
+const estiloTabla = { styles: { fontSize: 13, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 16 } };
 const textoTipificacion = p => {
   const t = TIPIFICACION[p.gravedad]?.find(t => t.id === p.tipificacion)?.label;
   return t ? `${t} (${p.gravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})` : "-";
@@ -775,7 +826,7 @@ function pdfParte(parte) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const g = gObj(parte.gravedad);
   let y = cabeceraPDF(doc, "Parte de incidencia", `Ref. PARTE-${parte.id}`);
-  autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", styles: { ...estiloTabla.styles, fontSize: 10 },
+  autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", styles: { ...estiloTabla.styles, fontSize: 13 },
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 48, fillColor: [238, 245, 248] } },
     body: [
       ["Alumno/a", parte.alumno], ["Curso", parte.curso], ["Tutor/a del grupo", parte.tutor || "-"], ["Correo del tutor/a", parte.tutorEmail || "-"],
@@ -943,17 +994,17 @@ function PrintParte({ parte, onClose }) {
       <div className="no-print" style={{ background: C.dark, color: "#fff", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14, fontFamily: "system-ui" }}>{APP} · Vista previa del parte</span>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => pdfParte(parte)} style={{ background: "#16a34a", border: "none", color: "#fff", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 700, fontFamily: "system-ui" }}>⬇️ Descargar PDF</button>
+          <button onClick={() => pdfParte(parte)} style={{ background: "#275D8C", border: "none", color: "#fff", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 700, fontFamily: "system-ui" }}>⬇️ Descargar PDF</button>
           <CopyBtn getText={() => texto} />
           <button onClick={onClose} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "8px 18px", cursor: "pointer", fontWeight: 700 }}>✕ Cerrar</button>
         </div>
       </div>
       <div style={{ maxWidth: 680, margin: "40px auto", padding: "0 24px 60px" }}>
         <div style={{ textAlign: "center", borderBottom: `3px solid ${C.teal}`, paddingBottom: 16, marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: C.gray, marginBottom: 4, letterSpacing: 2 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
+          <div style={{ fontSize: 13, color: C.gray, marginBottom: 4, letterSpacing: 2 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: C.dark, fontFamily: "system-ui" }}>{APP} — Parte de Incidencia</div>
           <div style={{ marginTop: 10 }}>
-            <span style={{ display: "inline-block", padding: "6px 20px", borderRadius: 8, fontWeight: 700, fontSize: 15, background: g.bg, color: g.color, border: `2px solid ${g.color}` }}>{g.label} — {g.desc}</span>
+            <span style={{ display: "inline-block", padding: "6px 20px", borderRadius: 8, fontWeight: 700, fontSize: 15, background: g.color, color: g.texto, border: `2px solid ${g.color}` }}>{g.label} — {g.desc}</span>
           </div>
         </div>
         {[["Alumno/a", parte.alumno], ["Curso / Aula", parte.curso], ["Tutor/a del grupo", parte.tutor || "—"], ["Correo del tutor/a", parte.tutorEmail || "—"], ["Tipo de parte", parte.tipo], ["Hora de clase", parte.hora || "No especificada"], ["Fecha y hora", fmt(parte.ts)], ["Profesor responsable", parte.profesor]].map(([k, v]) => (
@@ -964,29 +1015,29 @@ function PrintParte({ parte, onClose }) {
           const tipObj = TIPIFICACION[grav]?.find(t => t.id === parte.tipificacion);
           const fuente = grav === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM";
           return (
-            <div style={{ margin: "10px 0", padding: "10px 14px", background: "#EEF5F8", borderRadius: 8, border: `1px solid ${C.blue}`, fontSize: 13 }}>
+            <div style={{ margin: "10px 0", padding: "10px 14px", background: "#DDF0F4", borderRadius: 8, border: `1px solid ${C.blue}`, fontSize: 14 }}>
               <span style={{ fontWeight: 700, color: C.blue }}><Ic n="tipificacion" tam={20} />Tipificación normativa </span>
-              <span style={{ color: C.gray, fontSize: 11 }}>({fuente})</span>
+              <span style={{ color: C.gray, fontSize: 13 }}>({fuente})</span>
               <div style={{ marginTop: 4, color: C.dark }}>{tipObj?.label}</div>
             </div>
           );
         })()}
-        {parte.esGrupal && <div style={{ marginTop: 8, background: "#e8f5f3", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: C.teal, fontWeight: 600 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
+        {parte.esGrupal && <div style={{ marginTop: 8, background: "#DDF0F4", borderRadius: 8, padding: "8px 14px", fontSize: 14, color: C.teal, fontWeight: 600 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
         <div style={{ marginTop: 20 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="descripcion" tam={40} />Descripción del incidente:</div>
-          <div style={{ background: C.light, padding: 16, borderRadius: 8, fontSize: 14, lineHeight: 1.7, border: `1px solid #e5e7eb` }}>{parte.descripcion}</div>
+          <div style={{ background: C.light, padding: 16, borderRadius: 8, fontSize: 14, lineHeight: 1.7, border: `1px solid #CDE9ED` }}>{parte.descripcion}</div>
         </div>
-        <div style={{ background: "#EEF5F8", padding: 16, borderRadius: 8, marginTop: 20, fontSize: 14 }}>
+        <div style={{ background: "#DDF0F4", padding: 16, borderRadius: 8, marginTop: 20, fontSize: 14 }}>
           <div style={{ fontWeight: 700, marginBottom: 8, color: C.blue }}>📬 Contacto familia</div>
           <div><Ic n="mensaje-enviar" tam={20} />{parte.email}</div>
           <div style={{ marginTop: 4 }}><Ic n="selecciona-profesor" tam={20} />{parte.telefono}</div>
         </div>
         <div style={{ display: "flex", gap: 40, marginTop: 50 }}>
           {["Firma del Profesor", "Firma Jefatura de Estudios", "Firma del Alumno/a"].map(f => (
-            <div key={f} style={{ flex: 1, borderTop: `2px solid ${C.dark}`, paddingTop: 8, textAlign: "center", fontSize: 12, color: "#555" }}>{f}</div>
+            <div key={f} style={{ flex: 1, borderTop: `2px solid ${C.dark}`, paddingTop: 8, textAlign: "center", fontSize: 14, color: "#555" }}>{f}</div>
           ))}
         </div>
-        <div style={{ marginTop: 32, textAlign: "center", color: "#aaa", fontSize: 11, borderTop: "1px dashed #ccc", paddingTop: 12 }}>
+        <div style={{ marginTop: 32, textAlign: "center", color: "#aaa", fontSize: 13, borderTop: "1px dashed #ccc", paddingTop: 12 }}>
           {APP} · {CENTRO} · Ref: PARTE-{parte.id}
         </div>
       </div>
@@ -1029,22 +1080,22 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
         </div>
         <div data-print-informe style={{ maxWidth: 900, margin: "30px auto", padding: "0 24px 60px" }}>
           <div style={{ textAlign: "center", borderBottom: `3px solid ${C.teal}`, paddingBottom: 16, marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
+            <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: C.dark }}>{APP} — Informe de Partes</div>
-            <div style={{ color: C.gray, fontSize: 13, marginTop: 4 }}>Generado el {fecha} · Jefatura de Estudios</div>
-            {filtrosTexto && <div style={{ color: "#888", fontSize: 12, marginTop: 4 }}>Filtros: {filtrosTexto}</div>}
+            <div style={{ color: C.gray, fontSize: 14, marginTop: 4 }}>Generado el {fecha} · Jefatura de Estudios</div>
+            {filtrosTexto && <div style={{ color: "#888", fontSize: 14, marginTop: 4 }}>Filtros: {filtrosTexto}</div>}
           </div>
           <div style={{ display: "flex", gap: 14, marginBottom: 24, justifyContent: "center", flexWrap: "wrap" }}>
             {[{ label: "Total", value: partes.length, color: C.dark }, { label: "🟡 Leves", value: res.leve, color: C.teal }, { label: "⚠️ Graves", value: res.grave, color: C.amber }, { label: "🔴 Muy Graves", value: res.muy_grave, color: C.salmon }].map(s => (
               <div key={s.label} style={{ textAlign: "center", padding: "12px 24px", borderRadius: 10, background: C.light, borderTop: `3px solid ${s.color}`, minWidth: 100 }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: C.gray }}>{s.label}</div>
+                <div style={{ fontSize: 14, color: C.gray }}>{s.label}</div>
               </div>
             ))}
           </div>
           <div style={{ fontWeight: 700, color: C.dark, fontSize: 15, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="tutor" tam={32} />Resumen por grupo y tutoría</div>
           <div style={{ overflowX: "auto", marginBottom: 24 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead><tr style={{ background: C.blue, color: "#fff" }}>{["Grupo", "Tutor/a del grupo", "Correo", "Leves", "Graves", "Muy graves", "Total"].map(h => <th key={h} style={{ padding: "8px", textAlign: "left" }}>{h}</th>)}</tr></thead>
               <tbody>
                 {resumen.map((r, i) => (
@@ -1063,7 +1114,7 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
           </div>
           <div style={{ fontWeight: 700, color: C.dark, fontSize: 15, margin: "0 0 8px" }}><Ic n="partes" tam={20} />Detalle de los partes</div>
           <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: C.dark, color: "#fff" }}>
                 {["Fecha", "Hora", "Alumno", "Curso", "Tutor/a", "Tipo", "Gravedad", "Profesor", "Descripción"].map(h => (
@@ -1078,11 +1129,11 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
                   <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : C.light }}>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{fmt(p.ts)}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{p.hora || "-"}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", fontWeight: 600 }}>{p.alumno}{p.esGrupal ? <span style={{ marginLeft: 4, fontSize: 10, color: C.teal }}>◆grupal</span> : null}</td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", fontWeight: 600 }}>{p.alumno}{p.esGrupal ? <span style={{ marginLeft: 4, fontSize: 13, color: C.teal }}>◆grupal</span> : null}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.curso}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{tutorDeParte(p, tutores) || "—"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.tipo}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.bg, color: g.color, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 11 }}>{g.label}</span></td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 13 }}>{g.label}</span></td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.profesor}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.descripcion.slice(0, 60)}{p.descripcion.length > 60 ? "…" : ""}</td>
                   </tr>
@@ -1091,7 +1142,7 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
             </tbody>
           </table>
           </div>
-          <div style={{ marginTop: 24, textAlign: "center", color: "#aaa", fontSize: 11, borderTop: "1px dashed #ccc", paddingTop: 10 }}>
+          <div style={{ marginTop: 24, textAlign: "center", color: "#aaa", fontSize: 13, borderTop: "1px dashed #ccc", paddingTop: 10 }}>
             {APP} · {CENTRO} · {CIUDAD} · {fecha}
           </div>
         </div>
@@ -1120,20 +1171,20 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
         </div>
         <div data-print-informe style={{ maxWidth: 900, margin: "30px auto", padding: "0 24px 60px" }}>
           <div style={{ textAlign: "center", borderBottom: `3px solid ${C.blue}`, paddingBottom: 16, marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
+            <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: C.dark }}>{APP} — Informe de Salidas al Baño</div>
-            <div style={{ color: C.gray, fontSize: 13, marginTop: 4 }}>Generado el {fecha} · Jefatura de Estudios</div>
-            {filtrosTexto && <div style={{ color: "#888", fontSize: 12, marginTop: 4 }}>Filtros: {filtrosTexto}</div>}
+            <div style={{ color: C.gray, fontSize: 14, marginTop: 4 }}>Generado el {fecha} · Jefatura de Estudios</div>
+            {filtrosTexto && <div style={{ color: "#888", fontSize: 14, marginTop: 4 }}>Filtros: {filtrosTexto}</div>}
           </div>
           <div style={{ display: "flex", gap: 14, marginBottom: 24, justifyContent: "center", flexWrap: "wrap" }}>
             {[{ label: "Total Salidas", value: banos.length, color: C.blue }].map(s => (
               <div key={s.label} style={{ textAlign: "center", padding: "12px 24px", borderRadius: 10, background: C.light, borderTop: `3px solid ${s.color}`, minWidth: 100 }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 12, color: C.gray }}>{s.label}</div>
+                <div style={{ fontSize: 14, color: C.gray }}>{s.label}</div>
               </div>
             ))}
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ background: C.dark, color: "#fff" }}>
                 {["Fecha", "Alumno", "Curso", "Profesor", "Motivo"].map(h => (
@@ -1153,7 +1204,7 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
               ))}
             </tbody>
           </table>
-          <div style={{ marginTop: 24, textAlign: "center", color: "#aaa", fontSize: 11, borderTop: "1px dashed #ccc", paddingTop: 10 }}>
+          <div style={{ marginTop: 24, textAlign: "center", color: "#aaa", fontSize: 13, borderTop: "1px dashed #ccc", paddingTop: 10 }}>
             {APP} · {CENTRO} · {CIUDAD} · {fecha}
           </div>
         </div>
@@ -1166,24 +1217,25 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
 // ─── Cómo avisar a la familia y a Jefatura ─────────────────────────────────
 // La app no envía correos: el profesor lo manda desde su correo del centro.
 function ComoAvisar({ parte }) {
-  const btn = { border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13 };
   return (
-    <div style={{ marginTop: 14, background: "#FFFBEB", border: "1px solid #fcd34d", borderRadius: 10, padding: 14, textAlign: "left" }}>
-      <div style={{ fontWeight: 700, color: C.dark, fontSize: 14, marginBottom: 6 }}><Ic n="mensaje-enviar" tam={20} />Cómo avisar a la familia y a Jefatura</div>
-      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>
+    <div style={{ marginTop: 14, textAlign: "left", border: `1px solid ${R.turquesaClaro}`, background: C.white }}>
+      <div style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="mensaje-enviar" tam={34} />Cómo avisar a la familia y a Jefatura</div>
+      <div style={{ background: R.crema, padding: "12px 14px", fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>
         Elige abajo a quién se lo envías y pulsa «Abrir en mi correo». Para el contenido, elige una de estas dos formas:
-        <ol style={{ margin: "6px 0 10px", paddingLeft: 20 }}>
+        <ol style={{ margin: "6px 0 0", paddingLeft: 22 }}>
           <li><strong>Descarga el PDF</strong> y adjúntalo al correo.</li>
           <li><strong>Copia el texto</strong> del parte y pégalo en el cuerpo del correo.</li>
         </ol>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={() => pdfParte(parte)} style={{ ...btn, background: "#16a34a", color: "#fff" }}>⬇️ Descargar PDF</button>
-        <CopyBtn getText={() => textoParte(parte)} label="📋 Copiar texto" />
+      <div style={{ padding: 14 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={() => pdfParte(parte)} style={{ background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 17 }}>⬇️ Descargar PDF</button>
+          <CopyBtn getText={() => textoParte(parte)} label="📋 Copiar texto" />
+        </div>
+        <ElegirDestinatarios alumno={{ nombre: parte.alumno, email: parte.email }} tutorNombre={parte.tutor} tutorEmail={parte.tutorEmail}
+          asunto={`Parte de incidencia · ${parte.alumno} (${parte.curso}) · PARTE-${parte.id}`} cuerpo={textoParte(parte)} porDefecto={["familia", "tutor", "jefatura"]} C={C} />
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>La app no envía correos: se mandan desde tu correo del centro, que es el canal oficial.</div>
       </div>
-      <ElegirDestinatarios alumno={{ nombre: parte.alumno, email: parte.email }} tutorNombre={parte.tutor} tutorEmail={parte.tutorEmail}
-        asunto={`Parte de incidencia · ${parte.alumno} (${parte.curso}) · PARTE-${parte.id}`} cuerpo={textoParte(parte)} porDefecto={["familia", "tutor", "jefatura"]} C={C} />
-      <div style={{ fontSize: 11, color: C.gray, marginTop: 8 }}>La app no envía correos: se mandan desde tu correo del centro, que es el canal oficial.</div>
     </div>
   );
 }
@@ -1194,27 +1246,27 @@ function ParteCard({ parte, onVer, onPrint }) {
   return (
     <div onClick={onVer} role="button" tabIndex={0} title="Pulsa para ver el parte en grande"
       onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) onVer(); }}
-      onMouseOver={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.14)"; }}
-      onMouseOut={e => { e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.06)"; }}
-      style={{ background: C.white, borderRadius: 12, padding: 16, marginBottom: 10, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", borderLeft: `4px solid ${g.color}`, cursor: "pointer", transition: "box-shadow .15s" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>
+      onMouseOver={e => { e.currentTarget.style.background = R.azulClaro; }}
+      onMouseOut={e => { e.currentTarget.style.background = C.white; }}
+      style={{ background: C.white, padding: 16, marginBottom: 10, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${g.color}`, cursor: "pointer", transition: "background .15s" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo }}>
             {parte.alumno}
-            {parte.esGrupal && <span style={{ fontSize: 11, background: "#e8f5f3", color: C.teal, borderRadius: 6, padding: "2px 8px", marginLeft: 6 }}><Ic n="grupos" tam={20} />grupal</span>}
+            {parte.esGrupal && <span style={{ fontSize: 14, background: R.azulClaro, color: R.petroleo, borderRadius: 4, padding: "2px 8px", marginLeft: 6 }}><Ic n="grupos" tam={20} />grupal</span>}
           </div>
-          <div style={{ fontSize: 12, color: C.gray, marginTop: 3 }}>
+          <div style={{ fontSize: 14, color: R.petroleo, marginTop: 4, lineHeight: 1.5 }}>
             <Ic n="aula" tam={20} />{parte.curso}{parte.tutor ? ` (tutor/a: ${parte.tutor})` : ""} · {parte.tipo} · <Ic n="hora-reloj" tam={18} />{parte.hora || "—"} · <Ic n="fecha-hora" tam={18} />{fmt(parte.ts)} · <Ic n="cargo-profesor" tam={18} />{parte.profesor}
           </div>
-          <div style={{ fontSize: 13, marginTop: 6, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 15, marginTop: 6, color: R.noche, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {parte.descripcion}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
           <Badge g={parte.gravedad} />
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={e => { e.stopPropagation(); onVer(); }} style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Ic n="buscar" tam={20} />Ver</button>
-            <button onClick={e => { e.stopPropagation(); onPrint(); }} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Ic n="informe" tam={20} />PDF</button>
+            <button onClick={e => { e.stopPropagation(); onVer(); }} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="buscar" tam={22} />Ver</button>
+            <button onClick={e => { e.stopPropagation(); onPrint(); }} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="informe" tam={22} />PDF</button>
           </div>
         </div>
       </div>
@@ -1231,17 +1283,17 @@ function TutoriasGrupos({ cursos, tutores, setTutores, setAlumnos, profesores, s
     setTutores(prev => ({ ...prev, [curso]: { ...(prev[curso] || {}), [campo]: valor } }));
     if (campo === "tutor") setAlumnos(prev => prev.map(a => a.curso === curso ? { ...a, tutor: valor } : a));
   }
-  const inp = { ...inpStyle, padding: "8px 10px", fontSize: 13 };
+  const inp = { ...inpStyle, padding: "8px 10px", fontSize: 14 };
   return (
     <div style={{ background: C.white, borderRadius: 14, padding: 18, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", border: `1px solid ${C.cream}` }}>
       <div style={{ fontWeight: 700, color: C.dark, fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="tutor" tam={36} />{soloCurso ? `Tutor/a de ${soloCurso}` : "Tutorías de grupo"}</div>
-      <div style={{ fontSize: 12, color: C.gray, margin: "4px 0 12px" }}>
+      <div style={{ fontSize: 14, color: C.gray, margin: "4px 0 12px" }}>
         {soloCurso ? "Aparece en el informe. Si lo cambias aquí, queda guardado para el grupo." : "El tutor/a de cada grupo aparece en los partes y en los informes. Los cambios se guardan solos."}
       </div>
-      {lista.length === 0 && <div style={{ fontSize: 13, color: C.gray }}>Aún no hay grupos. Añade alumnado primero.</div>}
+      {lista.length === 0 && <div style={{ fontSize: 14, color: C.gray }}>Aún no hay grupos. Añade alumnado primero.</div>}
       {lista.map(curso => (
         <div key={curso} style={{ display: "grid", gridTemplateColumns: soloCurso ? "repeat(auto-fit,minmax(180px,1fr))" : "72px minmax(0,1fr) minmax(0,1fr)", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          {!soloCurso && <div style={{ fontWeight: 700, color: C.dark, fontSize: 13 }}>{curso}</div>}
+          {!soloCurso && <div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}>{curso}</div>}
           <select aria-label={`Tutor/a de ${curso}`} value={tutores[curso]?.tutor || ""} onChange={e => cambiar(curso, "tutor", e.target.value)} style={inp}>
             <option value="">— Sin tutor/a —</option>
             {[...new Set([...(profesores || []), tutores[curso]?.tutor].filter(Boolean))].sort().map(p => <option key={p} value={p}>{p}</option>)}
@@ -1265,16 +1317,16 @@ function InformesGuardados({ informes, setInformes, partes, banos, tutores, C })
   return (
     <div style={{ background: C.white, borderRadius: 14, padding: 18, marginTop: 20, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
       <div style={{ fontWeight: 700, color: C.dark, fontSize: 15 }}><Ic n="documentos" tam={20} />Informes guardados</div>
-      <div style={{ fontSize: 12, color: C.gray, margin: "4px 0 12px" }}>Cada informe descargado queda aquí anotado con sus partes, para volver a sacarlo igual.</div>
+      <div style={{ fontSize: 14, color: C.gray, margin: "4px 0 12px" }}>Cada informe descargado queda aquí anotado con sus partes, para volver a sacarlo igual.</div>
       {informes.map(inf => (
         <div key={inf.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderTop: `1px solid ${C.cream}`, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 14, color: C.dark }}><Ti tam={20}>{inf.tipo === "banos" ? "🚻 Salidas al baño" : "📋 Partes"}</Ti> · {inf.total} registro{inf.total !== 1 ? "s" : ""}</div>
-            <div style={{ fontSize: 12, color: C.gray }}>{fmt(inf.ts)} · {inf.autor || "—"}{inf.filtrosTexto ? ` · ${inf.filtrosTexto}` : " · Sin filtros"}</div>
+            <div style={{ fontSize: 14, color: C.gray }}>{fmt(inf.ts)} · {inf.autor || "—"}{inf.filtrosTexto ? ` · ${inf.filtrosTexto}` : " · Sin filtros"}</div>
           </div>
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => descargar(inf)} style={{ background: "#E8F5F3", color: C.teal, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>⬇️ PDF</button>
-            <button aria-label="Quitar del historial" onClick={() => { if (window.confirm("¿Quitar este informe del historial? Los partes no se borran.")) setInformes(prev => prev.filter(x => x.id !== inf.id)); }} style={{ background: "#f3f4f6", color: C.gray, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", fontSize: 12 }}><Ic n="eliminar" tam={20} /></button>
+            <button onClick={() => descargar(inf)} style={{ background: "#DDF0F4", color: C.teal, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>⬇️ PDF</button>
+            <button aria-label="Quitar del historial" onClick={() => { if (window.confirm("¿Quitar este informe del historial? Los partes no se borran.")) setInformes(prev => prev.filter(x => x.id !== inf.id)); }} style={{ background: "#EBF0F6", color: C.gray, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", fontSize: 14 }}><Ic n="eliminar" tam={20} /></button>
           </div>
         </div>
       ))}
@@ -1340,14 +1392,14 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
 
   const stb = active => ({
     padding: "10px 16px", border: "none", background: "none", cursor: "pointer",
-    fontSize: 13, fontWeight: 600,
+    fontSize: 14, fontWeight: 600,
     color: active ? C.teal : C.gray,
     borderBottom: active ? `3px solid ${C.teal}` : "3px solid transparent",
   });
 
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="grupos" tam={44} />Gestión de Alumnos</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Alumnos" icono="grupos" /></div>
       <div style={{ background: C.white, borderRadius: 12, marginBottom: 14, display: "flex", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderBottom: `2px solid ${C.cream}` }}>
         <button style={stb(subTab === "importar")} onClick={() => setSubTab("importar")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="importar" tam={30} />Importar CSV/Excel</span></button>
         <button style={stb(subTab === "manual")}   onClick={() => setSubTab("manual")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="anadir-manual" tam={30} />Añadir manual</span></button>
@@ -1356,9 +1408,9 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
 
       {subTab === "importar" && (
         <div>
-          <Card style={{ background: "#EEF5F8", border: `1px solid ${C.blue}`, marginBottom: 14 }}>
+          <Card style={{ background: "#DDF0F4", border: `1px solid ${C.blue}`, marginBottom: 14 }}>
             <div style={{ fontWeight: 700, color: C.blue, marginBottom: 8, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-exportar" tam={32} />Cómo exportar desde Raíces</div>
-            <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 14, color: "#16333F", lineHeight: 1.8 }}>
               1. Entra en <strong>Raíces → Alumnado → Listados</strong><br />
               2. Exporta en formato <strong>CSV o Excel</strong><br />
               3. Asegúrate de incluir columnas: <em>Nombre, Curso/Grupo, Tutor, Email y Teléfono</em><br />
@@ -1370,15 +1422,15 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
             onClick={() => fileRef.current.click()}
-            style={{ border: `2px dashed ${dragging ? C.teal : "#d1d5db"}`, borderRadius: 12, padding: "36px 20px", textAlign: "center", cursor: "pointer", background: dragging ? "#E8F5F3" : C.white, transition: "all .2s", marginBottom: 14 }}>
+            style={{ border: `2px dashed ${dragging ? C.teal : "#CDE9ED"}`, borderRadius: 12, padding: "36px 20px", textAlign: "center", cursor: "pointer", background: dragging ? "#DDF0F4" : C.white, transition: "all .2s", marginBottom: 14 }}>
             <Icono nombre="arrastrar" tam={88} style={{ margin: "0 auto 8px" }} />
             <div style={{ fontWeight: 700, color: C.dark, fontSize: 15 }}>Arrastra tu archivo aquí</div>
-            <div style={{ color: C.gray, fontSize: 13, marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Icono nombre="formato" tam={30} />o haz clic para seleccionar · CSV o Excel (.xlsx)</div>
+            <div style={{ color: C.gray, fontSize: 14, marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Icono nombre="formato" tam={30} />o haz clic para seleccionar · CSV o Excel (.xlsx)</div>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }}
               onChange={e => { if (e.target.files[0]) processFile(e.target.files[0]); e.target.value = ""; }} />
           </div>
           {importMsg && (
-            <div style={{ background: importMsg.type === "ok" ? "#E8F5F3" : "#FDF0EF", border: `1px solid ${importMsg.type === "ok" ? C.teal : C.salmon}`, borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 600, color: importMsg.type === "ok" ? C.teal : C.salmon, marginBottom: 14 }}>
+            <div style={{ background: importMsg.type === "ok" ? "#DDF0F4" : "#FDF1D9", border: `1px solid ${importMsg.type === "ok" ? C.teal : C.salmon}`, borderRadius: 8, padding: "10px 16px", fontSize: 14, fontWeight: 600, color: importMsg.type === "ok" ? C.teal : C.salmon, marginBottom: 14 }}>
               {importMsg.text}
             </div>
           )}
@@ -1389,7 +1441,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
                 <button onClick={() => setPreview(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: C.gray }}>✕</button>
               </div>
               <div style={{ overflowX: "auto", marginBottom: 16 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: C.dark, color: "#fff" }}>
                       {["Nombre", "Curso", "Tutor", "Email", "Teléfono", "NIA"].map(h => (
@@ -1410,7 +1462,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
                     ))}
                   </tbody>
                 </table>
-                {preview.length > 10 && <div style={{ textAlign: "center", color: C.gray, fontSize: 12, padding: "8px 0" }}>… y {preview.length - 10} más</div>}
+                {preview.length > 10 && <div style={{ textAlign: "center", color: C.gray, fontSize: 14, padding: "8px 0" }}>… y {preview.length - 10} más</div>}
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <Btn onClick={confirmarImport} color={C.teal} style={{ flex: 1 }}>✅ Confirmar importación ({preview.length} alumnos)</Btn>
@@ -1430,7 +1482,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
             ))}
             <datalist id="rumbo-cursos-alta">{[...new Set(alumnos.map(a => a.curso))].sort().map(c => <option key={c} value={c} />)}</datalist>
           </div>
-          {avisoAlta && <div role="alert" style={{ marginTop: 10, color: "#9f1239", fontWeight: 700, fontSize: 13 }}>{avisoAlta}</div>}
+          {avisoAlta && <div role="alert" style={{ marginTop: 10, color: "#275D8C", fontWeight: 700, fontSize: 14 }}>{avisoAlta}</div>}
           <Btn onClick={() => {
             const nombre = (nuevoAlumno.nombre || "").trim(), curso = (nuevoAlumno.curso || "").trim();
             if (!nombre || !curso) { setAvisoAlta("Escribe el nombre completo y el curso: son obligatorios."); return; }
@@ -1443,7 +1495,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
             // Feedback visual
             setFeedbackAñadir(true);
             setTimeout(() => setFeedbackAñadir(false), 1500);
-          }} color={feedbackAñadir ? "#10b981" : C.teal} style={{ marginTop: 12, transition: "all .3s ease" }}>
+          }} color={feedbackAñadir ? "#63CBA1" : C.teal} style={{ marginTop: 12, transition: "all .3s ease" }}>
             {feedbackAñadir ? "✅ ¡Alumno agregado!" : "➕ Añadir Alumno"}
           </Btn>
         </Card>
@@ -1456,23 +1508,23 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
             {alumnos.length > 0 && (
               confirmarBorrado
                 ? <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ fontSize: 13, color: C.salmon, fontWeight: 600 }}>¿Borrar todos al inicio de curso?</span>
-                  <Btn onClick={() => { setAlumnos([]); setConfirmarBorrado(false); }} color={C.salmon} style={{ padding: "6px 14px", fontSize: 13 }}>Sí, borrar</Btn>
-                  <Btn onClick={() => setConfirmarBorrado(false)} color={C.gray} style={{ padding: "6px 14px", fontSize: 13 }}>Cancelar</Btn>
+                  <span style={{ fontSize: 14, color: C.salmon, fontWeight: 600 }}>¿Borrar todos al inicio de curso?</span>
+                  <Btn onClick={() => { setAlumnos([]); setConfirmarBorrado(false); }} color={C.salmon} style={{ padding: "6px 14px", fontSize: 14 }}>Sí, borrar</Btn>
+                  <Btn onClick={() => setConfirmarBorrado(false)} color={C.gray} style={{ padding: "6px 14px", fontSize: 14 }}>Cancelar</Btn>
                 </div>
-                : <button onClick={() => setConfirmarBorrado(true)} style={{ background: "#FDF0EF", color: C.salmon, border: `1px solid ${C.salmon}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><Ic n="eliminar" tam={20} />Limpiar lista (nuevo curso)</button>
+                : <button onClick={() => setConfirmarBorrado(true)} style={{ background: "#FDF1D9", color: C.salmon, border: `1px solid ${C.salmon}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 14, fontWeight: 600 }}><Ic n="eliminar" tam={20} />Limpiar lista (nuevo curso)</button>
             )}
           </div>
           <Card style={{ padding: 0, overflow: "hidden" }}>
             {alumnos.length === 0
               ? <div style={{ padding: 30, textAlign: "center", color: C.gray }}>Sin alumnos. Importa un CSV o añádelos manualmente.</div>
               : alumnos.map(a => (
-                <div key={a.id} style={{ padding: "12px 20px", borderBottom: `1px solid ${C.cream}`, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={a.id} style={{ padding: "12px 20px", borderBottom: `1px solid ${C.cream}`, fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: C.dark }}>{a.nombre} <span style={{ color: C.gray, fontWeight: 400 }}>— {a.curso}</span>{a.nia && <span style={{ fontSize: 11, color: C.blue, marginLeft: 6 }}>NIA: {a.nia}</span>}</div>
+                    <div style={{ fontWeight: 600, color: C.dark }}>{a.nombre} <span style={{ color: C.gray, fontWeight: 400 }}>— {a.curso}</span>{a.nia && <span style={{ fontSize: 13, color: C.blue, marginLeft: 6 }}>NIA: {a.nia}</span>}</div>
                     <div style={{ color: C.gray, marginTop: 2 }}>Tutor: {a.tutor || "—"} · ✉️ {a.email || "—"} · 📱 {a.telefono || "—"}</div>
                   </div>
-                  <button onClick={() => setAlumnos(prev => prev.filter(x => x.id !== a.id))} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 8, padding: "4px 6px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex" }} title="Eliminar"><Icono nombre="eliminar" tam={26} /></button>
+                  <button onClick={() => setAlumnos(prev => prev.filter(x => x.id !== a.id))} style={{ background: "#FDF1D9", color: C.salmon, border: "none", borderRadius: 8, padding: "4px 6px", cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex" }} title="Eliminar"><Icono nombre="eliminar" tam={26} /></button>
                 </div>
               ))}
           </Card>
@@ -1581,38 +1633,38 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
   }
 
   // Colores de paso
-  const pasoColor = n => n < paso ? C.teal : n === paso ? C.blue : "#d1d5db";
+  const pasoColor = n => n < paso ? C.teal : n === paso ? C.blue : "#CDE9ED";
 
   // ── Vista detalle de un plan ──
   if (verPlan) return (
     <div>
       <button onClick={() => setVerPlan(null)}
-        style={{ marginBottom: 16, background: C.cream, border: `1px solid #ddd`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13, color: C.dark }}>
+        style={{ marginBottom: 16, background: C.cream, border: `1px solid #ddd`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 14, color: C.dark }}>
         ← Volver al listado
       </button>
-      <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, borderRadius: "14px 14px 0 0", padding: "20px 24px", color: "#fff" }}>
-        <div style={{ fontSize: 11, opacity: .7, letterSpacing: 1, marginBottom: 4 }}>PLAN DE GUARDIA · {CENTRO.toUpperCase()}</div>
+      <div style={{ background: R.azul, borderRadius: "14px 14px 0 0", padding: "20px 24px", color: "#fff" }}>
+        <div style={{ fontSize: 13, opacity: .7, letterSpacing: 1, marginBottom: 4 }}>PLAN DE GUARDIA · {CENTRO.toUpperCase()}</div>
         <div style={{ fontSize: 20, fontWeight: 800 }}><Ic n="por-alumno" tam={20} />{verPlan.profesorAusente}</div>
-        <div style={{ fontSize: 13, opacity: .85, marginTop: 4 }}>
+        <div style={{ fontSize: 14, opacity: .85, marginTop: 4 }}>
           <Ic n="fecha-hora" tam={20} />{verPlan.multidia ? `${fmtD(verPlan.fecha)} → ${fmtD(verPlan.fechaFin)}` : fmtD(verPlan.fecha)} · {verPlan.motivo}
         </div>
-        {verPlan.nota && <div style={{ fontSize: 12, opacity: .75, marginTop: 4, fontStyle: "italic" }}>{verPlan.nota}</div>}
+        {verPlan.nota && <div style={{ fontSize: 14, opacity: .75, marginTop: 4, fontStyle: "italic" }}>{verPlan.nota}</div>}
       </div>
       <div style={{ background: C.white, borderRadius: "0 0 14px 14px", padding: 20, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", marginBottom: 14 }}>
         <div style={{ fontWeight: 700, color: C.dark, marginBottom: 12 }}>Resumen de {verPlan.horas.length} hora(s)</div>
         {verPlan.horas.map((h, i) => (
-          <div key={i} style={{ borderRadius: 12, border: `1px solid #e5e7eb`, marginBottom: 10, overflow: "hidden" }}>
+          <div key={i} style={{ borderRadius: 12, border: `1px solid #CDE9ED`, marginBottom: 10, overflow: "hidden" }}>
             {/* Cabecera hora */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", background: C.cream }}>
               <div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}><Ic n="hora-reloj" tam={20} />{h.hora}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {h.curso && <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 6, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}><Ic n="por-curso" tam={20} />{h.curso}</span>}
-                {h.materia && <span style={{ background: C.amberBg, color: C.amber, borderRadius: 6, padding: "2px 10px", fontSize: 12 }}><Ic n="aula" tam={20} />{h.materia}</span>}
-                {h.modulo && <span style={{ background: "#E8F5F3", color: C.teal, borderRadius: 6, padding: "2px 10px", fontSize: 12 }}>🏢 {h.modulo}</span>}
+                {h.curso && <span style={{ background: "#DDF0F4", color: C.blue, borderRadius: 6, padding: "2px 10px", fontSize: 14, fontWeight: 600 }}><Ic n="por-curso" tam={20} />{h.curso}</span>}
+                {h.materia && <span style={{ background: C.amberBg, color: C.amber, borderRadius: 6, padding: "2px 10px", fontSize: 14 }}><Ic n="aula" tam={20} />{h.materia}</span>}
+                {h.modulo && <span style={{ background: "#DDF0F4", color: C.teal, borderRadius: 6, padding: "2px 10px", fontSize: 14 }}>🏢 {h.modulo}</span>}
               </div>
             </div>
             {/* Cuerpo */}
-            <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+            <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 14 }}>
               <div>
                 <div style={{ color: C.gray, fontWeight: 600, marginBottom: 4 }}><Ic n="guardias" tam={20} />Profesor de guardia</div>
                 <div style={{ color: C.dark, fontWeight: 700 }}>{h.profesorGuardia || <span style={{ color: "#f87171" }}>⚠ Sin asignar</span>}</div>
@@ -1621,14 +1673,14 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
               <div>
                 <div style={{ color: C.gray, fontWeight: 600, marginBottom: 4 }}><Ic n="partes" tam={20} />Tarea para los alumnos</div>
                 <div style={{ color: C.dark }}>{h.tarea || <span style={{ color: C.gray, fontStyle: "italic" }}>Sin tarea especificada</span>}</div>
-                {h.materialDetalle && <div style={{ color: C.gray, marginTop: 2, fontSize: 12 }}>📎 {h.materialDetalle}</div>}
+                {h.materialDetalle && <div style={{ color: C.gray, marginTop: 2, fontSize: 14 }}>📎 {h.materialDetalle}</div>}
               </div>
             </div>
           </div>
         ))}
       </div>
       <button onClick={() => { setPlanesGuardia(prev => prev.filter(p => p.id !== verPlan.id)); setVerPlan(null); }}
-        style={{ background: "#FDF0EF", color: C.salmon, border: `1px solid ${C.salmon}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+        style={{ background: "#FDF1D9", color: C.salmon, border: `1px solid ${C.salmon}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
         🗑 Eliminar este plan
       </button>
     </div>
@@ -1637,19 +1689,19 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
   // ── Vista principal ──
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="horario" tam={44} />Planificador de Guardias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Planificador de Guardias" icono="horario" /></div>
 
       {planGuardia && (
-        <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
+        <Card style={{ background: "#DDF0F4", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div>
               <strong style={{ color: C.teal }}>✅ Plan generado correctamente</strong>
-              <div style={{ fontSize: 13, color: C.dark, marginTop: 2 }}>
+              <div style={{ fontSize: 14, color: C.dark, marginTop: 2 }}>
                 {planGuardia.profesorAusente} · {fmtD(planGuardia.fecha)} · {planGuardia.horas.length} hora(s)
               </div>
             </div>
             <button onClick={() => { setVerPlan(planGuardia); setPlanGuardia(null); }}
-              style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+              style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
               👁 Ver plan
             </button>
           </div>
@@ -1664,10 +1716,10 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
             {[{ n:1, icon:"📅", label:"Fecha" }, { n:2, icon:"👤", label:"Ausente" }, { n:3, icon:"🏫", label:"Aula / Tarea" }, { n:4, icon:"🔄", label:"Guardia" }].map(({ n, icon, label }, i) => (
               <div key={n} style={{ display:"flex", alignItems:"center", flex:1 }}>
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flex:1, cursor: n < paso ? "pointer" : "default" }} onClick={() => n < paso && setPaso(n)}>
-                  <div style={{ width:40, height:40, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background: n < paso ? C.teal : n === paso ? C.blue : "#e5e7eb", color: n <= paso ? "#fff" : C.gray, fontSize:18, fontWeight:700, boxShadow: n === paso ? `0 0 0 4px ${C.blue}22` : "none", transition:"all .3s" }}>{n < paso ? "✓" : icon}</div>
-                  <div style={{ fontSize:11, fontWeight:600, color: n === paso ? C.blue : n < paso ? C.teal : C.gray, marginTop:4, whiteSpace:"nowrap" }}>{label}</div>
+                  <div style={{ width:40, height:40, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background: n < paso ? C.teal : n === paso ? C.blue : "#CDE9ED", color: n <= paso ? "#fff" : C.gray, fontSize:18, fontWeight:700, boxShadow: n === paso ? `0 0 0 4px ${C.blue}22` : "none", transition:"all .3s" }}>{n < paso ? "✓" : icon}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color: n === paso ? C.blue : n < paso ? C.teal : C.gray, marginTop:4, whiteSpace:"nowrap" }}>{label}</div>
                 </div>
-                {i < 3 && <div style={{ height:2, flex:1, background: n < paso ? C.teal : "#e5e7eb", transition:"background .3s", marginBottom:18 }} />}
+                {i < 3 && <div style={{ height:2, flex:1, background: n < paso ? C.teal : "#CDE9ED", transition:"background .3s", marginBottom:18 }} />}
               </div>
             ))}
           </div>
@@ -1698,7 +1750,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                 <label style={labelStyle}><ConIcono texto="📝 Nota general (opcional)" tam={40} /></label>
                 <textarea value={pgNota} onChange={e => setPgNota(e.target.value)} rows={2} placeholder="Observaciones generales sobre la ausencia…" style={{ ...inpStyle, resize:"vertical" }} />
               </div>
-              <div style={{ background:"#EEF5F8", borderRadius:8, padding:"10px 14px", fontSize:12, color:C.blue, marginTop:12 }}>
+              <div style={{ background:"#DDF0F4", borderRadius:8, padding:"10px 14px", fontSize:14, color:C.blue, marginTop:12 }}>
                 <Ic n="como-exportar" tam={20} />Si la ausencia abarca varios días, el plan se aplicará a todas las fechas del periodo seleccionado.
               </div>
             </Card>
@@ -1724,13 +1776,13 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                 </div>
               </div>
               <div style={{ marginBottom:8 }}>
-                <label style={{ ...labelStyle, marginBottom:10 }}><Ic n="hora-reloj" tam={20} />Horas afectadas * <span style={{ color:C.gray, fontWeight:400, fontSize:12 }}>— Selecciona todas las que apliquen</span></label>
+                <label style={{ ...labelStyle, marginBottom:10 }}><Ic n="hora-reloj" tam={20} />Horas afectadas * <span style={{ color:C.gray, fontWeight:400, fontSize:14 }}>— Selecciona todas las que apliquen</span></label>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:8 }}>
                   {HORAS.map(h => {
                     const sel = pgHoras.includes(h);
                     return (
                       <button key={h} onClick={() => toggleHora(h)}
-                        style={{ padding:"10px 8px", borderRadius:10, border:`2px solid ${sel ? C.blue : "#e5e7eb"}`, background: sel ? "#EEF5F8" : C.white, color: sel ? C.blue : C.gray, fontWeight: sel ? 700 : 500, fontSize:13, cursor:"pointer", transition:"all .15s", textAlign:"center" }}>
+                        style={{ padding:"10px 8px", borderRadius:10, border:`2px solid ${sel ? C.blue : "#CDE9ED"}`, background: sel ? "#DDF0F4" : C.white, color: sel ? C.blue : C.gray, fontWeight: sel ? 700 : 500, fontSize:14, cursor:"pointer", transition:"all .15s", textAlign:"center" }}>
                         {sel ? "✓ " : ""}{h}
                       </button>
                     );
@@ -1738,7 +1790,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                 </div>
               </div>
               {pgHoras.length > 0 && (
-                <div style={{ background:"#E8F5F3", borderRadius:8, padding:"8px 14px", fontSize:13, color:C.teal, fontWeight:600, marginTop:12 }}>
+                <div style={{ background:"#DDF0F4", borderRadius:8, padding:"8px 14px", fontSize:14, color:C.teal, fontWeight:600, marginTop:12 }}>
                   ✅ {pgHoras.length} hora(s) seleccionada(s): {pgHoras.join(", ")}
                 </div>
               )}
@@ -1781,7 +1833,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                     <input value={pgMaterialHora[h] || ""} onChange={e => setMaterialDetalleHora(h, e.target.value)} placeholder="Ej: Fotocopias en conserjería · Libro de texto · Presentación en Drive…" style={inpStyle} />
                   </div>
                   {pgCursoHora[h] && (
-                    <div style={{ marginTop:10, background:C.cream, borderRadius:6, padding:"6px 12px", fontSize:12, color:C.gray }}>
+                    <div style={{ marginTop:10, background:C.cream, borderRadius:6, padding:"6px 12px", fontSize:14, color:C.gray }}>
                       📍 {pgCursoHora[h]}{pgModuloEdificio[h] ? ` · ${pgModuloEdificio[h]}` : ""}
                     </div>
                   )}
@@ -1800,9 +1852,9 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                     <div style={{ fontWeight:700, color:C.teal, fontSize:15 }}><Ic n="hora-reloj" tam={20} />{conTramo(h)}</div>
                     {pgCursoHora[h] && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                        <span style={{ background:"#EEF5F8", color:C.blue, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600 }}><Ic n="por-curso" tam={20} />{pgCursoHora[h]}</span>
-                        {pgMateriaHora[h] && <span style={{ background:C.cream, color:C.dark, borderRadius:6, padding:"3px 10px", fontSize:12 }}>{pgMateriaHora[h]}</span>}
-                        {pgModuloEdificio[h] && <span style={{ background:"#E8F5F3", color:C.teal, borderRadius:6, padding:"3px 10px", fontSize:12 }}>🏢 {pgModuloEdificio[h]}</span>}
+                        <span style={{ background:"#DDF0F4", color:C.blue, borderRadius:6, padding:"3px 10px", fontSize:14, fontWeight:600 }}><Ic n="por-curso" tam={20} />{pgCursoHora[h]}</span>
+                        {pgMateriaHora[h] && <span style={{ background:C.cream, color:C.dark, borderRadius:6, padding:"3px 10px", fontSize:14 }}>{pgMateriaHora[h]}</span>}
+                        {pgModuloEdificio[h] && <span style={{ background:"#DDF0F4", color:C.teal, borderRadius:6, padding:"3px 10px", fontSize:14 }}>🏢 {pgModuloEdificio[h]}</span>}
                       </div>
                     )}
                   </div>
@@ -1823,12 +1875,12 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                     </div>
                   </div>
                   {pgGuardiaHora[h] && pgZonaHora[h] && (
-                    <div style={{ marginTop:10, background:"#E8F5F3", borderRadius:6, padding:"6px 12px", fontSize:12, color:C.teal, fontWeight:600 }}>
+                    <div style={{ marginTop:10, background:"#DDF0F4", borderRadius:6, padding:"6px 12px", fontSize:14, color:C.teal, fontWeight:600 }}>
                       ✅ {pgGuardiaHora[h]} — {pgZonaHora[h]}
                     </div>
                   )}
                   {pgTareaHora[h] && (
-                    <div style={{ marginTop:8, background:"#FFF8E8", borderRadius:6, padding:"6px 12px", fontSize:12, color:"#92400e" }}>
+                    <div style={{ marginTop:8, background:"#FDF1D9", borderRadius:6, padding:"6px 12px", fontSize:14, color:"#16333F" }}>
                       <Ic n="partes" tam={20} />Tarea: {pgTareaHora[h]}
                     </div>
                   )}
@@ -1864,7 +1916,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
             <Ic n="partes" tam={20} />Planes guardados ({planesGuardia.length})
           </div>
           {planesGuardia.length === 0
-            ? <div style={{ background: C.white, borderRadius: 12, padding: 20, textAlign: "center", color: C.gray, fontSize: 13, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+            ? <div style={{ background: C.white, borderRadius: 12, padding: 20, textAlign: "center", color: C.gray, fontSize: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 Aún no hay planes creados
               </div>
             : planesGuardia.map(p => (
@@ -1872,14 +1924,14 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
                 style={{ background: C.white, borderRadius: 12, padding: 14, marginBottom: 8, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderLeft: `4px solid ${C.blue}`, transition: "box-shadow .15s" }}
                 onMouseOver={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"}
                 onMouseOut={e => e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)"}>
-                <div style={{ fontWeight: 700, color: C.dark, fontSize: 13 }}><Ic n="por-alumno" tam={20} />{p.profesorAusente}</div>
-                <div style={{ fontSize: 12, color: C.gray, marginTop: 2 }}>
+                <div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}><Ic n="por-alumno" tam={20} />{p.profesorAusente}</div>
+                <div style={{ fontSize: 14, color: C.gray, marginTop: 2 }}>
                   <Ic n="fecha-hora" tam={20} />{p.multidia ? `${fmtD(p.fecha)} → ${fmtD(p.fechaFin)}` : fmtD(p.fecha)}
                 </div>
                 <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-                  <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 11 }}>{p.horas.length} hora(s)</span>
-                  <span style={{ background: C.cream, color: C.gray, borderRadius: 6, padding: "2px 8px", fontSize: 11 }}>{p.motivo}</span>
-                  {p.horas.map(h => <span key={h.hora} style={{ background: "#E8F5F3", color: C.teal, borderRadius: 6, padding: "2px 8px", fontSize: 11 }}>{h.hora}</span>)}
+                  <span style={{ background: "#DDF0F4", color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 13 }}>{p.horas.length} hora(s)</span>
+                  <span style={{ background: C.cream, color: C.gray, borderRadius: 6, padding: "2px 8px", fontSize: 13 }}>{p.motivo}</span>
+                  {p.horas.map(h => <span key={h.hora} style={{ background: "#DDF0F4", color: C.teal, borderRadius: 6, padding: "2px 8px", fontSize: 13 }}>{h.hora}</span>)}
                 </div>
               </div>
             ))
@@ -1947,10 +1999,10 @@ function guardiasDelDia(fecha, profesor, cuadrante, apoyos = {}, sustitutos = {}
 }
 
 const ESTADOS_ZONA = {
-  completa:    { label: "🟢 Completa",           color: "#0f766e", bg: "#E8F5F3" },
-  sustituto:   { label: "🟠 Entra el sustituto", color: "#b45309", bg: "#fef3c7" },
+  completa:    { label: "🟢 Completa",           color: "#275D8C", bg: "#DDF0F4" },
+  sustituto:   { label: "🟠 Entra el sustituto", color: "#16333F", bg: "#FDF1D9" },
   una:         { label: "🟡 Solo 1 profesor",    color: "#a16207", bg: "#fefce8" },
-  descubierta: { label: "🔴 Descubierta",        color: "#be123c", bg: "#FDF0EF" },
+  descubierta: { label: "🔴 Descubierta",        color: "#275D8C", bg: "#FDF1D9" },
 };
 function situacionZona({ fecha, hora, zonaId, profesores, cuadrante, apoyos = {}, sustitutos = {}, ausencias = [], coberturas = {} }) {
   const k = `${fecha}|${hora}|${zonaId}`;
@@ -2022,7 +2074,7 @@ function tareasDeGuardia(g, fecha, ausencias) {
 }
 // Tarjeta con lo que ha dejado el profesor ausente
 const TareaAusente = ({ a, C }) => (
-  <div style={{ background: "#FFFBEB", border: "1px solid #fbbf24", borderRadius: 8, padding: 10, fontSize: 12, color: "#78350F", lineHeight: 1.5 }}>
+  <div style={{ background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: 10, fontSize: 14, color: "#78350F", lineHeight: 1.5 }}>
     <div style={{ fontWeight: 700, marginBottom: 4 }}><Ic n="profe-ausente" tam={22} />Deja {a.profesor}{a.asignatura ? ` · ${a.asignatura}` : ""}</div>
     {(a.aula || a.edificio) && <div><Ic n="aula" tam={20} />Aula {a.aula || "?"}{a.edificio ? ` · Edificio ${a.edificio}` : ""}</div>}
     <div><Ic n="ejercicios" tam={20} />{a.tarea ? a.tarea : <em>No ha dejado tarea</em>}</div>
@@ -2036,11 +2088,11 @@ const TareaAusente = ({ a, C }) => (
 // coberturas: { "fecha|hora|idAusencia": profesor } — quién cubre cada clase en cada hora
 const claveCob = (fecha, hora, ausId) => `${fecha}|${hora}|${ausId}`;
 const PRIORIDADES_COB = {
-  1: { txt: "De guardia en aula", color: "#0f766e", bg: "#E8F5F3" },
-  2: { txt: "Sustituto en reserva", color: "#1d4ed8", bg: "#EEF5F8" },
+  1: { txt: "De guardia en aula", color: "#275D8C", bg: "#DDF0F4" },
+  2: { txt: "Sustituto en reserva", color: "#1d4ed8", bg: "#DDF0F4" },
   // (dentro de cada grupo va primero quien está en el mismo edificio que la clase)
-  3: { txt: "Zona con dos, mismo edificio", color: "#92400e", bg: "#fef3c7" },
-  4: { txt: "Zona con dos, otro edificio", color: "#6b7280", bg: "#f3f4f6" },
+  3: { txt: "Zona con dos, mismo edificio", color: "#16333F", bg: "#FDF1D9" },
+  4: { txt: "Zona con dos, otro edificio", color: "#6b7280", bg: "#EBF0F6" },
 };
 // Clases cubiertas por un profesor en un día
 const clasesCubiertasDia = (fecha, profesor, coberturas) =>
@@ -2095,32 +2147,32 @@ function CubrirClase({ fecha, hora, ausencia, equipo, coberturas = {}, setCobert
   const candidatos = candidatosClase({ fecha, hora, ausencia, ...equipo, coberturas });
   const asignar = p => setCoberturas?.(prev => ({ ...prev, [clave]: p }));
   const quitar = () => setCoberturas?.(prev => { const n = { ...prev }; delete n[clave]; return n; });
-  const btn = { border: "none", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: 12, cursor: "pointer" };
+  const btn = { border: "none", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: 14, cursor: "pointer" };
   const lista = verTodos ? candidatos : candidatos.slice(0, 3);
   return (
-    <div style={{ background: asignado ? "#E8F5F3" : "#fff", border: `1px solid ${asignado ? C.teal : "#fbbf24"}`, borderRadius: 8, padding: 10 }}>
+    <div style={{ background: asignado ? "#DDF0F4" : "#fff", border: `1px solid ${asignado ? C.teal : "#F6C862"}`, borderRadius: 8, padding: 10 }}>
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, justifyContent: "space-between" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>
           <Ic n="hora-reloj" tam={20} />{conTramo(hora)}
           {asignado
             ? <span style={{ color: C.teal }}> · ✅ Cubre {asignado}</span>
-            : <span style={{ color: "#b45309" }}> · Sin cubrir</span>}
+            : <span style={{ color: "#16333F" }}> · Sin cubrir</span>}
         </div>
         {asignado && puedeAsignar && <button onClick={quitar} style={{ ...btn, background: C.light, color: C.dark }}>Cambiar</button>}
       </div>
       {!asignado && (
         candidatos.length === 0 ? (
-          <div style={{ fontSize: 12, color: C.salmon, fontWeight: 600, marginTop: 6 }}>No hay nadie de guardia libre a esta hora sin dejar una zona vacía.</div>
+          <div style={{ fontSize: 14, color: C.salmon, fontWeight: 600, marginTop: 6 }}>No hay nadie de guardia libre a esta hora sin dejar una zona vacía.</div>
         ) : (
           <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-            {!puedeAsignar && <div style={{ fontSize: 11, color: C.gray }}>Jefatura confirmará quién la cubre. Sugerencias:</div>}
+            {!puedeAsignar && <div style={{ fontSize: 13, color: C.gray }}>Jefatura confirmará quién la cubre. Sugerencias:</div>}
             {lista.map((c, i) => {
               const pr = PRIORIDADES_COB[c.prioridad];
               return (
-                <div key={c.profesor} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: i === 0 ? "#F0FAF7" : C.light, borderRadius: 8, padding: "6px 10px" }}>
+                <div key={c.profesor} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: i === 0 ? "#DDF0F4" : C.light, borderRadius: 8, padding: "6px 10px" }}>
                   <div style={{ flex: "1 1 180px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{i === 0 ? "⭐ " : ""}{c.profesor}</div>
-                    <div style={{ fontSize: 11, color: C.gray }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{i === 0 ? "⭐ " : ""}{c.profesor}</div>
+                    <div style={{ fontSize: 13, color: C.gray }}>
                       <span style={{ color: pr.color, background: pr.bg, borderRadius: 6, padding: "1px 6px", fontWeight: 700 }}>{pr.txt}</span>
                       {" "}{c.zona} · {c.cubiertas} clase(s) cubiertas hoy · {c.guardias} guardia(s)
                     </div>
@@ -2163,9 +2215,9 @@ function PasarLista({ curso, alumnos, existente, onGuardar, onCerrar, C }) {
     <div role="dialog" aria-modal="true" aria-label={`Pasar lista de ${curso}`} onClick={onCerrar}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 120, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 16, width: "min(460px, 100%)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "14px 18px", borderRadius: "16px 16px 0 0", position: "sticky", top: 0 }}>
+        <div style={{ background: R.azul, color: "#fff", padding: "14px 18px", borderRadius: "16px 16px 0 0", position: "sticky", top: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="partes" tam={20} />Pasar lista · {curso}</div>
-          <div style={{ fontSize: 12, opacity: .85 }}>Marca solo a quien falta. {grupo.length} alumnos.</div>
+          <div style={{ fontSize: 14, opacity: .85 }}>Marca solo a quien falta. {grupo.length} alumnos.</div>
         </div>
         <div style={{ padding: 12 }}>
           {grupo.length === 0 && <div style={{ padding: 20, color: C.gray, textAlign: "center" }}>No hay alumnos cargados en {curso}.</div>}
@@ -2174,21 +2226,21 @@ function PasarLista({ curso, alumnos, existente, onGuardar, onCerrar, C }) {
             return (
               <button key={a.id} onClick={() => toggle(a.id)} aria-pressed={falta}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "12px 14px", marginBottom: 6, borderRadius: 10, cursor: "pointer", fontSize: 14, textAlign: "left",
-                  border: `2px solid ${falta ? C.salmon : "#e5e7eb"}`, background: falta ? "#FDF0EF" : "#fff", color: C.dark }}>
+                  border: `2px solid ${falta ? C.salmon : "#CDE9ED"}`, background: falta ? "#FDF1D9" : "#fff", color: C.dark }}>
                 <span>{a.nombre}</span>
-                <span style={{ fontWeight: 700, fontSize: 12, color: falta ? "#be123c" : C.teal }}>{falta ? "✗ Falta" : "✓ Presente"}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, color: falta ? "#275D8C" : C.teal }}>{falta ? "✗ Falta" : "✓ Presente"}</span>
               </button>
             );
           })}
         </div>
         <div style={{ display: "flex", gap: 8, padding: "0 12px 14px" }}>
-          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #d1d5db", background: "#f9fafb", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #CDE9ED", background: "#f9fafb", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
           <button onClick={() => onGuardar(grupo.filter(a => faltan.has(a.id)).map(a => ({ id: a.id, nombre: a.nombre })))}
             style={{ flex: 2, padding: 12, borderRadius: 10, border: "none", background: C.teal, color: "#fff", cursor: "pointer", fontWeight: 700 }}>
             Guardar lista ({faltan.size} {faltan.size === 1 ? "falta" : "faltas"})
           </button>
         </div>
-        <div style={{ padding: "0 14px 14px", fontSize: 11, color: C.gray }}>Las faltas oficiales se siguen registrando en Raíces.</div>
+        <div style={{ padding: "0 14px 14px", fontSize: 13, color: C.gray }}>Las faltas oficiales se siguen registrando en Raíces.</div>
       </div>
     </div>
   );
@@ -2206,10 +2258,10 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
   const pend = debidas.length - firmadas;
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="tareas" tam={44} />Firmas de guardia y listas</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Firmas de guardia y listas" icono="tareas" /></div>
       <div className="no-print" style={{ background: C.white, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label style={{ display: "block", fontWeight: 600, fontSize: 13, color: C.dark, marginBottom: 6 }}>Fecha</label>
+          <label style={{ display: "block", fontWeight: 600, fontSize: 14, color: C.dark, marginBottom: 6 }}>Fecha</label>
           <input type="date" value={fecha} onChange={e => setFecha(e.target.value || isoLocal())} style={inpStyle} />
         </div>
         <button onClick={() => pdfFirmasYListas(fecha, filas, listasDia)} style={{ background: C.dark, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", cursor: "pointer", fontWeight: 700 }}>⬇️ Descargar PDF</button>
@@ -2218,12 +2270,12 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
         {[
           { label: "Firmas esperadas hasta ahora", value: debidas.length, color: C.dark },
           { label: "Guardias firmadas", value: firmadas, color: C.teal },
-          { label: "Sin firmar", value: pend, color: pend ? "#b45309" : C.teal },
+          { label: "Sin firmar", value: pend, color: pend ? "#16333F" : C.teal },
           { label: "Listas pasadas", value: listasDia.length, color: C.blue },
         ].map(s => (
           <div key={s.label} style={{ background: C.white, borderRadius: 10, padding: 14, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderTop: `4px solid ${s.color}` }}>
             <div style={{ fontSize: 26, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{s.label}</div>
+            <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -2231,23 +2283,23 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
         <div style={{ background: C.dark, color: "#fff", padding: "10px 16px", fontWeight: 700, fontSize: 14 }}><Ic n="firmar" tam={20} />Firmas de guardia · {parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
         {filas.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.gray }}>No hay guardias en el cuadrante para esta fecha.</div> : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 560 }}>
               <thead><tr style={{ background: C.light }}>
-                {["Hora", "Zona", "Profesores en la zona y firma"].map(h => <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontSize: 12, color: C.gray }}>{h}</th>)}
+                {["Hora", "Zona", "Profesores en la zona y firma"].map(h => <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontSize: 14, color: C.gray }}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {filas.map((f, i) => (
                   <tr key={i} style={{ borderTop: `1px solid ${C.cream}` }}>
-                    <td style={{ padding: "8px 14px", fontWeight: 600, whiteSpace: "nowrap" }}>{f.hora}<div style={{ fontSize: 10, color: C.gray, fontWeight: 500 }}>{HORARIO[f.hora]}</div></td>
+                    <td style={{ padding: "8px 14px", fontWeight: 600, whiteSpace: "nowrap" }}>{f.hora}<div style={{ fontSize: 13, color: C.gray, fontWeight: 500 }}>{HORARIO[f.hora]}</div></td>
                     <td style={{ padding: "8px 14px" }}>{f.zona}</td>
                     <td style={{ padding: "8px 14px" }}>
-                      {f.personas.length === 0 && <span style={{ color: "#be123c", fontWeight: 600 }}>Nadie en la zona</span>}
+                      {f.personas.length === 0 && <span style={{ color: "#275D8C", fontWeight: 600 }}>Nadie en la zona</span>}
                       {f.personas.map(({ p, firma }) => (
                         <div key={p} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                           <span>{p}</span>
-                          {firma ? <span style={{ color: C.teal, fontWeight: 700, fontSize: 12 }}>✓ firmada a las {horaCorta(firma.ts)}</span>
-                            : f.empezada ? <span style={{ color: "#b45309", fontWeight: 700, fontSize: 12 }}>Sin firmar</span>
-                            : <span style={{ color: C.gray, fontSize: 12 }}>Aún no ha empezado</span>}
+                          {firma ? <span style={{ color: C.teal, fontWeight: 700, fontSize: 14 }}>✓ firmada a las {horaCorta(firma.ts)}</span>
+                            : f.empezada ? <span style={{ color: "#16333F", fontWeight: 700, fontSize: 14 }}>Sin firmar</span>
+                            : <span style={{ color: C.gray, fontSize: 14 }}>Aún no ha empezado</span>}
                         </div>
                       ))}
                     </td>
@@ -2261,23 +2313,23 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
       <div style={{ background: C.white, borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
         <div style={{ background: C.blue, color: "#fff", padding: "10px 16px", fontWeight: 700, fontSize: 14 }}><Ic n="partes" tam={20} />Listas pasadas en guardia</div>
         {listasDia.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.gray }}>No se ha pasado ninguna lista este día.</div> : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead><tr style={{ background: C.light }}>
-              {["Hora", "Grupo", "Profesor", "Faltas"].map(h => <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontSize: 12, color: C.gray }}>{h}</th>)}
+              {["Hora", "Grupo", "Profesor", "Faltas"].map(h => <th key={h} style={{ padding: "8px 14px", textAlign: "left", fontSize: 14, color: C.gray }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {listasDia.map(l => (
                 <tr key={l.id} style={{ borderTop: `1px solid ${C.cream}` }}>
                   <td style={{ padding: "8px 14px", fontWeight: 600 }}>{l.hora}</td>
                   <td style={{ padding: "8px 14px" }}>{l.curso}</td>
-                  <td style={{ padding: "8px 14px" }}>{l.profesor}<div style={{ fontSize: 11, color: C.gray }}>a las {horaCorta(l.ts)}</div></td>
+                  <td style={{ padding: "8px 14px" }}>{l.profesor}<div style={{ fontSize: 13, color: C.gray }}>a las {horaCorta(l.ts)}</div></td>
                   <td style={{ padding: "8px 14px" }}>{l.ausentes.length === 0 ? <span style={{ color: C.teal }}>Sin faltas</span> : l.ausentes.map(a => a.nombre).join(", ")}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        <div style={{ padding: "8px 14px", fontSize: 11, color: C.gray }}>Las faltas oficiales se registran en Raíces.</div>
+        <div style={{ padding: "8px 14px", fontSize: 13, color: C.gray }}>Las faltas oficiales se registran en Raíces.</div>
       </div>
     </div>
   );
@@ -2393,18 +2445,18 @@ function AyudaPantalla({ id, C }) {
   const cerrar = () => { setAbierta(false); try { localStorage.setItem(clave, "1"); } catch { /* sin almacenamiento */ } };
   if (!abierta) return (
     <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-      <button onClick={() => setAbierta(true)} style={{ background: "none", border: `1px solid ${C.blue}`, color: C.blue, borderRadius: 20, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="como-se-usa" tam={22} />Cómo se usa</button>
+      <button onClick={() => setAbierta(true)} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 6px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={24} />Cómo se usa <span aria-hidden="true" style={{ width: 0, height: 0, borderLeft: `10px solid ${R.mostaza}`, borderTop: "7px solid transparent", borderBottom: "7px solid transparent" }} /></button>
     </div>
   );
   return (
-    <div className="no-print" role="note" style={{ background: "#EEF5F8", border: `1px solid ${C.blue}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-        <div style={{ fontWeight: 700, color: C.blue, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={26} />Cómo se usa: {ayuda.titulo}</div>
-        <button onClick={cerrar} style={{ background: C.blue, color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
+    <div className="no-print" role="note" style={{ background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, padding: "12px 16px", marginBottom: 16, color: R.petroleo }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={28} />Cómo se usa: {ayuda.titulo}</div>
+        <button onClick={cerrar} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
       </div>
       {ayuda.pasos.length === 1
-        ? <p style={{ margin: "8px 0 0", fontSize: 13, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
-        : <ol style={{ margin: "8px 0 0", paddingLeft: 20, fontSize: 13, color: C.dark, lineHeight: 1.55 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
+        ? <p style={{ margin: "8px 0 0", fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
+        : <ol style={{ margin: "8px 0 0", paddingLeft: 22, fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
     </div>
   );
 }
@@ -2471,16 +2523,16 @@ function FrasesRapidas({ tipo, tipificacion, texto, setTexto }) {
   if (!frases.length) return null;
   const anadir = f => setTexto(prev => { const t = prev.trim(); return t ? `${t} ${f}` : f; });
   return (
-    <div style={{ background: C.cream, border: "1px solid #e5e7eb", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: C.dark, marginBottom: 8 }}>
-        💬 Frases rápidas <span style={{ fontWeight: 400, color: C.gray }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
+    <div style={{ background: C.white, border: "1px solid #CDE9ED", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 10, lineHeight: 1.4 }}>
+        💬 Frases rápidas <span style={{ fontWeight: 400, color: R.petroleo }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {frases.map(f => {
           const usada = texto.includes(f);
           return (
             <button key={f} type="button" onClick={() => !usada && anadir(f)} disabled={usada}
-              style={{ fontSize: 12, padding: "6px 10px", borderRadius: 16, border: `1px solid ${usada ? "#e5e7eb" : C.teal}`, background: usada ? "#f3f4f6" : C.white, color: usada ? C.gray : C.dark, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
+              style={{ fontSize: 15, lineHeight: 1.3, minHeight: 44, padding: "8px 14px", borderRadius: 22, border: `2px solid ${usada ? "#CDE9ED" : R.turquesa}`, background: usada ? R.gris : C.white, color: R.noche, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
               {usada ? "✓ " : "+ "}{f}
             </button>
           );
@@ -2698,11 +2750,11 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
         else saludo = "¡Buenas noches";
         
         return (
-          <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          <div style={{ color: R.petroleo, marginBottom: 28 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                   {guardiasDia.length > 0 ? (
                     <>Hoy tienes <strong>{guardiasDia.length} guardia{guardiasDia.length !== 1 ? 's' : ''}</strong> asignada{guardiasDia.length !== 1 ? 's' : ''}</>
                   ) : esFinde ? (
@@ -2712,16 +2764,16 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                   )}
                 </p>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icono nombre="fecha" tam={32} />
+                <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
               </div>
             </div>
           </div>
         );
       })()}
 
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Mi Guardia Hoy</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Mi Guardia Hoy" icono="guardias" /></div>
       <div style={{ background:C.white, borderRadius:12, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
         <label style={labelStyle}>Soy el/la profesor/a</label>
         <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={selStyle} disabled={profesores.includes(usuario)}>
@@ -2755,23 +2807,23 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
         
         if (ausenciasACubrir.length > 0 && zonaProfesor) {
           return (
-            <div style={{ background: "#FEF3C7", borderRadius: 12, padding: 16, marginBottom: 16, borderLeft: "4px solid #F59E0B", boxShadow: "0 2px 10px rgba(245, 158, 11, 0.15)" }}>
+            <div style={{ background: "#FDF1D9", borderRadius: 12, padding: 16, marginBottom: 16, borderLeft: "4px solid #F6C862", boxShadow: "0 2px 10px rgba(245, 158, 11, 0.15)" }}>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <div style={{ fontSize: 24 }}><Ic n="aviso" tam={22} /></div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: "#92400E", marginBottom: 10, fontSize: 15 }}>
+                  <div style={{ fontWeight: 700, color: "#16333F", marginBottom: 10, fontSize: 15 }}>
                     Tienes {ausenciasACubrir.length} {ausenciasACubrir.length === 1 ? "clase" : "clases"} sin profesor hoy
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {ausenciasACubrir.map((a, idx) => (
-                      <div key={idx} style={{ background: "#FFFBEB", borderRadius: 6, padding: 10, fontSize: 13, color: "#78350F" }}>
+                      <div key={idx} style={{ background: "#FDF1D9", borderRadius: 6, padding: 10, fontSize: 14, color: "#78350F" }}>
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>
                           {a.horas.join(", ")} - {a.asignatura || "Clase"}
                         </div>
-                        <div style={{ fontSize: 12 }}>
+                        <div style={{ fontSize: 14 }}>
                           <Ti tam={20}><Ic n="por-alumno" tam={20} />{a.profesor} · 🏫 Aula {a.aula || "?"} {a.asignatura ? `· 📚 ${a.asignatura}` : ""}</Ti>
                         </div>
-                        {a.tarea && <div style={{ fontSize: 12, marginTop: 4 }}>✏️ Tarea: {a.tarea}</div>}
+                        {a.tarea && <div style={{ fontSize: 14, marginTop: 4 }}>✏️ Tarea: {a.tarea}</div>}
                       </div>
                     ))}
                   </div>
@@ -2800,7 +2852,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
         
         return (
           <div style={{ background:C.white, borderRadius:12, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-            <div style={{ fontSize:13, fontWeight:600, color:C.gray, marginBottom:12 }}><Ic n="fecha-hora" tam={22} />Próximos 7 días</div>
+            <div style={{ fontSize:14, fontWeight:600, color:C.gray, marginBottom:12 }}><Ic n="fecha-hora" tam={22} />Próximos 7 días</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(7,minmax(0,1fr))", gap:4 }}>
               {proximosDias.map((p, idx) => (
                 <div key={idx} 
@@ -2810,7 +2862,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                     padding:"10px 2px", 
                     minWidth:0,
                     borderRadius:10, 
-                    background: p.tieneGuardia ? "#E8F5F3" : "#f3f4f6",
+                    background: p.tieneGuardia ? "#DDF0F4" : "#EBF0F6",
                     border: idx === 0 ? `2px solid ${C.teal}` : "2px solid transparent",
                     cursor: p.tieneGuardia ? "pointer" : "default",
                     transition: "all .2s ease",
@@ -2818,10 +2870,10 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                   }}
                   onMouseOver={e => { if (p.tieneGuardia) { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; } }}
                   onMouseOut={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:C.gray, marginBottom:4 }}>{p.dia.substring(0,3)}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.gray, marginBottom:4 }}>{p.dia.substring(0,3)}</div>
                   <div style={{ fontSize:14, fontWeight:700, color:C.dark, marginBottom:6 }}>{p.fecha.getDate()}</div>
                   <div style={{ fontSize:20 }}>{p.tieneGuardia ? "✅" : "⭕"}</div>
-                  <div style={{ fontSize:9, color: p.tieneGuardia ? C.teal : C.gray, fontWeight:600, marginTop:4, overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontSize:13, color: p.tieneGuardia ? C.teal : C.gray, fontWeight:600, marginTop:4, overflow:"hidden", textOverflow:"ellipsis" }}>
                     {p.tieneGuardia ? "Guardia" : "Libre"}
                   </div>
                 </div>
@@ -2835,7 +2887,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                 border: "none",
                 borderRadius: 8,
                 cursor: "pointer",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
                 transition: "all .3s ease"
               }}
@@ -2848,37 +2900,37 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
         );
       })()}
       {esFinde ? (
-        <div style={{ background:"#E8F5F3", borderRadius:12, padding:30, textAlign:"center", color:C.teal, fontWeight:600, fontSize:16 }}>
+        <div style={{ background:"#DDF0F4", borderRadius:12, padding:30, textAlign:"center", color:C.teal, fontWeight:600, fontSize:16 }}>
           🎉 ¡Hoy es {diaHoy}! No hay guardias.
         </div>
       ) : guardiasDia.length === 0 ? (
         <div style={{ background:C.white, borderRadius:12, padding:30, textAlign:"center", boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize:40, marginBottom:10 }}>✅</div>
           <div style={{ fontWeight:700, color:C.dark, fontSize:16 }}>No tienes guardias asignadas hoy ({diaHoy})</div>
-          <div style={{ color:C.gray, fontSize:13, marginTop:6 }}>Consulta con Jefatura si crees que es un error</div>
+          <div style={{ color:C.gray, fontSize:14, marginTop:6 }}>Consulta con Jefatura si crees que es un error</div>
         </div>
       ) : (
         <div>
-          <div style={{ fontWeight:600, color:C.gray, fontSize:13, marginBottom:10 }}>
+          <div style={{ fontWeight:600, color:C.gray, fontSize:14, marginBottom:10 }}>
             <Ic n="fecha-hora" tam={22} />{diaHoy} — {guardiasDia.length} guardia(s) asignada(s)
           </div>
           {guardiasDia.map((g, i) => {
             const { sit } = g;
             const ROLES = {
-              titular:   { txt: "🛡️ TITULAR DE LA GUARDIA", color: C.teal, bg: "#E8F5F3" },
-              apoyo:     { txt: "👥 APOYO",                  color: C.blue, bg: "#EEF5F8" },
-              sustituto: { txt: "🔁 SUSTITUTO",              color: "#7c3aed", bg: "#f3e8ff" },
+              titular:   { txt: "🛡️ TITULAR DE LA GUARDIA", color: C.teal, bg: "#DDF0F4" },
+              apoyo:     { txt: "👥 APOYO",                  color: C.blue, bg: "#DDF0F4" },
+              sustituto: { txt: "🔁 SUSTITUTO",              color: "#2B647E", bg: "#DDF0F4" },
             };
             const r = ROLES[g.rol];
             const esAhora = ahora === g.hora;
             const nombre = (p, falta) => p
               ? <span style={{ textDecoration: falta ? "line-through" : "none", color: falta ? C.salmon : C.dark }}>{p}{falta ? " (ausente)" : ""}</span>
-              : <span style={{ color: "#9f1239" }}>sin asignar</span>;
+              : <span style={{ color: "#275D8C" }}>sin asignar</span>;
             // Aviso principal según el papel
             let aviso = null;
-            const rojo = { background: "#FDF0EF", border: `2px solid ${C.salmon}`, color: "#9f1239" };
-            const ambar = { background: "#fef3c7", border: "1px solid #f59e0b", color: "#92400e" };
-            const azul = { background: "#EEF5F8", border: `1px solid ${C.blue}`, color: C.blue };
+            const rojo = { background: "#FDF1D9", border: `2px solid ${C.salmon}`, color: "#275D8C" };
+            const ambar = { background: "#FDF1D9", border: "1px solid #F6C862", color: "#16333F" };
+            const azul = { background: "#DDF0F4", border: `1px solid ${C.blue}`, color: C.blue };
             if (g.rol === "sustituto") {
               aviso = sit.sustituyeA
                 ? { estilo: rojo, txt: `⚠️ Hoy entras tú: sustituyes a ${sit.sustituyeA} (${sit.hueco})` }
@@ -2899,19 +2951,19 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                     <div style={{ fontWeight:800, fontSize:18, color:C.dark }}>{g.hora} <span style={{ fontSize:14, fontWeight:600, color:C.gray }}>· {HORARIO[g.hora]}</span></div>
                     <div style={{ fontSize:15, color:r.color, fontWeight:600, marginTop:4 }}><Ic n="edificio" tam={22} />{g.zona}</div>
                   </div>
-                  {esAhora && <span style={{ background:r.color, color:"#fff", borderRadius:20, padding:"4px 12px", fontSize:12, fontWeight:700 }}>⏱ AHORA</span>}
+                  {esAhora && <span style={{ background:r.color, color:"#fff", borderRadius:20, padding:"4px 12px", fontSize:14, fontWeight:700 }}>⏱ AHORA</span>}
                 </div>
-                <div style={{ marginTop:12, padding:"6px 12px", background:r.bg, borderRadius:8, fontSize:12, fontWeight:700, color:r.color, display:"inline-block" }}><Ti tam={22}>{r.txt}</Ti></div>
-                {g.cubre && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:13, fontWeight:800, background:"#EEF5F8", border:`2px solid ${C.blue}`, color:C.blue }}>📋 Jefatura te ha asignado: cubres la clase de {g.cubre.profesor}{g.cubre.aula ? ` en ${g.cubre.aula}` : ""}</div>}
-                {aviso && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:13, fontWeight:700, ...aviso.estilo }}><Ti tam={22}>{aviso.txt}</Ti></div>}
-                <div style={{ marginTop:10, display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:6, fontSize:12, color:C.gray }}>
+                <div style={{ marginTop:12, padding:"6px 12px", background:r.bg, borderRadius:8, fontSize:14, fontWeight:700, color:r.color, display:"inline-block" }}><Ti tam={22}>{r.txt}</Ti></div>
+                {g.cubre && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:800, background:"#DDF0F4", border:`2px solid ${C.blue}`, color:C.blue }}>📋 Jefatura te ha asignado: cubres la clase de {g.cubre.profesor}{g.cubre.aula ? ` en ${g.cubre.aula}` : ""}</div>}
+                {aviso && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:700, ...aviso.estilo }}><Ti tam={22}>{aviso.txt}</Ti></div>}
+                <div style={{ marginTop:10, display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:6, fontSize:14, color:C.gray }}>
                   <div><Ic n="titular" tam={22} />Titular: {nombre(sit.titular, sit.tA)}</div>
                   <div><Ic n="apoyo" tam={22} />Apoyo: {nombre(sit.apoyo, sit.aA)}</div>
                   <div><Ic n="sustituto" tam={22} />Sustituto: {nombre(sit.sustituto, sit.sA)}</div>
                 </div>
                 {g.ausencias.length > 0 && (
                   <div style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#92400e", marginBottom: 6 }}><Ic n="deberes" tam={22} />Deberes y tareas de las clases sin profesor</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#16333F", marginBottom: 6 }}><Ic n="deberes" tam={22} />Deberes y tareas de las clases sin profesor</div>
                     <div style={{ display: "grid", gap: 8 }}>{g.ausencias.map(a => <TareaAusente key={a.id} a={a} C={C} />)}</div>
                   </div>
                 )}
@@ -2920,29 +2972,29 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                   const firma = firmas.find(f => f.fecha === hoyISO && f.hora === g.hora && f.zonaId === g.zonaId && f.profesor === fProfesor);
                   const empezada = horaEmpezada(hoyISO, g.hora);
                   const cursosTarea = [...new Set(g.ausencias.map(a => a.aula).filter(c => cursosCentro.includes(c)))];
-                  const btn = { borderRadius: 10, padding: "10px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13, border: "none" };
+                  const btn = { borderRadius: 10, padding: "10px 14px", cursor: "pointer", fontWeight: 700, fontSize: 14, border: "none" };
                   return (
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.cream}`, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       {firma
-                        ? <span style={{ ...btn, background: "#E8F5F3", color: C.teal, cursor: "default" }}>✅ Guardia firmada a las {horaCorta(firma.ts)}</span>
+                        ? <span style={{ ...btn, background: "#DDF0F4", color: C.teal, cursor: "default" }}>✅ Guardia firmada a las {horaCorta(firma.ts)}</span>
                         : <button onClick={() => firmar(g)} disabled={!empezada} title={empezada ? "Registra que has hecho esta guardia" : `Se puede firmar desde las ${inicioHora(g.hora)}`}
-                            style={{ ...btn, background: empezada ? C.teal : "#e5e7eb", color: empezada ? "#fff" : "#6b7280", cursor: empezada ? "pointer" : "not-allowed" }}>
+                            style={{ ...btn, background: empezada ? C.teal : "#CDE9ED", color: empezada ? "#fff" : "#6b7280", cursor: empezada ? "pointer" : "not-allowed" }}>
                             <Ic n="firmar" tam={22} />{empezada ? "Firmar guardia" : `Firmar desde las ${inicioHora(g.hora)}`}
                           </button>}
                       {g.hora !== "Recreo" && cursosTarea.map(curso => {
                         const l = listaDe(g.hora, curso);
                         return (
                           <button key={curso} onClick={() => setListaAbierta({ hora: g.hora, curso })}
-                            style={{ ...btn, background: l ? "#EEF5F8" : C.blue, color: l ? C.blue : "#fff" }}>
+                            style={{ ...btn, background: l ? "#DDF0F4" : C.blue, color: l ? C.blue : "#fff" }}>
                             <Ic n="pasar-lista" tam={22} />{l ? `Lista de ${curso}: ${l.ausentes.length} ${l.ausentes.length === 1 ? "falta" : "faltas"}` : `Pasar lista · ${curso}`}
                           </button>
                         );
                       })}
                       {g.hora !== "Recreo" && (
                         <span style={{ position: "relative", display: "inline-block" }}>
-                        <img src="/iconos/lista-otro-grupo.png" alt="" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: 5, pointerEvents: "none" }} />
+                        <img src="/iconos/lista-otro-grupo.svg" alt="" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", pointerEvents: "none" }} />
                         <select aria-label="Pasar lista de otro grupo" value="" onChange={e => e.target.value && setListaAbierta({ hora: g.hora, curso: e.target.value })}
-                          style={{ padding: "9px 10px 9px 38px", borderRadius: 10, border: "1px solid #d1d5db", fontSize: 12, color: C.gray, background: "#fff" }}>
+                          style={{ padding: "9px 10px 9px 38px", borderRadius: 10, border: "1px solid #CDE9ED", fontSize: 14, color: C.gray, background: "#fff" }}>
                           <option value="">Pasar lista de otro grupo…</option>
                           {cursosCentro.map(c => <option key={c} value={c}>{c}{listaDe(g.hora, c) ? " (pasada)" : ""}</option>)}
                         </select>
@@ -2958,7 +3010,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
             <PasarLista curso={listaAbierta.curso} alumnos={alumnos} existente={listaDe(listaAbierta.hora, listaAbierta.curso)}
               onGuardar={guardarLista} onCerrar={() => setListaAbierta(null)} C={C} />
           )}
-          <div style={{ background:"#FFF8E8", borderRadius:10, padding:14, marginTop:8, fontSize:13, color:C.dark, border:"1px solid #fbbf24" }}>
+          <div style={{ background:"#FDF1D9", borderRadius:10, padding:14, marginTop:8, fontSize:14, color:C.dark, border:"1px solid #F6C862" }}>
             <Ic n="aviso" tam={22} />Si no puedes asistir, notifícalo en <strong>Notificar Ausencia</strong>.
           </div>
         </div>
@@ -2968,10 +3020,10 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
       {diaSeleccionadoGuardias && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} onClick={() => setDiaSeleccionadoGuardias(null)}>
           <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: "min(400px, 100vw)", background: C.white, boxShadow: "-4px 0 20px rgba(0,0,0,0.15)", overflowY: "auto", animation: "slideIn 0.3s ease" }} onClick={e => e.stopPropagation()}>
-            <div style={{ background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`, color: "#fff", padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ background: R.azul, color: "#fff", padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="fecha-hora" tam={22} />{diaSeleccionadoGuardias.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "short" })}</div>
-                <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>Guardias asignadas</div>
+                <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>Guardias asignadas</div>
               </div>
               {(() => {
                 const diasES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -3017,29 +3069,29 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                     {guardiasDelDia.map((g, idx) => (
                       <div key={idx} style={{ background: "#f9fafb", borderRadius: 10, padding: 14, borderLeft: `4px solid ${C.teal}` }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, marginBottom: 8 }}><Ic n="hora-reloj" tam={22} />{conTramo(g.hora)}</div>
-                        <div style={{ fontSize: 13, color: C.teal, fontWeight: 600, marginBottom: 10 }}><Ic n="edificio" tam={22} />{g.zona}</div>
+                        <div style={{ fontSize: 14, color: C.teal, fontWeight: 600, marginBottom: 10 }}><Ic n="edificio" tam={22} />{g.zona}</div>
                         
-                        <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, marginBottom: 6 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.blue, marginBottom: 6 }}>
                           <Ti tam={22}>{g.rol === "titular" ? "🛡️ Titular" : g.rol === "apoyo" ? "👥 Apoyo" : "🔁 Sustituto"}</Ti>
                         </div>
-                        <div style={{ background: "#EEF5F8", borderRadius: 6, padding: "6px 10px", fontSize: 12, color: C.dark, marginBottom: 8, lineHeight: 1.6 }}>
+                        <div style={{ background: "#DDF0F4", borderRadius: 6, padding: "6px 10px", fontSize: 14, color: C.dark, marginBottom: 8, lineHeight: 1.6 }}>
                           <Ic n="titular" tam={22} />Titular: {g.sit.titular || "—"}{g.sit.tA ? " (ausente)" : ""}<br/>
                           <Ic n="apoyo" tam={22} />Apoyo: {g.sit.apoyo || "sin asignar"}{g.sit.aA ? " (ausente)" : ""}<br/>
                           <Ic n="sustituto" tam={22} />Sustituto: {g.sit.sustituto || "sin asignar"}{g.sit.sA ? " (ausente)" : ""}
-                          {g.sit.sustituyeA && <div style={{ color: "#92400e", fontWeight: 700 }}>Entra el sustituto por {g.sit.sustituyeA}</div>}
+                          {g.sit.sustituyeA && <div style={{ color: "#16333F", fontWeight: 700 }}>Entra el sustituto por {g.sit.sustituyeA}</div>}
                         </div>
                         
                         {g.ausencias.length > 0 && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #e5e7eb" }}>
-                            <div style={{ fontWeight: 600, color: "#d97706", fontSize: 12, marginBottom: 8 }}><Ic n="aviso" tam={22} />AUSENCIAS A CUBRIR:</div>
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #CDE9ED" }}>
+                            <div style={{ fontWeight: 600, color: "#d97706", fontSize: 14, marginBottom: 8 }}><Ic n="aviso" tam={22} />AUSENCIAS A CUBRIR:</div>
                             {g.ausencias.map((a, i) => (
-                              <div key={i} style={{ background: "#FFF8E8", borderRadius: 6, padding: 10, marginBottom: 8, borderLeft: `3px solid #fbbf24` }}>
-                                <div style={{ fontWeight: 600, color: C.dark, fontSize: 12, marginBottom: 6 }}><Ic n="por-alumno" tam={20} />{a.profesor}</div>
-                                {a.asignatura && <div style={{ fontSize: 11, color: "#555", marginBottom: 3 }}><strong><Ic n="deberes" tam={22} />Asignatura:</strong> {a.asignatura}</div>}
-                                {a.aula && <div style={{ fontSize: 11, color: "#555", marginBottom: 3 }}><strong><Ic n="aula" tam={22} />Aula:</strong> {a.aula}</div>}
-                                {a.tarea && <div style={{ fontSize: 11, color: "#555", marginBottom: 3 }}><strong>✏️ Tarea:</strong> {a.tarea}</div>}
-                                {a.enlace && <div style={{ fontSize: 11, marginBottom: 3 }}><a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: "underline" }}>🔗 Ver recursos</a></div>}
-                                {a.ubicacion && <div style={{ fontSize: 11, color: "#555" }}><strong><Ic n="edificio" tam={22} />Ubicación:</strong> {a.ubicacion}</div>}
+                              <div key={i} style={{ background: "#FDF1D9", borderRadius: 6, padding: 10, marginBottom: 8, borderLeft: `3px solid #F6C862` }}>
+                                <div style={{ fontWeight: 600, color: C.dark, fontSize: 14, marginBottom: 6 }}><Ic n="por-alumno" tam={20} />{a.profesor}</div>
+                                {a.asignatura && <div style={{ fontSize: 13, color: "#555", marginBottom: 3 }}><strong><Ic n="deberes" tam={22} />Asignatura:</strong> {a.asignatura}</div>}
+                                {a.aula && <div style={{ fontSize: 13, color: "#555", marginBottom: 3 }}><strong><Ic n="aula" tam={22} />Aula:</strong> {a.aula}</div>}
+                                {a.tarea && <div style={{ fontSize: 13, color: "#555", marginBottom: 3 }}><strong>✏️ Tarea:</strong> {a.tarea}</div>}
+                                {a.enlace && <div style={{ fontSize: 13, marginBottom: 3 }}><a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: "underline" }}>🔗 Ver recursos</a></div>}
+                                {a.ubicacion && <div style={{ fontSize: 13, color: "#555" }}><strong><Ic n="edificio" tam={22} />Ubicación:</strong> {a.ubicacion}</div>}
                               </div>
                             ))}
                           </div>
@@ -3084,10 +3136,10 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
 
   return (
     <div>
-      <h2 style={{ color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="profe-ausente" tam={44} />{modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"}</h2>
-      {modoJefatura && <p style={{ marginTop: -6, color: C.gray, fontSize: 13 }}>Para cuando un profesor llama al instituto y no puede avisar desde la app. Su guardia y la tarea llegan igual a quien le cubre.</p>}
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"} icono="profe-ausente" /></div>
+      {modoJefatura && <p style={{ marginTop: -6, color: C.gray, fontSize: 14 }}>Para cuando un profesor llama al instituto y no puede avisar desde la app. Su guardia y la tarea llegan igual a quien le cubre.</p>}
       {enviado && (
-        <div style={{ background:"#E8F5F3", border:`2px solid ${C.teal}`, borderRadius:12, padding:16, marginBottom:16, fontWeight:700, color:C.teal, fontSize:15 }}>
+        <div style={{ background:"#DDF0F4", border:`2px solid ${C.teal}`, borderRadius:12, padding:16, marginBottom:16, fontWeight:700, color:C.teal, fontSize:15 }}>
           ✅ Ausencia notificada. Jefatura ha sido informada.
         </div>
       )}
@@ -3118,8 +3170,8 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
               const sel = ausHoras.includes(h);
               return (
                 <button key={h} onClick={() => toggleHora(h)}
-                  style={{ padding:"8px 14px", borderRadius:8, border:`2px solid ${sel?C.teal:"#d1d5db"}`, background:sel?C.teal:C.white, color:sel?"#fff":C.dark, cursor:"pointer", fontWeight:600, fontSize:13, transition:"all .15s", lineHeight:1.2 }}>
-                  {h}<br/><span style={{ fontSize:11, fontWeight:500, opacity:.8 }}>{HORARIO[h]}</span>
+                  style={{ padding:"8px 14px", borderRadius:8, border:`2px solid ${sel?C.teal:"#CDE9ED"}`, background:sel?C.teal:C.white, color:sel?"#fff":C.dark, cursor:"pointer", fontWeight:600, fontSize:14, transition:"all .15s", lineHeight:1.2 }}>
+                  {h}<br/><span style={{ fontSize:13, fontWeight:500, opacity:.8 }}>{HORARIO[h]}</span>
                 </button>
               );
             })}
@@ -3167,7 +3219,7 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
           </div>
         </div>
         <button onClick={enviar} disabled={!ausProfesor || !ausFecha || ausHoras.length === 0}
-          style={{ width:"100%", padding:14, borderRadius:10, border:"none", background:(!ausProfesor||!ausFecha||ausHoras.length===0)?"#94a3b8":C.salmon, color:"#fff", fontWeight:700, fontSize:15, cursor:(!ausProfesor||!ausFecha||ausHoras.length===0)?"not-allowed":"pointer" }}>
+          style={{ width:"100%", padding:14, borderRadius:10, border:"none", background:(!ausProfesor||!ausFecha||ausHoras.length===0)?"#EBF0F6":C.salmon, color:"#fff", fontWeight:700, fontSize:15, cursor:(!ausProfesor||!ausFecha||ausHoras.length===0)?"not-allowed":"pointer" }}>
           <Ti tam={22}>{modoJefatura ? "📞 Registrar la ausencia" : "📢 Notificar Ausencia a Jefatura"}</Ti>
         </button>
       </div>
@@ -3177,13 +3229,13 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
           {misAusencias.map(a => (
             <div key={a.id} style={{ background:C.white, borderRadius:10, padding:14, marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderLeft:`4px solid ${C.salmon}` }}>
               <div style={{ fontWeight:700, color:C.dark }}><Ic n="fecha-hora" tam={20} />{new Date(a.fecha).toLocaleDateString("es-ES")} · {a.motivo}</div>
-              <div style={{ fontSize:13, color:C.gray, marginTop:4 }}>Horas: {a.horas.join(", ")}</div>
-              {a.aula && <div style={{ fontSize:13, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="por-curso" tam={20} />Aula: {a.aula}</div>}
-              {a.asignatura && <div style={{ fontSize:13, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="aula" tam={20} />Asignatura: {a.asignatura}</div>}
-              {a.tarea && <div style={{ fontSize:13, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />Tarea: {a.tarea}</div>}
-              {a.enlace && <div style={{ fontSize:13, color:C.blue, marginTop:4, background:"#EEF5F8", borderRadius:6, padding:"6px 10px" }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color:C.blue, textDecoration:"underline" }}>Ver recursos</a></div>}
-              {a.ubicacion && <div style={{ fontSize:13, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="edificio" tam={20} />Ubicación: {a.ubicacion}</div>}
-              <div style={{ fontSize:11, color:C.gray, marginTop:4 }}>Notificado el {fmt(a.ts)}</div>
+              <div style={{ fontSize:14, color:C.gray, marginTop:4 }}>Horas: {a.horas.join(", ")}</div>
+              {a.aula && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="por-curso" tam={20} />Aula: {a.aula}</div>}
+              {a.asignatura && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="aula" tam={20} />Asignatura: {a.asignatura}</div>}
+              {a.tarea && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />Tarea: {a.tarea}</div>}
+              {a.enlace && <div style={{ fontSize:14, color:C.blue, marginTop:4, background:"#DDF0F4", borderRadius:6, padding:"6px 10px" }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color:C.blue, textDecoration:"underline" }}>Ver recursos</a></div>}
+              {a.ubicacion && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="edificio" tam={20} />Ubicación: {a.ubicacion}</div>}
+              <div style={{ fontSize:13, color:C.gray, marginTop:4 }}>Notificado el {fmt(a.ts)}</div>
             </div>
           ))}
         </div>
@@ -3251,7 +3303,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
   
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="horario" tam={44} />Cuadrante de Guardias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Cuadrante de Guardias" icono="horario" /></div>
       
       {/* SELECTOR DE PROFESOR */}
       <div style={{ background:C.white, borderRadius:12, padding:20, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
@@ -3278,23 +3330,23 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
             <label style={labelStyle}>Inicio de quincena</label>
             <input type="date" value={inicio} onChange={e => setQInicio(e.target.value)} style={inpStyle} />
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              <button onClick={() => setQInicio(isoLocal(sumarDias(inicio, -14)))} style={{ background: C.cream, border: "1px solid #ddd", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.dark }}>← Quincena anterior</button>
-              <button onClick={() => setQInicio(isoLocal(sumarDias(inicio, 14)))} style={{ background: C.cream, border: "1px solid #ddd", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.dark }}>Quincena siguiente →</button>
-              <button onClick={copiarQuincenaAnterior} style={{ background: "#EEF5F8", border: `1px solid ${C.blue}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.blue }}><Ic n="partes" tam={20} />Copiar de la quincena anterior</button>
+              <button onClick={() => setQInicio(isoLocal(sumarDias(inicio, -14)))} style={{ background: C.cream, border: "1px solid #ddd", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.dark }}>← Quincena anterior</button>
+              <button onClick={() => setQInicio(isoLocal(sumarDias(inicio, 14)))} style={{ background: C.cream, border: "1px solid #ddd", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.dark }}>Quincena siguiente →</button>
+              <button onClick={copiarQuincenaAnterior} style={{ background: "#DDF0F4", border: `1px solid ${C.blue}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.blue }}><Ic n="partes" tam={20} />Copiar de la quincena anterior</button>
             </div>
-            {dias.length > 0 && <div style={{ fontSize: 12, color: C.gray, marginTop: 6 }}>Del {dias[0].fecha.toLocaleDateString("es-ES")} al {dias[dias.length - 1].fecha.toLocaleDateString("es-ES")}</div>}
+            {dias.length > 0 && <div style={{ fontSize: 14, color: C.gray, marginTop: 6 }}>Del {dias[0].fecha.toLocaleDateString("es-ES")} al {dias[dias.length - 1].fecha.toLocaleDateString("es-ES")}</div>}
           </div>
           
           <div style={{ fontWeight:700, color:C.dark, marginBottom:4, fontSize:14 }}><Ic n="fecha-hora" tam={20} />Cuadrante: <strong>{profesorSel}</strong></div>
-          <div style={{ fontSize:12, color:C.gray, marginBottom:8 }}>En cada guardia: <strong><Ic n="edificio" tam={20} />zona</strong> del titular, <strong><Ic n="grupos" tam={20} />apoyo</strong> y <strong><Ic n="sustituto" tam={20} />sustituto</strong> (entra si falta el titular o el apoyo). Máximo {MAX_GUARDIAS_DIA} guardias por profesor y día; entre paréntesis, las que ya tiene ese día.</div>
+          <div style={{ fontSize:14, color:C.gray, marginBottom:8 }}>En cada guardia: <strong><Ic n="edificio" tam={20} />zona</strong> del titular, <strong><Ic n="grupos" tam={20} />apoyo</strong> y <strong><Ic n="sustituto" tam={20} />sustituto</strong> (entra si falta el titular o el apoyo). Máximo {MAX_GUARDIAS_DIA} guardias por profesor y día; entre paréntesis, las que ya tiene ese día.</div>
           {(() => {
             const incompletas = dias.reduce((n, d) => n + HORAS_GUARDIA.filter(h => { const z = cuadrante[`${d.key}|${h}|${profesorSel}`]; const k = `${d.key}|${h}|${z}`; return z && (!apoyosGuardia[k] || !sustitutosGuardia[k]); }).length, 0);
             return incompletas > 0
-              ? <div style={{ marginBottom: 14, padding: "8px 12px", background: "#FDF0EF", border: `1px solid ${C.salmon}`, borderRadius: 8, fontSize: 12, color: "#9f1239", fontWeight: 600, display: "inline-block" }}>⚠️ {incompletas} guardia(s) de esta quincena sin apoyo o sin sustituto</div>
+              ? <div style={{ marginBottom: 14, padding: "8px 12px", background: "#FDF1D9", border: `1px solid ${C.salmon}`, borderRadius: 8, fontSize: 14, color: "#275D8C", fontWeight: 600, display: "inline-block" }}>⚠️ {incompletas} guardia(s) de esta quincena sin apoyo o sin sustituto</div>
               : <div style={{ marginBottom: 14 }} />;
           })()}
           
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, minWidth: 90 + 150 * dias.length }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13, minWidth: 90 + 150 * dias.length }}>
             <thead>
               <tr style={{ background:C.dark }}>
                 <th style={{ padding:"8px 8px", color:"#fff", textAlign:"left", width:80 }}>Hora</th>
@@ -3303,7 +3355,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
                   return (
                     <th key={idx} style={{ padding:"8px 8px", color:"#fff", textAlign:"center", whiteSpace:"nowrap" }}>
                       {d.dia}
-                      <div title="Guardias de este profesor ese día (titular, apoyo y sustituto)" style={{ fontSize:10, fontWeight:600, marginTop:2, color: nd >= MAX_GUARDIAS_DIA ? "#fecaca" : "rgba(255,255,255,0.75)" }}>{nd}/{MAX_GUARDIAS_DIA} guardias</div>
+                      <div title="Guardias de este profesor ese día (titular, apoyo y sustituto)" style={{ fontSize:13, fontWeight:600, marginTop:2, color: nd >= MAX_GUARDIAS_DIA ? "#fecaca" : "rgba(255,255,255,0.75)" }}>{nd}/{MAX_GUARDIAS_DIA} guardias</div>
                     </th>
                   );
                 })}
@@ -3312,7 +3364,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
             <tbody>
               {HORAS_GUARDIA.map((hora, i) => (
                 <tr key={hora} style={{ background:i%2===0?"#fff":C.light }}>
-                  <td style={{ padding:"6px 8px", fontWeight:700, color:C.dark, fontSize:12, whiteSpace:"nowrap" }}>{hora}<div style={{ fontSize:10, fontWeight:500, color:C.gray }}>{HORARIO[hora]}</div></td>
+                  <td style={{ padding:"6px 8px", fontWeight:700, color:C.dark, fontSize:14, whiteSpace:"nowrap" }}>{hora}<div style={{ fontSize:13, fontWeight:500, color:C.gray }}>{HORARIO[hora]}</div></td>
                   {dias.map((d, idx) => {
                     const zona = cuadrante[`${d.key}|${hora}|${profesorSel}`] || "";
                     const zonaObj = ZONAS_CENTRO.find(z => z.id === zona);
@@ -3334,7 +3386,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
                         <div style={{ display:"flex", flexDirection:"column", gap:"3px" }}>
                           <select value={zona} onChange={e => setZona(d.key, hora, profesorSel, e.target.value)} disabled={selBloqueado}
                             title={selBloqueado ? `Ya tiene ${MAX_GUARDIAS_DIA} guardias este día` : "Zona de la que es titular"}
-                            style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${zona?"#00B7B5":"#d1d5db"}`, fontSize:10, background: selBloqueado ? "#f3f4f6" : zona?"#E8F5F3":"#fff", color: selBloqueado ? "#9ca3af" : C.dark, cursor: selBloqueado ? "not-allowed" : "pointer", fontWeight: zona ? 600 : 400 }}>
+                            style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${zona?"#00B7B5":"#CDE9ED"}`, fontSize:13, background: selBloqueado ? "#EBF0F6" : zona?"#DDF0F4":"#fff", color: selBloqueado ? "#9ca3af" : C.dark, cursor: selBloqueado ? "not-allowed" : "pointer", fontWeight: zona ? 600 : 400 }}>
                             <option value="">{selBloqueado ? `Máx. ${MAX_GUARDIAS_DIA} al día` : "📍 Zona"}</option>
                             <optgroup label="── Edificio A">{ZONAS_CENTRO.filter(z=>z.edificio==="A").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
                             <optgroup label="── Edificio B">{ZONAS_CENTRO.filter(z=>z.edificio==="B").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
@@ -3343,14 +3395,14 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
                           </select>
                           {zona && (
                             <select value={apoyo} onChange={e => setApoyo(d.key, hora, zona, e.target.value)} title={apoyo ? "Profesor de apoyo" : "Falta asignar el profesor de apoyo"}
-                              style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${apoyo ? "#00B7B5" : C.salmon}`, fontSize:10, background: apoyo ? "#e0f7f6" : "#FDF0EF", color: apoyo ? C.dark : "#9f1239", cursor:"pointer", fontWeight: 600 }}>
+                              style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${apoyo ? "#00B7B5" : C.salmon}`, fontSize:13, background: apoyo ? "#e0f7f6" : "#FDF1D9", color: apoyo ? C.dark : "#275D8C", cursor:"pointer", fontWeight: 600 }}>
                               <option value="">⚠️ Falta apoyo</option>
                               {profesores.filter(p => p !== profesorSel && ((!ocupados.has(p) && !lleno(p)) || p === apoyo)).map(p => <option key={p} value={p}>👥 {p} ({nDia(p)})</option>)}
                             </select>
                           )}
                           {zona && (
                             <select value={sustituto} onChange={e => setSustituto(d.key, hora, zona, e.target.value)} title={sustituto ? "Sustituto: entra si falta el titular o el apoyo" : "Falta asignar el sustituto"}
-                              style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${sustituto ? "#7c3aed" : C.salmon}`, fontSize:10, background: sustituto ? "#f3e8ff" : "#FDF0EF", color: sustituto ? C.dark : "#9f1239", cursor:"pointer", fontWeight: 600 }}>
+                              style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${sustituto ? "#2B647E" : C.salmon}`, fontSize:13, background: sustituto ? "#DDF0F4" : "#FDF1D9", color: sustituto ? C.dark : "#275D8C", cursor:"pointer", fontWeight: 600 }}>
                               <option value="">⚠️ Falta sustituto</option>
                               {profesores.filter(p => p !== profesorSel && ((!ocupados.has(p) && !lleno(p)) || p === sustituto)).map(p => <option key={p} value={p}>🔁 {p} ({nDia(p)})</option>)}
                             </select>
@@ -3364,8 +3416,8 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
             </tbody>
           </table>
           
-          <div style={{ marginTop:14, fontSize:12, color:C.gray }}>💾 Los cambios se guardan automáticamente.</div>
-          <div style={{ marginTop:8, padding: "10px 12px", background: "#E8F5F3", borderRadius: 8, fontSize: 12, color: C.teal, fontWeight: 600, display: "inline-block" }}>✅ Cambios guardados correctamente</div>
+          <div style={{ marginTop:14, fontSize:14, color:C.gray }}>💾 Los cambios se guardan automáticamente.</div>
+          <div style={{ marginTop:8, padding: "10px 12px", background: "#DDF0F4", borderRadius: 8, fontSize: 14, color: C.teal, fontWeight: 600, display: "inline-block" }}>✅ Cambios guardados correctamente</div>
         </div>
       )}
     </div>
@@ -3430,14 +3482,14 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
   
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="eventos" tam={44} />Coordinación Diaria de Ausencias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Coordinación Diaria de Ausencias" icono="eventos" /></div>
       
       {/* SELECTOR DE FECHA */}
       <div style={{ background: C.white, borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
         <label style={{ ...labelStyle, fontSize: 14 }}>Selecciona una fecha</label>
         <input type="date" value={fechaCoordinacion} onChange={e => setFechaCoordinacion(e.target.value)} style={inpStyle} />
         {fechaCoordinacion && (
-          <div style={{ marginTop: 10, fontSize: 13, color: C.gray }}>
+          <div style={{ marginTop: 10, fontSize: 14, color: C.gray }}>
             <Ic n="fecha-hora" tam={20} />{parseISO(fechaCoordinacion).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </div>
         )}
@@ -3447,7 +3499,7 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
         <div style={{ background: C.white, borderRadius: 12, padding: 40, textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}><Ic n="fecha-hora" tam={20} /></div>
           <div style={{ fontSize: 16, fontWeight: 600, color: C.dark }}>Selecciona una fecha</div>
-          <div style={{ fontSize: 13, color: C.gray, marginTop: 8 }}>Para ver el cuadrante de guardias y ausencias de ese día</div>
+          <div style={{ fontSize: 14, color: C.gray, marginTop: 8 }}>Para ver el cuadrante de guardias y ausencias de ese día</div>
         </div>
       ) : (
         <>
@@ -3456,43 +3508,43 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
             <div style={{ fontWeight: 700, color: C.dark, marginBottom: 14, fontSize: 14 }}><Ic n="titular" tam={20} />Cuadrante de Guardias - {parseISO(fechaCoordinacion).toLocaleDateString("es-ES")}</div>
             
             {Object.keys(guardiasEdificios).length === 0 ? (
-              <div style={{ color: C.gray, fontSize: 13, padding: 20, textAlign: "center" }}>
+              <div style={{ color: C.gray, fontSize: 14, padding: 20, textAlign: "center" }}>
                 No hay guardias configuradas para este día
               </div>
             ) : (
               Object.entries(guardiasEdificios).map(([edificio, guardias]) => (
-                <div key={edificio} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #e5e7eb" }}>
-                  <div style={{ fontWeight: 600, color: C.teal, marginBottom: 10, fontSize: 13 }}>
+                <div key={edificio} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #CDE9ED" }}>
+                  <div style={{ fontWeight: 600, color: C.teal, marginBottom: 10, fontSize: 14 }}>
                     🏢 Edificio {edificio} {edificio === "-" ? "- Otros" : ""}
                   </div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                     <thead>
-                      <tr style={{ background: "#f3f4f6" }}>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Hora</th>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Zona</th>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Titular</th>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Apoyo</th>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Sustituto</th>
-                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #d1d5db" }}>Estado</th>
+                      <tr style={{ background: "#EBF0F6" }}>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Hora</th>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Zona</th>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Titular</th>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Apoyo</th>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Sustituto</th>
+                        <th style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #CDE9ED" }}>Estado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {guardias.map((g, idx) => (
-                        <tr key={idx} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                          <td style={{ padding: "8px", fontWeight: 600, color: C.dark, whiteSpace: "nowrap" }}>{g.hora}<div style={{ fontSize: 10, fontWeight: 500, color: C.gray }}>{HORARIO[g.hora]}</div></td>
+                        <tr key={idx} style={{ borderBottom: "1px solid #CDE9ED" }}>
+                          <td style={{ padding: "8px", fontWeight: 600, color: C.dark, whiteSpace: "nowrap" }}>{g.hora}<div style={{ fontSize: 13, fontWeight: 500, color: C.gray }}>{HORARIO[g.hora]}</div></td>
                           <td style={{ padding: "8px", color: "#555" }}>{g.zona}</td>
                           {[[g.sit.titular, g.sit.tA, "titular"], [g.sit.apoyo, g.sit.aA, "apoyo"], [g.sit.sustituto, g.sit.sA, "sustituto"]].map(([p, falta, rol]) => {
                             const entra = rol === "sustituto" && g.sit.sustituyeA;
                             return (
-                              <td key={rol} style={{ padding: "8px", color: !p ? "#9f1239" : falta ? C.salmon : (rol === "titular" ? C.teal : "#555"), fontWeight: (rol === "titular" || entra || !p) ? 600 : 400 }}>
+                              <td key={rol} style={{ padding: "8px", color: !p ? "#275D8C" : falta ? C.salmon : (rol === "titular" ? C.teal : "#555"), fontWeight: (rol === "titular" || entra || !p) ? 600 : 400 }}>
                                 {p || "⚠️ Sin asignar"}
-                                {falta && <span style={{ marginLeft: 6, fontSize: 11, background: "#FDF0EF", color: C.salmon, borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap" }}>🔴 Ausente</span>}
-                                {entra && <div style={{ fontSize: 11, color: "#b45309" }}>🟠 entra por {g.sit.sustituyeA}</div>}
+                                {falta && <span style={{ marginLeft: 6, fontSize: 13, background: "#FDF1D9", color: C.salmon, borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap" }}>🔴 Ausente</span>}
+                                {entra && <div style={{ fontSize: 13, color: "#16333F" }}>🟠 entra por {g.sit.sustituyeA}</div>}
                               </td>
                             );
                           })}
                           <td style={{ padding: "8px" }}>
-                            <span style={{ color: ESTADOS_ZONA[g.sit.estado].color, background: ESTADOS_ZONA[g.sit.estado].bg, borderRadius: 8, padding: "2px 8px", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap" }}>{ESTADOS_ZONA[g.sit.estado].label}</span>
+                            <span style={{ color: ESTADOS_ZONA[g.sit.estado].color, background: ESTADOS_ZONA[g.sit.estado].bg, borderRadius: 8, padding: "2px 8px", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>{ESTADOS_ZONA[g.sit.estado].label}</span>
                           </td>
                         </tr>
                       ))}
@@ -3508,7 +3560,7 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
             <div style={{ fontWeight: 700, color: C.dark, marginBottom: 14, fontSize: 14 }}>⚠️ Profesores Ausentes y Sustituciones</div>
             
             {ausenciasDelDia.length === 0 ? (
-              <div style={{ color: C.gray, fontSize: 13, padding: 20, textAlign: "center" }}>
+              <div style={{ color: C.gray, fontSize: 14, padding: 20, textAlign: "center" }}>
                 ✅ Sin ausencias registradas para este día
               </div>
             ) : (
@@ -3516,10 +3568,10 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
                 {ausenciasDelDia.map((a, idx) => {
                   
                   return (
-                    <div key={idx} style={{ background: "#FFF8E8", borderRadius: 8, padding: 12, borderLeft: "4px solid #fbbf24" }}>
-                      <div style={{ fontWeight: 600, color: "#d97706", marginBottom: 8 }}><Ic n="por-alumno" tam={20} />{a.profesor} <span style={{ fontSize: 11, color: "#666" }}>({a.motivo})</span></div>
+                    <div key={idx} style={{ background: "#FDF1D9", borderRadius: 8, padding: 12, borderLeft: "4px solid #F6C862" }}>
+                      <div style={{ fontWeight: 600, color: "#d97706", marginBottom: 8 }}><Ic n="por-alumno" tam={20} />{a.profesor} <span style={{ fontSize: 13, color: "#666" }}>({a.motivo})</span></div>
                       
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10, fontSize: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10, fontSize: 14 }}>
                         <div>
                           <div style={{ color: "#555", marginBottom: 4 }}><Ic n="hora-reloj" tam={20} /><strong>Horas:</strong> {a.horas.join(", ")}</div>
                           {a.aula && <div style={{ color: "#555", marginBottom: 4 }}><Ic n="por-curso" tam={20} /><strong>Aula:</strong> {a.aula}</div>}
@@ -3604,7 +3656,7 @@ function sonarAlarma() {
   } catch { /* sin sonido */ }
   try { navigator.vibrate?.([300, 150, 300, 150, 600]); } catch { /* sin vibración */ }
 }
-const RESPUESTAS = { voy: { txt: "va de camino", icono: "🏃", color: "#0f766e", bg: "#E8F5F3" }, no: { txt: "no puede ir", icono: "✋", color: "#b45309", bg: "#fef3c7" } };
+const RESPUESTAS = { voy: { txt: "va de camino", icono: "🏃", color: "#275D8C", bg: "#DDF0F4" }, no: { txt: "no puede ir", icono: "✋", color: "#16333F", bg: "#FDF1D9" } };
 // Los demás destinatarios del mismo aviso (se envió a la vez a varios)
 const hermanosDe = (m, mensajes) => mensajes.filter(x => x.id !== m.id && x.remitente === m.remitente && (m.aviso ? x.aviso === m.aviso : x.ts === m.ts));
 
@@ -3624,7 +3676,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
   const hora = ts => new Date(ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   const u = urgentes[0];
   const toast = { position: "fixed", left: "50%", transform: "translateX(-50%)", zIndex: 2100, width: "min(560px, calc(100% - 24px))", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.25)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" };
-  const btn = { border: "none", borderRadius: 8, padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: 13 };
+  const btn = { border: "none", borderRadius: 8, padding: "8px 12px", fontWeight: 800, cursor: "pointer", fontSize: 14 };
   return (<>
     {/* Respuestas a mis avisos */}
     {respuestas.length > 0 && (() => {
@@ -3633,7 +3685,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
         <div role="status" style={{ ...toast, top: 12, background: R.bg, border: `2px solid ${R.color}` }}>
           <div style={{ flex: "1 1 260px", color: R.color, fontWeight: 800, fontSize: 15 }}>
             {R.icono} {r.destinatario} {R.txt}
-            <div style={{ fontSize: 12, fontWeight: 600, color: C.dark }}>Respuesta a tu aviso de las {hora(r.ts)} · {hora(r.respuesta.ts)}{respuestas.length > 1 ? ` · y ${respuestas.length - 1} respuesta(s) más` : ""}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.dark }}>Respuesta a tu aviso de las {hora(r.ts)} · {hora(r.respuesta.ts)}{respuestas.length > 1 ? ` · y ${respuestas.length - 1} respuesta(s) más` : ""}</div>
           </div>
           <button onClick={() => onActualizar(r.id, { respuestaVista: true })} style={{ ...btn, background: R.color, color: "#fff" }}>Entendido</button>
         </div>
@@ -3648,7 +3700,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
           <Icono nombre="mensaje-recibido" tam={32} />
           <div style={{ flex: "1 1 220px", minWidth: 0 }}>
             <div style={{ fontWeight: 800, color: C.dark, fontSize: 14 }}>💬 {nuevos.length > 1 ? `${nuevos.length} mensajes nuevos` : "Mensaje nuevo"} de {m.remitente}</div>
-            <div style={{ fontSize: 12, color: C.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.lugar ? `📍 ${textoLugar(m.lugar)} · ` : ""}{m.texto}</div>
+            <div style={{ fontSize: 14, color: C.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.lugar ? `📍 ${textoLugar(m.lugar)} · ` : ""}{m.texto}</div>
           </div>
           <button onClick={() => onAbrir()} style={{ ...btn, background: C.blue, color: "#fff" }}>Ver</button>
           <button onClick={() => setOcultos(o => [...o, ...nuevos.map(x => x.id)])} aria-label="Cerrar aviso" style={{ ...btn, background: "transparent", color: C.gray }}>✕</button>
@@ -3664,22 +3716,22 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
       return (
         <div role="alertdialog" aria-modal="true" aria-labelledby="aviso-urgente-titulo" style={{ position: "fixed", inset: 0, zIndex: 2200, background: "rgba(127,29,29,.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", borderRadius: 16, width: "min(520px, 100%)", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.4)" }}>
-            <div style={{ background: "#be123c", color: "#fff", padding: "16px 20px" }}>
+            <div style={{ background: "#275D8C", color: "#fff", padding: "16px 20px" }}>
               <div id="aviso-urgente-titulo" style={{ fontSize: 22, fontWeight: 900 }}>🚨 AVISO URGENTE</div>
-              <div style={{ fontSize: 13, opacity: .9 }}>De {u.remitente} · {hora(u.ts)}{urgentes.length > 1 ? ` · ${urgentes.length - 1} aviso(s) más esperando` : ""}</div>
+              <div style={{ fontSize: 14, opacity: .9 }}>De {u.remitente} · {hora(u.ts)}{urgentes.length > 1 ? ` · ${urgentes.length - 1} aviso(s) más esperando` : ""}</div>
             </div>
             <div style={{ padding: 20 }}>
-              {u.lugar && <div style={{ fontSize: 22, fontWeight: 900, color: "#be123c", marginBottom: 10 }}>📍 {textoLugar(u.lugar)}</div>}
+              {u.lugar && <div style={{ fontSize: 22, fontWeight: 900, color: "#275D8C", marginBottom: 10 }}>📍 {textoLugar(u.lugar)}</div>}
               <div style={{ fontSize: 17, color: C.dark, marginBottom: 12 }}>{u.texto}</div>
               {otros.length > 0 && (
-                <div style={{ fontSize: 13, color: C.gray, marginBottom: 12 }}>
+                <div style={{ fontSize: 14, color: C.gray, marginBottom: 12 }}>
                   También avisado/a: {otros.map(x => x.destinatario).join(", ")}
-                  {yaVan.length > 0 && <div style={{ color: "#0f766e", fontWeight: 800, marginTop: 4 }}>🏃 {yaVan.map(x => x.destinatario).join(", ")} ya va de camino</div>}
+                  {yaVan.length > 0 && <div style={{ color: "#275D8C", fontWeight: 800, marginTop: 4 }}>🏃 {yaVan.map(x => x.destinatario).join(", ")} ya va de camino</div>}
                 </div>
               )}
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
-                <button onClick={() => responder("voy")} style={{ ...btn, background: "#0f766e", color: "#fff", fontSize: 18, padding: "16px" }}>🏃 Voy</button>
-                <button onClick={() => responder("no")} style={{ ...btn, background: "#fef3c7", color: "#92400e", fontSize: 15, padding: "16px" }}>✋ No puedo</button>
+                <button onClick={() => responder("voy")} style={{ ...btn, background: "#275D8C", color: "#fff", fontSize: 18, padding: "16px" }}>🏃 Voy</button>
+                <button onClick={() => responder("no")} style={{ ...btn, background: "#FDF1D9", color: "#16333F", fontSize: 15, padding: "16px" }}>✋ No puedo</button>
               </div>
               <button onClick={() => responder(null)} style={{ ...btn, background: "transparent", color: C.gray, width: "100%", marginTop: 8, fontWeight: 600 }}>Cerrar sin responder</button>
             </div>
@@ -3785,7 +3837,7 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
   
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="mensajes" tam={44} />Galvángram</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Galvángram" icono="mensajes" /></div>
       
       {/* TABS */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, borderBottom: `2px solid ${C.light}` }}>
@@ -3818,7 +3870,7 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
           }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="historial" tam={28} />Historial</span>
           {mensajesNoLeidos > 0 && (
-            <div style={{ position: "absolute", top: 0, right: 0, background: "#ef4444", color: "#fff", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
+            <div style={{ position: "absolute", top: 0, right: 0, background: "#ef4444", color: "#fff", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>
               {mensajesNoLeidos}
             </div>
           )}
@@ -3839,10 +3891,10 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
                     padding: "10px 12px",
                     borderRadius: 8,
                     border: `2px solid ${tipoMensaje === m.id ? C.blue : C.light}`,
-                    background: tipoMensaje === m.id ? "#E8F5F3" : "#fff",
+                    background: tipoMensaje === m.id ? "#DDF0F4" : "#fff",
                     color: C.dark,
                     cursor: "pointer",
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: tipoMensaje === m.id ? 600 : 400,
                     textAlign: "left", display: "flex", alignItems: "center", gap: 10
                   }}>
@@ -3866,13 +3918,13 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
           {(() => {
             const tipoLabel = mensajesPredefinidos.find(m => m.id === tipoMensaje)?.label || "";
             const urgente = URGENTES.includes(tipoLabel);
-            const pill = activo => ({ flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700,
-              border: `2px solid ${activo ? C.blue : C.light}`, background: activo ? "#EEF5F8" : "#fff", color: activo ? C.blue : C.gray });
+            const pill = activo => ({ flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 700,
+              border: `2px solid ${activo ? C.blue : C.light}`, background: activo ? "#DDF0F4" : "#fff", color: activo ? C.blue : C.gray });
             const ORIGEN = { cobertura: "📋 Clase que cubres (asignada por jefatura)", guardia: "🔄 Tu guardia de esta hora", horario: "📅 Tu horario de clases" };
             return (
-              <div style={{ marginBottom: 16, background: urgente && !lugar ? "#FDF0EF" : C.light, border: `2px solid ${urgente ? (lugar ? C.teal : C.salmon) : "transparent"}`, borderRadius: 10, padding: 14 }}>
+              <div style={{ marginBottom: 16, background: urgente && !lugar ? "#FDF1D9" : C.light, border: `2px solid ${urgente ? (lugar ? C.teal : C.salmon) : "transparent"}`, borderRadius: 10, padding: 14 }}>
                 <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <Icono nombre="aula" tam={30} />📍 ¿Dónde estás?{urgente && <span style={{ color: C.salmon, fontSize: 12 }}> · obligatorio en avisos urgentes</span>}
+                  <Icono nombre="aula" tam={30} />📍 ¿Dónde estás?{urgente && <span style={{ color: C.salmon, fontSize: 14 }}> · obligatorio en avisos urgentes</span>}
                 </label>
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                   <button type="button" onClick={() => setModoLugar("auto")} style={pill(modoLugar === "auto")}>📅 Según mi horario</button>
@@ -3880,40 +3932,40 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
                 </div>
                 {modoLugar === "auto" ? (
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 12, color: C.gray }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8, fontSize: 14, color: C.gray }}>
                       Hora:
-                      <select value={horaLugar} onChange={e => setHoraLugar(e.target.value)} style={{ ...selStyle, width: "auto", padding: "6px 10px", fontSize: 13 }}>
+                      <select value={horaLugar} onChange={e => setHoraLugar(e.target.value)} style={{ ...selStyle, width: "auto", padding: "6px 10px", fontSize: 14 }}>
                         {HORAS.map(h => <option key={h} value={h}>{conTramo(h)}{h === horaEnCurso() ? " · ahora" : ""}</option>)}
                       </select>
                     </div>
                     {lugarAuto ? (
                       <div style={{ background: "#fff", border: `1px solid ${C.teal}`, borderRadius: 8, padding: "10px 12px" }}>
-                        <div style={{ fontSize: 11, color: C.gray, fontWeight: 700 }}>{ORIGEN[lugarAuto.origen]} · {lugarAuto.detalle}</div>
+                        <div style={{ fontSize: 13, color: C.gray, fontWeight: 700 }}>{ORIGEN[lugarAuto.origen]} · {lugarAuto.detalle}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginTop: 2 }}>📍 {textoLugar(lugarAuto)}</div>
                       </div>
                     ) : (
-                      <div style={{ background: "#fff", border: `1px dashed ${C.salmon}`, borderRadius: 8, padding: "10px 12px", fontSize: 13, color: C.dark }}>
+                      <div style={{ background: "#fff", border: `1px dashed ${C.salmon}`, borderRadius: 8, padding: "10px 12px", fontSize: 14, color: C.dark }}>
                         {!esLectivo(new Date()) ? "Hoy no es día lectivo." : !hayHorarios ? "Todavía no hay horarios de clase cargados." : "A esa hora no tienes clase ni guardia en tu horario."}
-                        {" "}<button type="button" onClick={() => setModoLugar("mano")} style={{ border: "none", background: "none", color: C.blue, fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 13 }}>Escríbelo a mano →</button>
+                        {" "}<button type="button" onClick={() => setModoLugar("mano")} style={{ border: "none", background: "none", color: C.blue, fontWeight: 700, cursor: "pointer", padding: 0, fontSize: 14 }}>Escríbelo a mano →</button>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(150px,100%),1fr))", gap: 8 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: C.gray, fontWeight: 700, marginBottom: 4 }}>AULA</div>
+                      <div style={{ fontSize: 13, color: C.gray, fontWeight: 700, marginBottom: 4 }}>AULA</div>
                       <input list="rumbo-aulas" value={lugarMano.aula} onChange={e => setLugarMano(l => ({ ...l, aula: e.target.value }))} placeholder="Ej.: Aula A1.03, Laboratorio…" style={inpStyle} />
                       <datalist id="rumbo-aulas">{aulasConocidas.map(a => <option key={a} value={a} />)}</datalist>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: C.gray, fontWeight: 700, marginBottom: 4 }}>EDIFICIO</div>
+                      <div style={{ fontSize: 13, color: C.gray, fontWeight: 700, marginBottom: 4 }}>EDIFICIO</div>
                       <select value={lugarMano.edificio} onChange={e => setLugarMano(l => ({ ...l, edificio: e.target.value }))} style={selStyle}>
                         <option value="">—</option>
                         {EDIFICIOS.map(e => <option key={e} value={e}>Edificio {e}</option>)}
                       </select>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: C.gray, fontWeight: 700, marginBottom: 4 }}>GRUPO</div>
+                      <div style={{ fontSize: 13, color: C.gray, fontWeight: 700, marginBottom: 4 }}>GRUPO</div>
                       <select value={lugarMano.grupo} onChange={e => setLugarMano(l => ({ ...l, grupo: e.target.value }))} style={selStyle}>
                         <option value="">—</option>
                         {cursos.map(c => <option key={c} value={c}>{c}</option>)}
@@ -3942,18 +3994,18 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
             const rol = (sit, p) => p === sit.titular ? "Titular" : p === sit.apoyo ? "Pareja" : sit.sustituyeA ? `Sustituto · entra por ${sit.sustituyeA}` : "Sustituto · en reserva, libre";
             const chip = (p, activo, ocupado) => ({
               display: "inline-flex", flexDirection: "column", alignItems: "flex-start", padding: "6px 10px", borderRadius: 8, cursor: ocupado ? "default" : "pointer", textAlign: "left",
-              border: `2px solid ${activo ? C.blue : "#d6d3d1"}`, background: activo ? "#EEF5F8" : ocupado ? C.light : "#fff", opacity: ocupado ? .65 : 1,
+              border: `2px solid ${activo ? C.blue : "#d6d3d1"}`, background: activo ? "#DDF0F4" : ocupado ? C.light : "#fff", opacity: ocupado ? .65 : 1,
             });
             return (
               <div style={{ marginBottom: 16, background: C.light, borderRadius: 10, padding: 14 }}>
                 <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <Icono nombre="guardias" tam={30} />¿A quién avisar?
                 </label>
-                <div style={{ fontSize: 12, color: C.gray, marginBottom: 10 }}>
+                <div style={{ fontSize: 14, color: C.gray, marginBottom: 10 }}>
                   Profesorado de guardia a {conTramo(horaLugar)}{esLectivo(new Date()) ? "" : " (hoy no es lectivo)"}. Toca un nombre para enviárselo{miEdificio ? <>; primero, la zona de <strong>tu edificio ({miEdificio})</strong></> : ""}.
                 </div>
                 {zonasG.length === 0 ? (
-                  <div style={{ fontSize: 13, color: C.gray, background: "#fff", borderRadius: 8, padding: 10 }}>No hay guardias en el cuadrante para esta hora. Elige el destinatario en la lista de abajo.</div>
+                  <div style={{ fontSize: 14, color: C.gray, background: "#fff", borderRadius: 8, padding: 10 }}>No hay guardias en el cuadrante para esta hora. Elige el destinatario en la lista de abajo.</div>
                 ) : (
                   <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", marginBottom: 12 }}>
                     {zonasG.map(z => {
@@ -3967,34 +4019,34 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
                       return (
                         <div key={z.zonaId} style={{ background: "#fff", borderRadius: 10, padding: 10, border: `2px solid ${z.cerca ? C.teal : "transparent"}` }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                            <span style={{ fontWeight: 800, fontSize: 13, color: C.dark }}>{z.cerca ? "⭐ " : ""}{z.nombre}</span>
-                            <span style={{ color: e.color, background: e.bg, borderRadius: 6, padding: "1px 6px", fontWeight: 700, fontSize: 11 }}>{e.label}</span>
+                            <span style={{ fontWeight: 800, fontSize: 14, color: C.dark }}>{z.cerca ? "⭐ " : ""}{z.nombre}</span>
+                            <span style={{ color: e.color, background: e.bg, borderRadius: 6, padding: "1px 6px", fontWeight: 700, fontSize: 13 }}>{e.label}</span>
                           </div>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                             {disponibles.map(p => (
                               <button key={p} type="button" onClick={() => alternarDest(p)} style={chip(p, destinatarios.includes(p), false)}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{destinatarios.includes(p) ? "✓ " : ""}{p}</span>
-                                <span style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>{rol(z.sit, p)}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{destinatarios.includes(p) ? "✓ " : ""}{p}</span>
+                                <span style={{ fontSize: 13, color: C.gray, fontWeight: 600 }}>{rol(z.sit, p)}</span>
                               </button>
                             ))}
                             {reserva && (
                               <button type="button" onClick={() => alternarDest(reserva)} style={{ ...chip(reserva, destinatarios.includes(reserva), false), borderStyle: destinatarios.includes(reserva) ? "solid" : "dashed" }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{destinatarios.includes(reserva) ? "✓ " : ""}{reserva}</span>
-                                <span style={{ fontSize: 10, color: C.gray, fontWeight: 600 }}>{rol(s2, reserva)}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{destinatarios.includes(reserva) ? "✓ " : ""}{reserva}</span>
+                                <span style={{ fontSize: 13, color: C.gray, fontWeight: 600 }}>{rol(s2, reserva)}</span>
                               </button>
                             )}
                             {ocupados.map(([p, clase]) => (
                               <span key={p} style={chip(p, false, true)} title="Está cubriendo una clase">
-                                <span style={{ fontSize: 13, fontWeight: 700, color: C.gray }}>{p}</span>
-                                <span style={{ fontSize: 10, color: "#1d4ed8", fontWeight: 600 }}>Ocupado · cubre {clase}</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: C.gray }}>{p}</span>
+                                <span style={{ fontSize: 13, color: "#1d4ed8", fontWeight: 600 }}>Ocupado · cubre {clase}</span>
                               </span>
                             ))}
-                            {disponibles.length === 0 && ocupados.length === 0 && <span style={{ fontSize: 12, color: C.salmon, fontWeight: 700 }}>Nadie en la zona</span>}
+                            {disponibles.length === 0 && ocupados.length === 0 && <span style={{ fontSize: 14, color: C.salmon, fontWeight: 700 }}>Nadie en la zona</span>}
                           </div>
-                          {faltan.length > 0 && <div style={{ fontSize: 11, color: C.salmon, marginTop: 6 }}>Falta: {faltan.join(", ")}</div>}
+                          {faltan.length > 0 && <div style={{ fontSize: 13, color: C.salmon, marginTop: 6 }}>Falta: {faltan.join(", ")}</div>}
                           {disponibles.length > 1 && (
                             <button type="button" onClick={() => setDestinatarios(d => todos ? d.filter(x => !disponibles.includes(x)) : [...new Set([...d, ...disponibles])])}
-                              style={{ marginTop: 8, border: "none", background: "transparent", color: C.blue, fontWeight: 700, fontSize: 12, cursor: "pointer", padding: 0 }}>
+                              style={{ marginTop: 8, border: "none", background: "transparent", color: C.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", padding: 0 }}>
                               {todos ? "Quitar a la zona" : "📣 Avisar a la zona"}
                             </button>
                           )}
@@ -4004,16 +4056,16 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, color: C.gray, fontWeight: 700 }}>Otro destinatario:</span>
+                  <span style={{ fontSize: 14, color: C.gray, fontWeight: 700 }}>Otro destinatario:</span>
                   <select value="" onChange={e => { if (e.target.value) alternarDest(e.target.value); }} style={{ ...selStyle, width: "auto", flex: "1 1 200px" }}>
                     <option value="">— Añadir a cualquier profesor/a —</option>
                     {profesores.filter(p => p !== usuario && !destinatarios.includes(p)).map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
-                <div style={{ marginTop: 10, fontSize: 13, color: C.dark }}>
+                <div style={{ marginTop: 10, fontSize: 14, color: C.dark }}>
                   <strong>Para:</strong>{" "}
                   {destinatarios.length === 0 ? <span style={{ color: C.gray }}>nadie todavía</span> : destinatarios.map(p => (
-                    <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#EEF5F8", color: C.blue, borderRadius: 14, padding: "2px 8px", margin: "2px 4px 2px 0", fontWeight: 700, fontSize: 12 }}>
+                    <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#DDF0F4", color: C.blue, borderRadius: 14, padding: "2px 8px", margin: "2px 4px 2px 0", fontWeight: 700, fontSize: 14 }}>
                       {p}<button type="button" onClick={() => alternarDest(p)} style={{ border: "none", background: "transparent", color: C.blue, cursor: "pointer", fontWeight: 800, padding: 0 }} aria-label={`Quitar a ${p}`}>×</button>
                     </span>
                   ))}
@@ -4051,41 +4103,41 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {misMensajes.map(m => (
-                <div key={m.id} style={{ background: m.destinatario === usuario ? "#E8F5F3" : "#FEF3C7", borderRadius: 10, padding: 12, borderLeft: `4px solid ${m.destinatario === usuario ? C.teal : C.blue}` }}>
+                <div key={m.id} style={{ background: m.destinatario === usuario ? "#DDF0F4" : "#FDF1D9", borderRadius: 10, padding: 12, borderLeft: `4px solid ${m.destinatario === usuario ? C.teal : C.blue}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <div style={{ fontWeight: 600, color: C.dark, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ fontWeight: 600, color: C.dark, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
                       <Icono nombre={m.remitente === usuario ? "boton-enviar" : (m.leido ? "mensaje-leido" : "mensaje-recibido")} tam={28} />
                       {m.remitente === usuario ? "A: " : "De: "}{m.remitente === usuario ? m.destinatario : m.remitente}
-                      {m.conCopia?.length > 0 && <span style={{ fontSize: 11, color: C.gray, fontWeight: 500 }}>· también a {m.conCopia.join(", ")}</span>}
+                      {m.conCopia?.length > 0 && <span style={{ fontSize: 13, color: C.gray, fontWeight: 500 }}>· también a {m.conCopia.join(", ")}</span>}
                     </div>
-                    <div style={{ fontSize: 11, color: C.gray, display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ fontSize: 13, color: C.gray, display: "flex", alignItems: "center", gap: 5 }}>
                       <Icono nombre="hora-mensaje" tam={20} />
                       {new Date(m.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
                   {m.lugar && (
                     <div style={{ marginBottom: 6, padding: "6px 10px", borderRadius: 8, fontWeight: 800, fontSize: m.urgente ? 15 : 13,
-                      background: m.urgente ? "#FDF0EF" : "#fff", color: m.urgente ? "#be123c" : C.dark, border: `1px solid ${m.urgente ? C.salmon : C.light}` }}>
+                      background: m.urgente ? "#FDF1D9" : "#fff", color: m.urgente ? "#275D8C" : C.dark, border: `1px solid ${m.urgente ? C.salmon : C.light}` }}>
                       {m.urgente ? "🚨 " : ""}📍 {textoLugar(m.lugar)}
-                      <span style={{ fontSize: 11, fontWeight: 600, color: C.gray }}>{m.lugar.origen === "mano" ? " · indicado a mano" : ` · según ${m.lugar.origen === "horario" ? "su horario" : m.lugar.origen === "guardia" ? "su guardia" : "la clase que cubre"}${m.lugar.hora ? ` (${m.lugar.hora})` : ""}`}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.gray }}>{m.lugar.origen === "mano" ? " · indicado a mano" : ` · según ${m.lugar.origen === "horario" ? "su horario" : m.lugar.origen === "guardia" ? "su guardia" : "la clase que cubre"}${m.lugar.hora ? ` (${m.lugar.hora})` : ""}`}</span>
                     </div>
                   )}
-                  <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 14, color: "#333", lineHeight: 1.5 }}>
                     {m.texto}
                   </div>
                   {/* Recibido: responder a un aviso urgente o ver lo que respondí */}
                   {m.destinatario === usuario && m.urgente && !m.respuesta && (
                     <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button onClick={() => responderEn(m.id, "voy")} style={{ border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", background: "#0f766e", color: "#fff" }}>🏃 Voy</button>
-                      <button onClick={() => responderEn(m.id, "no")} style={{ border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", background: "#fef3c7", color: "#92400e" }}>✋ No puedo</button>
+                      <button onClick={() => responderEn(m.id, "voy")} style={{ border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", background: "#275D8C", color: "#fff" }}>🏃 Voy</button>
+                      <button onClick={() => responderEn(m.id, "no")} style={{ border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, cursor: "pointer", background: "#FDF1D9", color: "#16333F" }}>✋ No puedo</button>
                     </div>
                   )}
                   {m.destinatario === usuario && m.respuesta && (
-                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: RESPUESTAS[m.respuesta.tipo].color }}>Respondiste: {RESPUESTAS[m.respuesta.tipo].icono} {m.respuesta.tipo === "voy" ? "Voy" : "No puedo"} · {horaC(m.respuesta.ts)}</div>
+                    <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700, color: RESPUESTAS[m.respuesta.tipo].color }}>Respondiste: {RESPUESTAS[m.respuesta.tipo].icono} {m.respuesta.tipo === "voy" ? "Voy" : "No puedo"} · {horaC(m.respuesta.ts)}</div>
                   )}
                   {/* Enviado: estado del mensaje */}
                   {m.remitente === usuario && (
-                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, display: "inline-block", borderRadius: 6, padding: "2px 8px",
+                    <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700, display: "inline-block", borderRadius: 6, padding: "2px 8px",
                       color: m.respuesta ? RESPUESTAS[m.respuesta.tipo].color : m.leido ? C.blue : C.gray, background: m.respuesta ? RESPUESTAS[m.respuesta.tipo].bg : "transparent" }}>
                       {m.respuesta ? `${RESPUESTAS[m.respuesta.tipo].icono} ${m.destinatario} ${RESPUESTAS[m.respuesta.tipo].txt} · ${horaC(m.respuesta.ts)}`
                         : m.leido ? `✓✓ Leído${m.leidoTs ? ` · ${horaC(m.leidoTs)}` : ""}` : "✓ Enviado · sin leer"}
@@ -4124,7 +4176,7 @@ function ParteDia({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia
 
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="estado-general" tam={44} />Parte del Día — {diaHoy}</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={`Parte del Día — ${diaHoy}`} icono="estado-general" /></div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))", gap:12, marginBottom:16 }}>
         {[
           { label:"Zonas de guardia",   value:asignaciones.length,                                   color:C.dark   },
@@ -4135,12 +4187,12 @@ function ParteDia({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia
         ].map(s => (
           <div key={s.label} style={{ background:C.white, borderRadius:10, padding:14, textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderTop:`4px solid ${s.color}` }}>
             <div style={{ fontSize:26, fontWeight:800, color:s.color }}>{s.value}</div>
-            <div style={{ fontSize:11, color:C.gray, marginTop:2 }}>{s.label}</div>
+            <div style={{ fontSize:13, color:C.gray, marginTop:2 }}>{s.label}</div>
           </div>
         ))}
       </div>
       {ausHoy.length > 0 && (
-        <div style={{ background:"#FDF0EF", border:`1px solid ${C.salmon}`, borderRadius:10, padding:12, marginBottom:16, fontSize:13 }}>
+        <div style={{ background:"#FDF1D9", border:`1px solid ${C.salmon}`, borderRadius:10, padding:12, marginBottom:16, fontSize:14 }}>
           <strong style={{ color:C.salmon }}>⚠️ Ausencias notificadas hoy:</strong>
           {ausHoy.map(a => (
             <div key={a.id} style={{ marginTop:4, color:C.dark }}>· {a.profesor} — {a.horas.join(", ")} — {a.motivo}{a.tarea&&<span style={{color:C.gray}}> · Tarea: {a.tarea.slice(0,50)}</span>}</div>
@@ -4149,7 +4201,7 @@ function ParteDia({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia
       )}
       {porHora.length === 0 ? (
         <div style={{ background:C.white, borderRadius:12, padding:30, textAlign:"center", color:C.gray, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
-          No hay guardias configuradas para hoy.<br/><span style={{fontSize:13}}>Ve a <strong>Cuadrante Guardias</strong> para asignar zonas.</span>
+          No hay guardias configuradas para hoy.<br/><span style={{fontSize:14}}>Ve a <strong>Cuadrante Guardias</strong> para asignar zonas.</span>
         </div>
       ) : porHora.map(({ hora, items }) => (
         <div key={hora} style={{ background:C.white, borderRadius:12, marginBottom:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", overflow:"hidden" }}>
@@ -4158,26 +4210,26 @@ function ParteDia({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia
           </div>
           <table style={{ width:"100%", borderCollapse:"collapse" }}>
             <thead><tr style={{ background:C.light }}>
-              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:12, color:C.gray, fontWeight:600 }}>Zona</th>
-              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:12, color:C.gray, fontWeight:600 }}>Titular</th>
-              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:12, color:C.gray, fontWeight:600 }}>Apoyo</th>
-              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:12, color:C.gray, fontWeight:600 }}>Sustituto</th>
-              <th style={{ padding:"7px 16px", textAlign:"center", fontSize:12, color:C.gray, fontWeight:600 }}>Estado</th>
+              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:14, color:C.gray, fontWeight:600 }}>Zona</th>
+              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:14, color:C.gray, fontWeight:600 }}>Titular</th>
+              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:14, color:C.gray, fontWeight:600 }}>Apoyo</th>
+              <th style={{ padding:"7px 16px", textAlign:"left", fontSize:14, color:C.gray, fontWeight:600 }}>Sustituto</th>
+              <th style={{ padding:"7px 16px", textAlign:"center", fontSize:14, color:C.gray, fontWeight:600 }}>Estado</th>
             </tr></thead>
             <tbody>
               {items.map((item, i) => (
                 <tr key={i} style={{ borderBottom:`1px solid ${C.cream}` }}>
-                  <td style={{ padding:"10px 16px", fontSize:13, color:C.dark }}>{item.zona}</td>
+                  <td style={{ padding:"10px 16px", fontSize:14, color:C.dark }}>{item.zona}</td>
                   {[[item.sit.titular, item.sit.tA, "titular"], [item.sit.apoyo, item.sit.aA, "apoyo"], [item.sit.sustituto, item.sit.sA, "sustituto"]].map(([p, falta, rol]) => {
                     const entra = rol === "sustituto" && item.sit.sustituyeA;
                     return (
-                      <td key={rol} style={{ padding:"10px 16px", fontSize:13, color: !p ? "#9f1239" : falta ? C.salmon : C.dark, textDecoration: falta ? "line-through" : "none", fontWeight: entra ? 700 : 400 }}>
-                        {p || "⚠️ Sin asignar"}{entra && <div style={{ fontSize:11, color:"#b45309", textDecoration:"none" }}>entra por {item.sit.sustituyeA}</div>}
+                      <td key={rol} style={{ padding:"10px 16px", fontSize:14, color: !p ? "#275D8C" : falta ? C.salmon : C.dark, textDecoration: falta ? "line-through" : "none", fontWeight: entra ? 700 : 400 }}>
+                        {p || "⚠️ Sin asignar"}{entra && <div style={{ fontSize:13, color:"#16333F", textDecoration:"none" }}>entra por {item.sit.sustituyeA}</div>}
                       </td>
                     );
                   })}
                   <td style={{ padding:"10px 16px", textAlign:"center" }}>
-                    <span style={{ color:ESTADOS_ZONA[item.estado].color, background:ESTADOS_ZONA[item.estado].bg, borderRadius:8, padding:"3px 8px", fontWeight:700, fontSize:12, whiteSpace:"nowrap" }}>{ESTADOS_ZONA[item.estado].label}</span>
+                    <span style={{ color:ESTADOS_ZONA[item.estado].color, background:ESTADOS_ZONA[item.estado].bg, borderRadius:8, padding:"3px 8px", fontWeight:700, fontSize:14, whiteSpace:"nowrap" }}>{ESTADOS_ZONA[item.estado].label}</span>
                   </td>
                 </tr>
               ))}
@@ -4212,17 +4264,17 @@ function EquipoZona({ sit, C }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 6, marginTop: 6 }}>
       {filas.map(f => {
-        const estado = !f.p ? { txt: "Sin asignar", color: "#9f1239", bg: "#FDF0EF" }
-          : f.falta ? { txt: "Falta", color: C.salmon, bg: "#FDF0EF" }
-          : sit.enClase?.[f.p] ? { txt: `Cubre ${sit.enClase[f.p]}`, color: "#1d4ed8", bg: "#EEF5F8" }
-          : f.entra ? { txt: `Entra por ${f.entra}`, color: "#b45309", bg: "#fef3c7" }
+        const estado = !f.p ? { txt: "Sin asignar", color: "#275D8C", bg: "#FDF1D9" }
+          : f.falta ? { txt: "Falta", color: C.salmon, bg: "#FDF1D9" }
+          : sit.enClase?.[f.p] ? { txt: `Cubre ${sit.enClase[f.p]}`, color: "#1d4ed8", bg: "#DDF0F4" }
+          : f.entra ? { txt: `Entra por ${f.entra}`, color: "#16333F", bg: "#FDF1D9" }
           : f.rol === "Sustituto" ? { txt: "En reserva", color: C.gray, bg: C.light }
-          : { txt: "En la zona", color: "#0f766e", bg: "#E8F5F3" };
+          : { txt: "En la zona", color: "#275D8C", bg: "#DDF0F4" };
         return (
           <div key={f.rol} style={{ background: estado.bg, borderRadius: 8, padding: "6px 10px" }}>
-            <div style={{ fontSize: 10, color: C.gray, fontWeight: 700, letterSpacing: .5, textTransform: "uppercase" }}>{f.rol}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: f.p ? C.dark : "#9f1239", textDecoration: f.falta ? "line-through" : "none" }}>{f.p || "—"}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: estado.color }}>{estado.txt}</div>
+            <div style={{ fontSize: 13, color: C.gray, fontWeight: 700, letterSpacing: .5, textTransform: "uppercase" }}>{f.rol}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: f.p ? C.dark : "#275D8C", textDecoration: f.falta ? "line-through" : "none" }}>{f.p || "—"}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: estado.color }}>{estado.txt}</div>
           </div>
         );
       })}
@@ -4279,11 +4331,11 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Icono nombre="hora-reloj" tam={44} />
           <div>
-            <div style={{ fontSize: 11, opacity: .75, letterSpacing: 1 }}>{ahora.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div>
+            <div style={{ fontSize: 13, opacity: .75, letterSpacing: 1 }}>{ahora.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}</div>
             <div style={{ fontSize: 22, fontWeight: 800 }}>
               {!lectivo ? "Hoy no es día lectivo" : hora ? conTramo(hora) : siguiente ? `Antes de ${siguiente}` : "La jornada ha terminado"}
             </div>
-            {horaElegida && horaElegida !== enCurso && <div style={{ fontSize: 12, opacity: .8 }}>Estás viendo otra hora · ahora es {enCurso || "fuera del horario"}</div>}
+            {horaElegida && horaElegida !== enCurso && <div style={{ fontSize: 14, opacity: .8 }}>Estás viendo otra hora · ahora es {enCurso || "fuera del horario"}</div>}
           </div>
         </div>
         <div style={{ fontSize: 40, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{reloj}</div>
@@ -4292,7 +4344,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
             <div style={{ height: 8, background: "rgba(255,255,255,.2)", borderRadius: 6, overflow: "hidden" }}>
               <div style={{ width: `${progreso.pct}%`, height: "100%", background: C.teal }} />
             </div>
-            <div style={{ fontSize: 12, opacity: .85, marginTop: 4 }}>Quedan {progreso.quedan} min{siguiente ? ` · después: ${conTramo(siguiente)}` : " · última hora del día"}</div>
+            <div style={{ fontSize: 14, opacity: .85, marginTop: 4 }}>Quedan {progreso.quedan} min{siguiente ? ` · después: ${conTramo(siguiente)}` : " · última hora del día"}</div>
           </div>
         )}
       </div>
@@ -4301,7 +4353,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
         {[["", "En curso"], ...HORAS.map(h => [h, h])].map(([v, t]) => (
           <button key={t} onClick={() => setHoraElegida(v)}
-            style={{ border: `1px solid ${horaElegida === v ? C.dark : "#d6d3d1"}`, background: horaElegida === v ? C.dark : C.white, color: horaElegida === v ? "#fff" : C.dark, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            style={{ border: `1px solid ${horaElegida === v ? C.dark : "#d6d3d1"}`, background: horaElegida === v ? C.dark : C.white, color: horaElegida === v ? "#fff" : C.dark, borderRadius: 20, padding: "6px 12px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
             {t}{v === enCurso && v ? " ●" : ""}
           </button>
         ))}
@@ -4310,7 +4362,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
       {!lectivo || !hora ? (
         <div style={{ ...tarjeta, textAlign: "center", color: C.gray, padding: 28 }}>
           {!lectivo ? "Fin de semana: no hay guardias." : siguiente ? `Aún no ha empezado la jornada. La primera es ${conTramo(siguiente)}.` : "No hay ninguna hora en curso."}
-          <div style={{ fontSize: 13, marginTop: 6 }}>Puedes elegir una hora arriba para verla.</div>
+          <div style={{ fontSize: 14, marginTop: 6 }}>Puedes elegir una hora arriba para verla.</div>
         </div>
       ) : (<>
         {/* Te toca ahora */}
@@ -4318,14 +4370,14 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
           <div style={{ ...tarjeta, borderLeft: `6px solid ${miGuardia.length ? C.teal : "#d6d3d1"}` }}>
             <div style={{ fontWeight: 800, color: C.dark, fontSize: 16, marginBottom: 8 }}><Ic n="guardias" tam={22} />{miGuardia.length || miClase ? "Te toca guardia" : "No tienes guardia a esta hora"}</div>
             {miClase && (
-              <div style={{ background: "#EEF5F8", border: `2px solid ${C.blue}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>
+              <div style={{ background: "#DDF0F4", border: `2px solid ${C.blue}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>
                 <div style={{ fontWeight: 800, color: C.blue, fontSize: 15, marginBottom: 6 }}>📋 Jefatura te ha asignado: cubres la clase de {miClase.profesor}{miClase.aula ? ` en ${miClase.aula}` : ""}</div>
                 <TareaAusente a={miClase} C={C} />
               </div>
             )}
             {miGuardia.map((g, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 15, color: C.dark }}><strong>{g.zona}</strong> · como {g.rol}{g.rol === "sustituto" && g.sit.sustituyeA ? <span style={{ color: "#b45309", fontWeight: 700 }}> — entras por {g.sit.sustituyeA}</span> : ""}</div>
+                <div style={{ fontSize: 15, color: C.dark }}><strong>{g.zona}</strong> · como {g.rol}{g.rol === "sustituto" && g.sit.sustituyeA ? <span style={{ color: "#16333F", fontWeight: 700 }}> — entras por {g.sit.sustituyeA}</span> : ""}</div>
                 <EquipoZona sit={g.sit} C={C} />
                 <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                   {tareasDeGuardia(g, fecha, ausencias).map(a => <TareaAusente key={a.id} a={a} C={C} />)}
@@ -4346,7 +4398,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
           ].map(s => (
             <div key={s.label} style={{ background: C.white, borderRadius: 10, padding: 12, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderTop: `4px solid ${s.color}` }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -4354,7 +4406,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
         {/* Clases sin profe */}
         {clasesSinProfe.length > 0 && (
           <div style={tarjeta}>
-            <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 10 }}><Ic n="profe-ausente" tam={22} />Clases sin su profesor/a · {sinCubrir ? <span style={{ color: "#b45309" }}>{sinCubrir} sin cubrir</span> : <span style={{ color: C.teal }}>todas cubiertas</span>}</div>
+            <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 10 }}><Ic n="profe-ausente" tam={22} />Clases sin su profesor/a · {sinCubrir ? <span style={{ color: "#16333F" }}>{sinCubrir} sin cubrir</span> : <span style={{ color: C.teal }}>todas cubiertas</span>}</div>
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(min(300px,100%),1fr))" }}>
               {clasesSinProfe.map(a => (
                 <div key={a.id} style={{ display: "grid", gap: 6, alignContent: "start" }}>
@@ -4370,14 +4422,14 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
         <div style={{ ...tarjeta, padding: 0, overflow: "hidden" }}>
           <div style={{ background: hora === "Recreo" ? C.blue : C.dark, color: "#fff", padding: "10px 16px", fontWeight: 700, fontSize: 14 }}><Ic n="guardias" tam={20} />Zonas de guardia · {hora}</div>
           {zonas.length === 0 ? (
-            <div style={{ padding: 22, textAlign: "center", color: C.gray, fontSize: 13 }}>No hay zonas en el cuadrante para esta hora.</div>
+            <div style={{ padding: 22, textAlign: "center", color: C.gray, fontSize: 14 }}>No hay zonas en el cuadrante para esta hora.</div>
           ) : zonas.map(z => {
             const e = ESTADOS_ZONA[z.sit.estado];
             return (
               <div key={z.zonaId} style={{ padding: "12px 16px", borderBottom: `1px solid ${C.cream}` }}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{z.zona}</div>
-                  <span style={{ color: e.color, background: e.bg, borderRadius: 8, padding: "3px 8px", fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" }}>{e.label}</span>
+                  <span style={{ color: e.color, background: e.bg, borderRadius: 8, padding: "3px 8px", fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>{e.label}</span>
                 </div>
                 <div>
                   <EquipoZona sit={z.sit} C={C} />
@@ -4389,12 +4441,12 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
 
         {/* Siguiente hora */}
         {siguiente && (
-          <div style={{ ...tarjeta, background: C.light, fontSize: 13, color: C.dark }}>
+          <div style={{ ...tarjeta, background: C.light, fontSize: 14, color: C.dark }}>
             <strong>Siguiente: {conTramo(siguiente)}</strong> — {zonasSig.length} zona(s)
             {zonasSig.filter(z => z.sit.estado === "descubierta").length > 0
               ? <span style={{ color: C.salmon, fontWeight: 700 }}> · {zonasSig.filter(z => z.sit.estado === "descubierta").length} descubierta(s): {zonasSig.filter(z => z.sit.estado === "descubierta").map(z => z.zona).join(", ")}</span>
               : <span style={{ color: C.teal }}> · ninguna descubierta</span>}
-            <button onClick={() => setHoraElegida(siguiente)} style={{ marginLeft: 8, border: "none", background: "transparent", color: C.blue, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Ver →</button>
+            <button onClick={() => setHoraElegida(siguiente)} style={{ marginLeft: 8, border: "none", background: "transparent", color: C.blue, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>Ver →</button>
           </div>
         )}
       </>)}
@@ -4412,21 +4464,21 @@ function GestionAusencias({ ausencias, setAusencias, profesores, C, fmt }) {
 
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="profe-ausente" tam={44} />Gestión de Ausencias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Ausencias" icono="profe-ausente" /></div>
       <div style={{ background:C.white, borderRadius:12, padding:16, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div>
-            <label style={{ display:"block", fontWeight:600, fontSize:13, color:C.dark, marginBottom:6 }}>Filtrar por fecha</label>
-            <input type="date" value={filtFecha} onChange={e=>setFiltFecha(e.target.value)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #d1d5db", fontSize:13, boxSizing:"border-box" }}/>
+            <label style={{ display:"block", fontWeight:600, fontSize:14, color:C.dark, marginBottom:6 }}>Filtrar por fecha</label>
+            <input type="date" value={filtFecha} onChange={e=>setFiltFecha(e.target.value)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #CDE9ED", fontSize:14, boxSizing:"border-box" }}/>
           </div>
           <div>
-            <label style={{ display:"block", fontWeight:600, fontSize:13, color:C.dark, marginBottom:6 }}>Filtrar por profesor</label>
-            <select value={filtProf} onChange={e=>setFiltProf(e.target.value)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #d1d5db", fontSize:13 }}>
+            <label style={{ display:"block", fontWeight:600, fontSize:14, color:C.dark, marginBottom:6 }}>Filtrar por profesor</label>
+            <select value={filtProf} onChange={e=>setFiltProf(e.target.value)} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"1px solid #CDE9ED", fontSize:14 }}>
               <option value="">Todos</option>{profesores.map(p=><option key={p}>{p}</option>)}
             </select>
           </div>
         </div>
-        <button onClick={()=>{setFiltFecha("");setFiltProf("");}} style={{ marginTop:10, background:"none", border:"1px solid #d1d5db", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:12, color:C.gray }}>Limpiar filtros</button>
+        <button onClick={()=>{setFiltFecha("");setFiltProf("");}} style={{ marginTop:10, background:"none", border:"1px solid #CDE9ED", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:14, color:C.gray }}>Limpiar filtros</button>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
         {[
@@ -4436,7 +4488,7 @@ function GestionAusencias({ ausencias, setAusencias, profesores, C, fmt }) {
         ].map(s=>(
           <div key={s.label} style={{ background:C.white, borderRadius:10, padding:14, textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderTop:`4px solid ${s.color}` }}>
             <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.value}</div>
-            <div style={{ fontSize:11, color:C.gray, marginTop:2 }}>{s.label}</div>
+            <div style={{ fontSize:13, color:C.gray, marginTop:2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -4444,18 +4496,18 @@ function GestionAusencias({ ausencias, setAusencias, profesores, C, fmt }) {
         ? <div style={{ background:C.white, borderRadius:12, padding:30, textAlign:"center", color:C.gray }}>No hay ausencias notificadas</div>
         : ausFiltradas.map(a => (
           <div key={a.id} onClick={()=>setAusencias(prev=>prev.map(x=>x.id===a.id?{...x,leida:true}:x))}
-            style={{ background:a.leida?C.white:"#FFF8E8", borderRadius:12, padding:16, marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderLeft:`4px solid ${a.leida?"#e5e7eb":C.salmon}`, cursor:"pointer" }}>
+            style={{ background:a.leida?C.white:"#FDF1D9", borderRadius:12, padding:16, marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderLeft:`4px solid ${a.leida?"#CDE9ED":C.salmon}`, cursor:"pointer" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:8 }}>
               <div>
                 <div style={{ fontWeight:700, color:C.dark, fontSize:15 }}>
                   <Ic n="cargo-profesor" tam={20} />{a.profesor}
-                  {!a.leida && <span style={{ marginLeft:8, fontSize:11, background:C.salmon, color:"#fff", borderRadius:6, padding:"2px 8px" }}>Sin leer</span>}
+                  {!a.leida && <span style={{ marginLeft:8, fontSize:13, background:C.salmon, color:"#fff", borderRadius:6, padding:"2px 8px" }}>Sin leer</span>}
                 </div>
-                <div style={{ fontSize:13, color:C.gray, marginTop:3 }}><Ic n="fecha-hora" tam={20} />{new Date(a.fecha).toLocaleDateString("es-ES")} · {a.motivo}</div>
-                <div style={{ fontSize:13, color:C.dark, marginTop:3 }}><Ic n="hora-reloj" tam={20} />Horas: <strong>{a.horas.join(", ")}</strong></div>
-                {a.tarea && <div style={{ fontSize:13, marginTop:6, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />{a.tarea}</div>}
+                <div style={{ fontSize:14, color:C.gray, marginTop:3 }}><Ic n="fecha-hora" tam={20} />{new Date(a.fecha).toLocaleDateString("es-ES")} · {a.motivo}</div>
+                <div style={{ fontSize:14, color:C.dark, marginTop:3 }}><Ic n="hora-reloj" tam={20} />Horas: <strong>{a.horas.join(", ")}</strong></div>
+                {a.tarea && <div style={{ fontSize:14, marginTop:6, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />{a.tarea}</div>}
               </div>
-              <div style={{ fontSize:11, color:C.gray, whiteSpace:"nowrap", textAlign:"right" }}>Notificado: {fmt(a.ts)}{a.registradaPor && <div><Ic n="profe-ausente" tam={20} />Registrada por {a.registradaPor}</div>}</div>
+              <div style={{ fontSize:13, color:C.gray, whiteSpace:"nowrap", textAlign:"right" }}>Notificado: {fmt(a.ts)}{a.registradaPor && <div><Ic n="profe-ausente" tam={20} />Registrada por {a.registradaPor}</div>}</div>
             </div>
           </div>
         ))
@@ -4720,18 +4772,18 @@ async function excelPeriodo(est, periodo, tutores = {}, alumnos = [], soloAlumna
 }
 
 // Barras horizontales sencillas
-function Barras({ datos, color = "#44a194", vacio = "Sin datos en este periodo.", onClick }) {
+function Barras({ datos, color = R.turquesa, vacio = "Sin datos en este periodo.", onClick }) {
   const max = Math.max(1, ...datos.map(d => d[1]));
-  if (!datos.length) return <div style={{ fontSize: 13, color: "#64748b" }}>{vacio}</div>;
+  if (!datos.length) return <div style={{ fontSize: 15, color: R.petroleo }}>{vacio}</div>;
   return (
     <div>
       {datos.map(([k, n, clave]) => (
         <div key={k} onClick={onClick ? () => onClick(clave ?? k, k) : undefined} role={onClick ? "button" : undefined} title={onClick ? "Pulsa para ver estos partes" : undefined}
-          onMouseOver={onClick ? e => { e.currentTarget.style.background = "#f1f5f9"; } : undefined} onMouseOut={onClick ? e => { e.currentTarget.style.background = "transparent"; } : undefined}
-          style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(60px,1.2fr) 34px", gap: 8, alignItems: "center", marginBottom: 2, padding: "2px 4px", borderRadius: 6, fontSize: 12, cursor: onClick ? "pointer" : "default" }}>
-          <div title={k} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#2c4a52" }}>{k}</div>
-          <div style={{ background: "#eef2f4", borderRadius: 6, height: 12 }}><div style={{ width: `${(100 * n) / max}%`, background: color, height: "100%", borderRadius: 6 }} /></div>
-          <div style={{ textAlign: "right", fontWeight: 700, color: "#2c4a52" }}>{n}</div>
+          onMouseOver={onClick ? e => { e.currentTarget.style.background = R.azulClaro; } : undefined} onMouseOut={onClick ? e => { e.currentTarget.style.background = "transparent"; } : undefined}
+          style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(60px,1.2fr) 34px", gap: 8, alignItems: "center", marginBottom: 2, minHeight: 32, padding: "2px 4px", fontSize: 14, cursor: onClick ? "pointer" : "default" }}>
+          <div title={k} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: R.petroleo }}>{k}</div>
+          <div style={{ background: R.gris, height: 14 }}><div style={{ width: `${(100 * n) / max}%`, background: color, height: "100%" }} /></div>
+          <div style={{ textAlign: "right", fontWeight: 700, color: R.petroleo }}>{n}</div>
         </div>
       ))}
     </div>
@@ -4750,13 +4802,13 @@ function DetallePartes({ titulo, subtitulo, partes, tutores, onVerParte, onCerra
   return (
     <div onClick={onCerrar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 150, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "3vh 2vw" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: C.cream, borderRadius: 16, width: "100%", maxWidth: 1200, overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{titulo}</div>
-            {subtitulo && <div style={{ fontSize: 12, opacity: .85 }}>{subtitulo}</div>}
+            {subtitulo && <div style={{ fontSize: 14, opacity: .85 }}>{subtitulo}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            {partes.length > 0 && <button onClick={() => pdfInformePartes(ordenados, `${titulo}${subtitulo ? ` · ${subtitulo}` : ""}`, tutores)} style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>⬇️ PDF</button>}
+            {partes.length > 0 && <button onClick={() => pdfInformePartes(ordenados, `${titulo}${subtitulo ? ` · ${subtitulo}` : ""}`, tutores)} style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>⬇️ PDF</button>}
             <button onClick={onCerrar} aria-label="Cerrar" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 16 }}>✕</button>
           </div>
         </div>
@@ -4765,14 +4817,14 @@ function DetallePartes({ titulo, subtitulo, partes, tutores, onVerParte, onCerra
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 14 }}>
                 {[{ n: partes.length, t: "Partes", c: C.dark }, { n: g.leve, t: "Leves", c: C.teal }, { n: g.grave, t: "Graves", c: C.amber }, { n: g.muy_grave, t: "Muy graves", c: C.salmon }, { n: new Set(partes.map(p => p.alumnoId ?? p.alumno)).size, t: "Alumnos/as", c: C.blue }].map(k => (
-                  <div key={k.t} style={{ ...caja, borderTop: `4px solid ${k.c}`, padding: 12 }}><div style={{ fontSize: 26, fontWeight: 800, color: C.dark }}>{k.n}</div><div style={{ fontSize: 13, fontWeight: 700, color: C.gray }}>{k.t}</div></div>
+                  <div key={k.t} style={{ ...caja, borderTop: `4px solid ${k.c}`, padding: 12 }}><div style={{ fontSize: 26, fontWeight: 800, color: C.dark }}>{k.n}</div><div style={{ fontSize: 14, fontWeight: 700, color: C.gray }}>{k.t}</div></div>
                 ))}
               </div>
               {top && (
                 <div style={{ ...caja, marginBottom: 14, borderLeft: `5px solid ${C.amber}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.amber, textTransform: "uppercase", letterSpacing: .5 }}>La falta que más se repite</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.amber, textTransform: "uppercase", letterSpacing: .5 }}>La falta que más se repite</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginTop: 4 }}>{top[0]}</div>
-                  <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{top[1]} de {partes.length} partes ({Math.round(100 * top[1] / partes.length)} %)</div>
+                  <div style={{ fontSize: 14, color: C.gray, marginTop: 2 }}>{top[1]} de {partes.length} partes ({Math.round(100 * top[1] / partes.length)} %)</div>
                 </div>
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 14, marginBottom: 14 }}>
@@ -4780,9 +4832,9 @@ function DetallePartes({ titulo, subtitulo, partes, tutores, onVerParte, onCerra
                 <div style={caja}><h3 style={h3}><Ic n="por-curso" tam={20} />Por grupo</h3><Barras datos={contarPor(partes, "curso")} /></div>
                 <div style={caja}><h3 style={h3}><Ic n="hora-reloj" tam={20} />Por hora de clase</h3><Barras datos={HORAS.map(h => [h, partes.filter(p => p.hora === h).length]).filter(([, n]) => n)} color={C.blue} /></div>
                 <div style={caja}><h3 style={h3}><Ic n="por-alumno" tam={20} />Alumnado</h3><Barras datos={contarPor(partes, p => `${p.alumno} (${p.curso})`).slice(0, 10)} color={C.salmon} /></div>
-                <div style={caja}><h3 style={h3}><Ic n="cargo-profesor" tam={20} />Profesorado que pone el parte</h3><Barras datos={contarPor(partes, "profesor").slice(0, 10)} color="#8b5cf6" /></div>
+                <div style={caja}><h3 style={h3}><Ic n="cargo-profesor" tam={20} />Profesorado que pone el parte</h3><Barras datos={contarPor(partes, "profesor").slice(0, 10)} color="#2B647E" /></div>
               </div>
-              <h3 style={{ ...h3, marginTop: 6 }}><Ic n="partes" tam={20} />Los {partes.length} partes <span style={{ fontWeight: 500, fontSize: 12, color: C.gray }}>· pulsa uno para verlo en grande</span></h3>
+              <h3 style={{ ...h3, marginTop: 6 }}><Ic n="partes" tam={20} />Los {partes.length} partes <span style={{ fontWeight: 500, fontSize: 14, color: C.gray }}>· pulsa uno para verlo en grande</span></h3>
               {ordenados.map(p => <ParteCard key={p.id} parte={p} onVer={() => onVerParte(p)} onPrint={() => pdfParte(p)} />)}
             </>
           )}
@@ -4827,7 +4879,7 @@ function pdfInformeFamilia(alumno, partes, banos, periodo, tutores = {}, remiten
   y = doc.lastAutoTable.finalY + 8;
   doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text("Resumen", 14, y); doc.setTextColor(0);
   autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Partes", "Leves", "Graves", "Muy graves", "Salidas al baño"]],
-    body: [[partes.length, d.leve, d.grave, d.muy_grave, d.banos].map(String)], styles: { ...estiloTabla.styles, halign: "center", fontSize: 11 } });
+    body: [[partes.length, d.leve, d.grave, d.muy_grave, d.banos].map(String)], styles: { ...estiloTabla.styles, halign: "center", fontSize: 13 } });
   y = doc.lastAutoTable.finalY + 6;
   if (d.faltas.length) {
     doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text("Conductas que más se repiten:", 14, y); y += 5;
@@ -4890,24 +4942,24 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
   const mailto = `mailto:${unicos.map(encodeURIComponent).join(",")}?subject=${encodeURIComponent(asunto || "")}&body=${encodeURIComponent(cuerpoCorto)}`;
   const copiar = async () => { try { await navigator.clipboard.writeText(unicos.join(", ")); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { window.prompt("Copia los correos:", unicos.join(", ")); } };
   return (
-    <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 12, marginTop: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: C.dark, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Ic n="selecciona-profesor" tam={22} />¿A quién se lo envías?</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 6 }}>
+    <div style={{ background: R.azulClaro, padding: 12, marginTop: 14 }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: R.petroleo, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="selecciona-profesor" tam={32} />¿A quién se lo envías?</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
         {opciones.map(o => {
           const ok = correoValido(o.email);
           return (
-            <label key={o.id} title={ok ? o.email : "Sin correo registrado"} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, border: `1px solid ${marcados.includes(o.id) && ok ? C.teal : "#e5e7eb"}`, background: marcados.includes(o.id) && ok ? "#F0FAF7" : "#fff", cursor: ok ? "pointer" : "not-allowed", opacity: ok ? 1 : .55 }}>
-              <input type="checkbox" checked={ok && marcados.includes(o.id)} disabled={!ok} onChange={() => cambia(o.id)} />
-              <Icono nombre={o.icono} tam={26} />
-              <span style={{ fontSize: 12, lineHeight: 1.25 }}><b style={{ color: C.dark }}>{o.label}</b><br /><span style={{ color: C.gray }}>{ok ? o.email : DESTINOS_CENTRO.some(d => d.id === o.id) ? "Sin correo: añádelo en Administración" : "Sin correo registrado"}</span></span>
+            <label key={o.id} title={ok ? o.email : "Sin correo registrado"} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 56, padding: "8px 10px", borderRadius: 6, border: `2px solid ${marcados.includes(o.id) && ok ? R.turquesa : C.white}`, background: C.white, cursor: ok ? "pointer" : "not-allowed", opacity: ok ? 1 : .55 }}>
+              <input type="checkbox" checked={ok && marcados.includes(o.id)} disabled={!ok} onChange={() => cambia(o.id)} style={{ width: 22, height: 22, accentColor: R.azul, flexShrink: 0 }} />
+              <Icono nombre={o.icono} tam={32} />
+              <span style={{ fontSize: 15, lineHeight: 1.3, minWidth: 0 }}><b style={{ color: R.petroleo }}>{o.label}</b><br /><span style={{ color: R.petroleo, fontSize: 14 }}>{ok ? <>{o.email.split("@")[0]}@<wbr />{o.email.split("@").slice(1).join("@")}</> : DESTINOS_CENTRO.some(d => d.id === o.id) ? "Sin correo: añádelo en Administración" : "Sin correo registrado"}</span></span>
             </label>
           );
         })}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-        <Icono nombre="selecciona-profesor" tam={26} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+        <Icono nombre="anadir-profesor" tam={32} />
         <select value="" aria-label="Añadir a otro profesor/a" onChange={e => { const n = e.target.value; if (n) setProfesElegidos(prev => prev.includes(n) ? prev : [...prev, n]); }}
-          style={{ flex: "1 1 220px", padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12, background: "#fff" }}>
+          style={{ flex: "1 1 0", minWidth: 0, minHeight: 48, padding: "8px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
           <option value="">Añadir a otro profesor/a…</option>
           {[...profes].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(p => (
             <option key={p.nombre} value={p.nombre} disabled={!correoValido(p.email) || profesElegidos.includes(p.nombre)}>
@@ -4919,26 +4971,26 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
       {profesElegidos.length > 0 && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
           {profesElegidos.map(n => (
-            <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#EEF5F8", color: C.dark, borderRadius: 20, padding: "4px 6px 4px 10px", fontSize: 12, fontWeight: 600 }}>
+            <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.white, color: R.petroleo, border: `2px solid ${R.turquesa}`, borderRadius: 22, padding: "4px 4px 4px 12px", fontSize: 15, fontWeight: 700 }}>
               {n}
               <button aria-label={`Quitar a ${n}`} onClick={() => setProfesElegidos(prev => prev.filter(x => x !== n))}
-                style={{ border: "none", background: "#fff", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontWeight: 800, color: C.gray, lineHeight: "18px", padding: 0 }}>×</button>
+                style={{ border: "none", background: R.azulClaro, borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontWeight: 700, fontSize: 18, color: R.petroleo, lineHeight: "30px", padding: 0 }}>×</button>
             </span>
           ))}
         </div>
       )}
       <input value={otro} onChange={e => setOtro(e.target.value)} placeholder="Otro correo (opcional): PTSC, familia separada…" aria-label="Otro correo"
-        style={{ width: "100%", marginTop: 8, padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12, boxSizing: "border-box" }} />
+        style={{ width: "100%", marginTop: 10, minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box" }} />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
         <a href={unicos.length ? mailto : undefined} onClick={e => { if (!unicos.length) e.preventDefault(); }}
-          style={{ flex: "1 1 200px", textAlign: "center", textDecoration: "none", padding: "10px 12px", borderRadius: 10, background: unicos.length ? C.teal : "#cbd5e1", color: "#fff", fontWeight: 800, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: unicos.length ? "pointer" : "not-allowed" }}>
-          <Icono nombre="boton-enviar" tam={24} />Abrir en mi correo ({unicos.length})
+          style={{ flex: "1 1 200px", textAlign: "center", textDecoration: "none", minHeight: 48, padding: "8px 12px", borderRadius: 6, background: unicos.length ? R.azul : R.gris, color: unicos.length ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 17, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: unicos.length ? "pointer" : "not-allowed" }}>
+          <Icono nombre="boton-enviar" tam={30} />Abrir en mi correo ({unicos.length})
         </a>
-        <button onClick={copiar} disabled={!unicos.length} style={{ flex: "1 1 160px", padding: "10px 12px", borderRadius: 10, border: `2px solid ${C.teal}`, background: "#F0FAF7", color: C.dark, fontWeight: 700, fontSize: 12, cursor: unicos.length ? "pointer" : "not-allowed" }}>
+        <button onClick={copiar} disabled={!unicos.length} style={{ flex: "1 1 160px", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontWeight: 700, fontSize: 16, cursor: unicos.length ? "pointer" : "not-allowed" }}>
           {copiado ? "✅ Correos copiados" : "Copiar solo los correos"}
         </button>
       </div>
-      <div style={{ fontSize: 11, color: C.gray, marginTop: 6 }}>Se abre tu programa de correo con los destinatarios, el asunto y el texto. Revisa y adjunta el PDF antes de enviarlo.</div>
+      <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>Se abre tu programa de correo con los destinatarios, el asunto y el texto. Revisa y adjunta el PDF antes de enviarlo.</div>
     </div>
   );
 }
@@ -4949,13 +5001,13 @@ function CorreosCentro({ C }) {
   return (
     <div style={{ background: "#fff", borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
       <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="mensaje-enviar" tam={40} />Correos del centro para los avisos</h3>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 12 }}>Aparecen como destinatarios al avisar de un parte o enviar un informe a la familia.</div>
+      <div style={{ fontSize: 14, color: C.gray, marginBottom: 12 }}>Aparecen como destinatarios al avisar de un parte o enviar un informe a la familia.</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>
         {DESTINOS_CENTRO.map(d => (
-          <label key={d.id} style={{ fontSize: 12, fontWeight: 700, color: C.dark }}>
+          <label key={d.id} style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>
             <span style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}><Icono nombre={d.icono} tam={24} />{d.label}</span>
             <input type="email" value={correos?.[d.id] || ""} placeholder="correo@educa.madrid.org" onChange={e => setCorreos(prev => ({ ...prev, [d.id]: e.target.value }))}
-              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${correos?.[d.id] && !correoValido(correos[d.id]) ? C.salmon : "#d1d5db"}`, fontSize: 13, boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${correos?.[d.id] && !correoValido(correos[d.id]) ? C.salmon : "#CDE9ED"}`, fontSize: 14, boxSizing: "border-box" }} />
           </label>
         ))}
       </div>
@@ -4970,17 +5022,19 @@ function ContactoFamilia({ alumno, partes, banos, periodo, tutores, remitente, C
     catch { window.prompt("Copia el texto:", texto); }
   };
   if (!alumno) return null;
-  const btn = { flex: "1 1 150px", padding: "10px 12px", borderRadius: 10, border: `2px solid ${C.teal}`, background: "#F0FAF7", color: C.dark, fontWeight: 700, fontSize: 12, cursor: "pointer" };
+  const btn = { flex: "1 1 150px", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontWeight: 700, fontSize: 16, cursor: "pointer" };
   return (
-    <div style={{ background: "#FFFBEB", border: "1px solid #fcd34d", borderRadius: 10, padding: 12, marginTop: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 2 }}><Ic n="mensaje-enviar" tam={20} />Contactar con la familia</div>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 8 }}><Ic n="mensaje-enviar" tam={20} />{alumno.email || "sin correo"} · 📱 {alumno.telefono || "sin teléfono"}</div>
+    <div style={{ marginTop: 10, border: `1px solid ${R.turquesaClaro}` }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: R.noche, background: R.mostaza, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="mensaje-enviar" tam={30} />Contactar con la familia</div>
+      <div style={{ padding: 12, background: C.white }}>
+      <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 10 }}><Ic n="mensaje-enviar" tam={20} />{alumno.email || "sin correo"} · 📱 {alumno.telefono || "sin teléfono"}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button style={btn} onClick={() => pdfInformeFamilia(alumno, partes, banos, periodo, tutores, remitente)}><Ic n="informe" tam={20} />Ver informe para la familia</button>
         <button style={btn} onClick={() => copiar(textoInformeFamilia(alumno, partes, banos, periodo, remitente, tutores), "texto")}>{copiado === "texto" ? "✅ Copiado" : "📋 Copiar texto del correo"}</button>
       </div>
       <ElegirDestinatarios alumno={alumno} tutorNombre={tutores[alumno.curso]?.tutor || alumno.tutor} tutorEmail={tutores[alumno.curso]?.email}
         asunto={`Convivencia de ${alumno.nombre} (${alumno.curso}) · ${periodo.texto}`} cuerpo={textoInformeFamilia(alumno, partes, banos, periodo, remitente, tutores)} C={C} />
+      </div>
     </div>
   );
 }
@@ -5027,21 +5081,21 @@ function PanelAvisos({ partes, alumnos, banos, usuario, tutores, avisos, setAvis
     const al = alumnos.find(a => a.id === x.alumnoId) || { id: x.alumnoId, nombre: x.alumno, curso: x.curso };
     const banosAl = banos.filter(b => b.alumno === x.alumno && b.curso === x.curso && isoLocal(b.ts || b.salida) >= tri.desde && isoLocal(b.ts || b.salida) <= tri.hasta);
     return (
-      <div key={x.id} style={{ background: C.white, borderRadius: 10, padding: 12, marginBottom: 8, borderLeft: `4px solid ${x.pendiente ? C.salmon : C.teal}` }}>
+      <div key={x.id} style={{ background: C.white, padding: 12, marginBottom: 8, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${x.pendiente ? R.mostaza : R.verde}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 800, color: C.dark, fontSize: 15 }}>{x.alumno} <span style={{ fontWeight: 500, color: C.gray, fontSize: 13 }}>· {x.curso}</span></div>
-            <div style={{ fontSize: 12, color: C.gray }}>
-              <b style={{ color: C.salmon }}>{x.n} partes</b> este trimestre{x.graves ? ` (${x.graves} graves o muy graves)` : ""} · {x.ambito === "mios" ? "puestos por ti" : `en tu tutoría`}
+            <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 17 }}>{x.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {x.curso}</span></div>
+            <div style={{ fontSize: 14, color: R.petroleo, lineHeight: 1.45 }}>
+              <b style={{ color: R.noche }}>{x.n} partes</b> este trimestre{x.graves ? ` (${x.graves} graves o muy graves)` : ""} · {x.ambito === "mios" ? "puestos por ti" : `en tu tutoría`}
               {x.aviso && <> · {x.pendiente ? `avisada con ${x.aviso.n}, hay ${x.n - x.aviso.n} nuevo(s)` : `✅ familia avisada el ${fmtD(x.aviso.ts)}`}</>}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button onClick={() => onVerPartes(x)} style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}><Ic n="buscar" tam={20} />Ver partes</button>
-            <button onClick={() => setAbierto(abierto === x.id ? null : x.id)} style={{ background: "#FFFBEB", color: "#92400e", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}><Ic n="mensaje-enviar" tam={20} />Avisar a la familia</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => onVerPartes(x)} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="buscar" tam={22} />Ver partes</button>
+            <button onClick={() => setAbierto(abierto === x.id ? null : x.id)} style={{ background: R.mostaza, color: R.noche, border: "none", borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="mensaje-enviar" tam={22} />Avisar a la familia</button>
             {x.pendiente
-              ? <button onClick={() => marcar(x)} style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>✅ Ya he avisado</button>
-              : <button onClick={() => deshacer(x)} style={{ background: "none", color: C.gray, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12 }}>Deshacer</button>}
+              ? <button onClick={() => marcar(x)} style={{ background: R.verde, color: R.noche, border: "none", borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>✅ Ya he avisado</button>
+              : <button onClick={() => deshacer(x)} style={{ background: "none", color: R.azul, border: "none", textDecoration: "underline", minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15 }}>Deshacer</button>}
           </div>
         </div>
         {abierto === x.id && <ContactoFamilia alumno={al} partes={x.partes} banos={banosAl} periodo={tri} tutores={tutores} remitente={usuario} C={C} />}
@@ -5049,23 +5103,25 @@ function PanelAvisos({ partes, alumnos, banos, usuario, tutores, avisos, setAvis
     );
   };
   return (
-    <div className="no-print" style={{ background: pendientes.length ? "#FDF0EF" : "#F0FAF7", border: `2px solid ${pendientes.length ? C.salmon : C.teal}`, borderRadius: 12, padding: 16, marginBottom: 14 }}>
-      <div style={{ fontWeight: 800, color: C.dark, fontSize: 16, marginBottom: 4 }}>
-        <Ic n="alertas" tam={20} />{pendientes.length ? `${pendientes.length} alumno/a(s) con ${UMBRAL_AVISO} o más partes: conviene avisar a su familia` : "Avisos a familias"}
+    <div className="no-print" style={{ marginBottom: 18 }}>
+      <div style={{ fontWeight: 700, color: R.noche, fontSize: 17, padding: "10px 14px", background: pendientes.length ? R.mostaza : R.verde }}>
+        <Ic n="alertas" tam={24} />{pendientes.length ? `${pendientes.length} alumno/a(s) con ${UMBRAL_AVISO} o más partes: conviene avisar a su familia` : "Avisos a familias"}
       </div>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 10 }}>
+      <div style={{ background: R.crema, padding: 14 }}>
+      <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 12, lineHeight: 1.45 }}>
         Alumnado con {UMBRAL_AVISO} o más partes en {tri.texto}: los que has puesto tú{Object.values(tutores).some(t => t?.tutor === usuario) ? " y los de tu tutoría" : ""}. Cuando avises, pulsa «Ya he avisado». Si luego tiene más partes, volverá a aparecer.
       </div>
-      {pendientes.length === 0 && <div style={{ fontSize: 13, color: C.teal, fontWeight: 700, marginBottom: hechos.length ? 8 : 0 }}>✅ No tienes avisos pendientes.</div>}
+      {pendientes.length === 0 && <div style={{ fontSize: 16, color: R.petroleo, fontWeight: 700, marginBottom: hechos.length ? 8 : 0 }}>✅ No tienes avisos pendientes.</div>}
       {pendientes.map(tarjeta)}
       {hechos.length > 0 && (
         <>
-          <button onClick={() => setVerHechos(v => !v)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0, marginTop: 4 }}>
+          <button onClick={() => setVerHechos(v => !v)} style={{ background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 16, fontWeight: 700, minHeight: 44, padding: 0, marginTop: 4 }}>
             {verHechos ? "▾" : "▸"} Familias ya avisadas ({hechos.length})
           </button>
           {verHechos && <div style={{ marginTop: 8 }}>{hechos.map(tarjeta)}</div>}
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -5098,10 +5154,10 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
   const abrirDia = f => setDetalle({ titulo: `Partes del ${parseISO(f).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`, partes: est.partes.filter(p => isoLocal(p.ts) === f) });
   const abrir = (titulo, filtro) => setDetalle({ titulo, subtitulo: periodoTxt, partes: est.partes.filter(filtro) });
 
-  const tarjeta = { background: C.white, borderRadius: 12, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 14 };
-  const h3 = { margin: "0 0 12px", color: C.dark, fontSize: 15 };
-  const btnDoc = (activo = true) => ({ display: "block", width: "100%", textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `2px solid ${activo ? C.teal : "#e2e8f0"}`, background: activo ? "#F0FAF7" : "#f8fafc", color: activo ? C.dark : C.gray, cursor: activo ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13 });
-  const sub = { display: "block", fontWeight: 500, fontSize: 11, color: C.gray, marginTop: 2 };
+  const tarjeta = { background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 16, marginBottom: 14 };
+  const h3 = { margin: "0 0 12px", color: R.petroleo, fontSize: 18, display: "flex", alignItems: "center", gap: 8 };
+  const btnDoc = (activo = true) => ({ display: "block", width: "100%", textAlign: "left", minHeight: 48, padding: "12px 14px", borderRadius: 6, border: `2px solid ${activo ? R.turquesa : R.gris}`, background: activo ? C.white : R.gris, color: R.petroleo, opacity: activo ? 1 : .7, cursor: activo ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 16 });
+  const sub = { display: "block", fontWeight: 400, fontSize: 14, color: R.petroleo, marginTop: 4 };
 
   const partesAlumno = est.partes.filter(p => String(p.alumnoId) === alumnoDoc);
   const partesGrupo = est.partes.filter(p => p.curso === grupoDoc);
@@ -5112,9 +5168,10 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 
   return (
     <div>
-      <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="estadisticas" tam={44} />{esProfe ? "Mis estadísticas e informes" : "Estadísticas y documentos"}</h2>
+      <TituloBloque titulo={esProfe ? "Mis estadísticas e informes" : "Estadísticas y documentos"} sub="Cifras, gráficos y documentos del periodo que elijas" icono="estadisticas" />
+      <div style={{ height: 16 }} />
       {esProfe && (
-        <div className="no-print" style={{ ...tarjeta, borderLeft: `5px solid ${C.teal}` }}>
+        <div className="no-print" style={{ ...tarjeta, background: R.azulClaro, border: "none" }}>
           <label style={labelStyle}>¿Qué partes quieres analizar?</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
@@ -5124,13 +5181,13 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
               { id: "mios", txt: "👤 Como profesor/a: mis partes", sub: "Los partes que has puesto y el alumnado que sale al baño en tus clases" },
             ].map(o => (
               <button key={o.id} disabled={o.off} onClick={() => { setAmbito(o.id); setAlumnoDoc(""); setGrupoDoc(""); }}
-                style={{ flex: "1 1 220px", textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `2px solid ${ambitoOk === o.id ? C.teal : "#e2e8f0"}`, background: o.off ? "#f8fafc" : ambitoOk === o.id ? "#F0FAF7" : C.white, cursor: o.off ? "not-allowed" : "pointer", opacity: o.off ? .65 : 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, display: "flex", alignItems: "center", gap: 6 }}>{ambitoOk === o.id ? "✔ " : ""}<ConIcono texto={o.txt} tam={34} /></div>
-                <div style={{ fontSize: 11, color: C.gray }}>{o.sub}</div>
+                style={{ flex: "1 1 220px", textAlign: "left", minHeight: 56, padding: "10px 14px", borderRadius: 6, border: `2px solid ${ambitoOk === o.id ? R.azul : C.white}`, background: o.off ? R.gris : C.white, cursor: o.off ? "not-allowed" : "pointer", opacity: o.off ? .6 : 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: R.petroleo, display: "flex", alignItems: "center", gap: 6 }}>{ambitoOk === o.id ? "✔ " : ""}<ConIcono texto={o.txt} tam={34} /></div>
+                <div style={{ fontSize: 14, color: R.petroleo }}>{o.sub}</div>
               </button>
             ))}
           </div>
-          {!misTutorias.length && <div style={{ fontSize: 12, color: C.gray, marginTop: 8 }}>Estás viendo tus partes como profesor/a. Si eres tutor/a y no aparece tu grupo, pide a Administración que te asigne la tutoría.{MODO_DEMO ? " En la demostración, para verlo como tutor/a pulsa «Salir» y entra con el botón «Tutor/a de un grupo»." : ""}</div>}
+          {!misTutorias.length && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>Estás viendo tus partes como profesor/a. Si eres tutor/a y no aparece tu grupo, pide a Administración que te asigne la tutoría.{MODO_DEMO ? " En la demostración, para verlo como tutor/a pulsa «Salir» y entra con el botón «Tutor/a de un grupo»." : ""}</div>}
         </div>
       )}
       {detalle && <DetallePartes {...detalle} tutores={tutores} onVerParte={onVerParte} onCerrar={() => setDetalle(null)} C={C} />}
@@ -5143,45 +5200,45 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
           {PERIODOS.map(p => (
             <button key={p.id} onClick={() => setTipo(p.id)}
-              style={{ padding: "8px 14px", borderRadius: 20, border: `2px solid ${tipo === p.id ? C.teal : "#e2e8f0"}`, background: tipo === p.id ? C.teal : C.white, color: tipo === p.id ? "#fff" : C.dark, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: `2px solid ${tipo === p.id ? R.azul : R.turquesa}`, background: tipo === p.id ? R.azul : C.white, color: tipo === p.id ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {p.label}
             </button>
           ))}
         </div>
         {tipo === "rango" ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-            <div><label style={{ fontSize: 12, color: C.gray }}>Desde</label><input type="date" value={desdeLibre} onChange={e => setDesdeLibre(e.target.value)} style={inpStyle} /></div>
-            <div><label style={{ fontSize: 12, color: C.gray }}>Hasta</label><input type="date" value={hastaLibre} onChange={e => setHastaLibre(e.target.value)} style={inpStyle} /></div>
+            <div><label style={{ fontSize: 14, color: R.petroleo, fontWeight: 700 }}>Desde</label><input type="date" value={desdeLibre} onChange={e => setDesdeLibre(e.target.value)} style={inpStyle} /></div>
+            <div><label style={{ fontSize: 14, color: R.petroleo, fontWeight: 700 }}>Hasta</label><input type="date" value={hastaLibre} onChange={e => setHastaLibre(e.target.value)} style={inpStyle} /></div>
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <button onClick={() => setRef(moverPeriodo(tipo, ref, -1))} aria-label="Periodo anterior" style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid #e2e8f0`, background: C.white, cursor: "pointer", fontWeight: 700 }}>◀</button>
+            <button onClick={() => setRef(moverPeriodo(tipo, ref, -1))} aria-label="Periodo anterior" style={{ minWidth: 48, minHeight: 48, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.turquesa}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700 }}>◀</button>
             <input type="date" value={ref} onChange={e => setRef(e.target.value || isoLocal())} style={{ ...inpStyle, width: "auto", flex: "1 1 160px", marginBottom: 0 }} aria-label="Fecha" />
-            <button onClick={() => setRef(moverPeriodo(tipo, ref, 1))} aria-label="Periodo siguiente" style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid #e2e8f0`, background: C.white, cursor: "pointer", fontWeight: 700 }}>▶</button>
-            <button onClick={() => setRef(isoLocal())} style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: C.cream, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Hoy</button>
+            <button onClick={() => setRef(moverPeriodo(tipo, ref, 1))} aria-label="Periodo siguiente" style={{ minWidth: 48, minHeight: 48, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.turquesa}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700 }}>▶</button>
+            <button onClick={() => setRef(isoLocal())} style={{ minHeight: 48, padding: "0 16px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700, fontSize: 16 }}>Hoy</button>
           </div>
         )}
-        <div style={{ marginTop: 12, fontSize: 14, fontWeight: 700, color: C.blue }}><Ic n="fecha-hora" tam={20} />{periodo.texto[0].toUpperCase() + periodo.texto.slice(1)} · {est.lectivos.length} día(s) lectivo(s)</div>
+        <div style={{ marginTop: 12, fontSize: 16, fontWeight: 700, color: R.azul }}><Ic n="fecha-hora" tam={20} />{periodo.texto[0].toUpperCase() + periodo.texto.slice(1)} · {est.lectivos.length} día(s) lectivo(s)</div>
       </div>
 
       {/* Cifras principales */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 14 }}>
         {[
-          { n: est.partes.length, t: "Partes", s: `${est.gravedad.leve} leves · ${est.gravedad.grave} graves · ${est.gravedad.muy_grave} muy graves`, c: C.teal, click: () => abrir("Todos los partes", () => true) },
-          { n: est.alumnosConParte, t: "Alumnos/as con parte", s: est.lectivos.length ? `${(est.partes.length / est.lectivos.length).toFixed(1)} partes por día` : "", c: C.blue },
-          { n: est.banos.length, t: "Salidas al baño", s: est.banoMedio ? `${est.banoMedio} min de media · ${est.banosLargos} de más de 10 min` : "", c: "#10b981" },
+          { n: est.partes.length, t: "Partes", s: `${est.gravedad.leve} leves · ${est.gravedad.grave} graves · ${est.gravedad.muy_grave} muy graves`, c: R.verde, click: () => abrir("Todos los partes", () => true) },
+          { n: est.alumnosConParte, t: "Alumnos/as con parte", s: est.lectivos.length ? `${(est.partes.length / est.lectivos.length).toFixed(1)} partes por día` : "", c: R.turquesa },
+          { n: est.banos.length, t: "Salidas al baño", s: est.banoMedio ? `${est.banoMedio} min de media · ${est.banosLargos} de más de 10 min` : "", c: R.verde },
           ...(esProfe ? [
-            { n: est.gravedad.grave + est.gravedad.muy_grave, t: "Graves y muy graves", s: "Pulsa para verlos", c: C.salmon, click: () => abrir("Partes graves y muy graves", p => p.gravedad !== "leve") },
+            { n: est.gravedad.grave + est.gravedad.muy_grave, t: "Graves y muy graves", s: "Pulsa para verlos", c: R.azul, click: () => abrir("Partes graves y muy graves", p => p.gravedad !== "leve") },
           ] : [
-            { n: est.ausencias.length, t: "Ausencias profesorado", s: `${est.horasAusencia} horas · ${est.profesoresAusentes} profesores/as`, c: C.salmon },
-            { n: est.guardiasDebidas ? `${pct(est.guardiasFirmadas, est.guardiasDebidas)} %` : "-", t: "Guardias firmadas", s: `${est.guardiasFirmadas} de ${est.guardiasDebidas}`, c: C.amber },
-            { n: est.listasPasadas, t: "Listas en guardia", s: `${est.faltasEnListas} faltas anotadas`, c: "#8b5cf6" },
+            { n: est.ausencias.length, t: "Ausencias profesorado", s: `${est.horasAusencia} horas · ${est.profesoresAusentes} profesores/as`, c: R.azul },
+            { n: est.guardiasDebidas ? `${pct(est.guardiasFirmadas, est.guardiasDebidas)} %` : "-", t: "Guardias firmadas", s: `${est.guardiasFirmadas} de ${est.guardiasDebidas}`, c: R.mostaza },
+            { n: est.listasPasadas, t: "Listas en guardia", s: `${est.faltasEnListas} faltas anotadas`, c: R.petroleo },
           ]),
         ].map(k => (
-          <div key={k.t} onClick={k.click} title={k.click ? "Pulsa para verlos en detalle" : undefined} style={{ background: C.white, borderRadius: 12, padding: 14, borderTop: `4px solid ${k.c}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", cursor: k.click ? "pointer" : "default" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: C.dark }}>{k.n}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{k.t}</div>
-            <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{k.s}</div>
+          <div key={k.t} onClick={k.click} title={k.click ? "Pulsa para verlos en detalle" : undefined} style={{ background: C.white, padding: 14, border: `1px solid ${R.turquesaClaro}`, borderTop: `8px solid ${k.c}`, cursor: k.click ? "pointer" : "default" }}>
+            <div style={{ fontFamily: TITULO, fontSize: 32, fontWeight: 400, color: R.petroleo }}>{k.n}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: R.petroleo }}>{k.t}</div>
+            <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{k.s}</div>
           </div>
         ))}
       </div>
@@ -5194,20 +5251,20 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
             {est.porDia.map(d => (
               <div key={d.fecha} title={`${fmtD(parseISO(d.fecha))}: ${d.partes} partes (${d.leve} leves, ${d.grave} graves, ${d.muy_grave} muy graves) · ${d.banos} baños · ${d.ausencias} ausencias. Pulsa para ver el detalle.`}
                 role="button" tabIndex={0} onClick={() => abrirDia(d.fecha)} onKeyDown={e => { if (e.key === "Enter") abrirDia(d.fecha); }}
-                onMouseOver={e => { e.currentTarget.style.background = "#f1f5f9"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}
+                onMouseOver={e => { e.currentTarget.style.background = R.azulClaro; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}
                 style={{ flex: "1 0 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", cursor: "pointer", borderRadius: 6 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.dark }}>{d.partes || ""}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: R.petroleo }}>{d.partes || ""}</div>
                 <div style={{ width: "100%", maxWidth: 34, display: "flex", flexDirection: "column-reverse", height: `${(100 * d.partes) / maxDia}%`, minHeight: d.partes ? 3 : 0, borderRadius: "4px 4px 0 0", overflow: "hidden" }}>
-                  <div style={{ flex: d.leve, background: C.teal }} /><div style={{ flex: d.grave, background: C.amber }} /><div style={{ flex: d.muy_grave, background: C.salmon }} />
+                  <div style={{ flex: d.leve, background: COLOR_GRAVEDAD.leve }} /><div style={{ flex: d.grave, background: COLOR_GRAVEDAD.grave }} /><div style={{ flex: d.muy_grave, background: COLOR_GRAVEDAD.muy_grave }} />
                 </div>
-                <div style={{ fontSize: 10, color: C.gray, marginTop: 3 }}>{parseISO(d.fecha).getDate()}</div>
+                <div style={{ fontSize: 14, color: R.petroleo, marginTop: 3 }}>{parseISO(d.fecha).getDate()}</div>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.gray, marginTop: 8, flexWrap: "wrap" }}>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.teal, borderRadius: 2 }} /> Leves</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.amber, borderRadius: 2 }} /> Graves</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.salmon, borderRadius: 2 }} /> Muy graves</span>
+          <div style={{ display: "flex", gap: 14, fontSize: 14, color: R.petroleo, marginTop: 10, flexWrap: "wrap" }}>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.leve, verticalAlign: -2 }} /> Leves</span>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.grave, verticalAlign: -2 }} /> Graves</span>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.muy_grave, verticalAlign: -2 }} /> Muy graves</span>
             <span><b>Pulsa una columna</b> para ver ese día en grande: motivos, faltas que más se repiten y cada parte.</span>
           </div>
         </div>
@@ -5215,19 +5272,19 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
         <div style={tarjeta}><h3 style={h3}><Ic n="por-curso" tam={20} />Partes por grupo</h3><Barras datos={est.porGrupo.map(r => [`${r.curso}${r.tutor ? ` · ${r.tutor}` : ""}`, r.total, r.curso])} onClick={c => abrir(`Partes de ${c}`, p => p.curso === c)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="hora-reloj" tam={20} />Partes por hora de clase</h3><Barras datos={est.porHora} color={C.blue} onClick={h => abrir(`Partes a ${h}`, p => p.hora === h)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="por-alumno" tam={20} />Alumnado con más partes</h3><Barras datos={est.porAlumno} color={C.salmon} onClick={k => abrir(`Partes de ${k}`, p => `${p.alumno} (${p.curso})` === k)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="tipificacion" tam={20} />Faltas más frecuentes</h3><Barras datos={est.porTipificacion} color={C.amber} onClick={k => abrir(k, p => etiquetaTip(p) === k)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Salidas al baño por grupo</h3><Barras datos={est.banosPorGrupo} color="#10b981" /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="hora-reloj" tam={20} />Partes por hora de clase</h3><Barras datos={est.porHora} color={R.azul} onClick={h => abrir(`Partes a ${h}`, p => p.hora === h)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="por-alumno" tam={20} />Alumnado con más partes</h3><Barras datos={est.porAlumno} color={R.mostaza} onClick={k => abrir(`Partes de ${k}`, p => `${p.alumno} (${p.curso})` === k)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="tipificacion" tam={20} />Faltas más frecuentes</h3><Barras datos={est.porTipificacion} color={R.petroleo} onClick={k => abrir(k, p => etiquetaTip(p) === k)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Salidas al baño por grupo</h3><Barras datos={est.banosPorGrupo} color={R.verde} /></div>
         {esProfe
-          ? <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Alumnado que más sale al baño</h3><Barras datos={est.banosPorAlumno} color="#10b981" /></div>
-          : <div style={tarjeta}><h3 style={h3}><Ic n="profe-ausente" tam={20} />Ausencias del profesorado por motivo</h3><Barras datos={est.ausenciasPorMotivo} color="#8b5cf6" /></div>}
+          ? <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Alumnado que más sale al baño</h3><Barras datos={est.banosPorAlumno} color={R.verde} /></div>
+          : <div style={tarjeta}><h3 style={h3}><Ic n="profe-ausente" tam={20} />Ausencias del profesorado por motivo</h3><Barras datos={est.ausenciasPorMotivo} color={R.petroleo} /></div>}
       </div>
 
       {/* Documentos */}
       <div className="no-print" style={tarjeta}>
         <h3 style={h3}><Ic n="informe" tam={20} />Documentos de este periodo</h3>
-        <div style={{ fontSize: 12, color: C.gray, marginBottom: 12 }}>Al pulsar, el informe se abre <b>en pantalla</b>; desde ahí lo descargas o lo imprimes. Usan las fechas elegidas arriba.</div>
+        <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 12 }}>Al pulsar, el informe se abre <b>en pantalla</b>; desde ahí lo descargas o lo imprimes. Usan las fechas elegidas arriba.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>
           <button style={btnDoc()} onClick={() => pdfEstadisticas(est, periodo, esProfe ? `${ambitoOk === "mios" ? "Partes puestos por" : `Tutoría de ${ambitoOk} ·`} ${usuario}` : "")}>
             <Ic n="dashboard" tam={20} />Estadísticas del periodo<span style={sub}>Resumen, evolución por día, grupos, alumnado, faltas y profesorado</span>
@@ -5251,7 +5308,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
           </button>
         </div>
 
-        <div style={{ borderTop: `1px dashed ${C.cream}`, marginTop: 16, paddingTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, marginTop: 16, paddingTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
           <div>
             <label style={labelStyle}><Ic n="por-alumno" tam={20} />Partes de un alumno/a</label>
             <select value={alumnoDoc} onChange={e => setAlumnoDoc(e.target.value)} style={{ ...selStyle, marginBottom: 8 }}>
@@ -5287,7 +5344,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
             </button>
           </div>}
         </div>
-        <div style={{ fontSize: 11, color: C.gray, marginTop: 12 }}>Las faltas oficiales de asistencia del alumnado se registran en Raíces; aquí solo aparecen las anotadas en las listas de guardia.</div>
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 12 }}>Las faltas oficiales de asistencia del alumnado se registran en Raíces; aquí solo aparecen las anotadas en las listas de guardia.</div>
       </div>
     </div>
   );
@@ -5324,7 +5381,7 @@ function GuiaInstalar() {
     iphone: { titulo: "iPhone o iPad (Safari)", pasos: ["Abre rumboaula.vercel.app en Safari (en otros navegadores del iPhone puede no aparecer la opción).", "Toca el botón Compartir (el cuadrado con una flecha hacia arriba).", "Desliza y elige «Añadir a pantalla de inicio».", "Toca «Añadir»: el icono aparece en tu pantalla de inicio."] },
     ordenador: { titulo: "Ordenador (Chrome o Edge)", pasos: ["Abre rumboaula.vercel.app en Chrome o Edge.", "Pulsa el icono de instalar que aparece a la derecha de la barra de direcciones (una pantalla con una flecha).", "Si no lo ves: menú ⋮ › «Enviar, guardar y compartir» › «Instalar página como aplicación» en Chrome, o menú … › «Aplicaciones» › «Instalar este sitio como aplicación» en Edge.", "Se abrirá en su propia ventana y quedará en el menú de inicio o en el Dock. En Firefox no se puede instalar: guarda la página en marcadores."] },
   };
-  const tab = id => ({ border: `2px solid ${disp === id ? C.teal : C.light}`, background: disp === id ? "#E8F5F3" : "#fff", color: disp === id ? C.teal : C.gray, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer" });
+  const tab = id => ({ border: `2px solid ${disp === id ? C.teal : C.light}`, background: disp === id ? "#DDF0F4" : "#fff", color: disp === id ? C.teal : C.gray, borderRadius: 8, padding: "6px 10px", fontSize: 14, fontWeight: 700, cursor: "pointer" });
   return (
     <div>
       <p style={{ margin: "0 0 8px" }}>Para ver la demostración <strong>no hace falta instalar nada</strong>: basta con abrir <strong>rumboaula.vercel.app</strong> en el navegador. Instalarla solo sirve para tenerla a mano, con su icono, como cualquier otra aplicación.</p>
@@ -5334,7 +5391,7 @@ function GuiaInstalar() {
         {Object.entries(PASOS).map(([id, v]) => <button key={id} role="tab" aria-selected={disp === id} onClick={() => setDisp(id)} style={tab(id)}>{v.titulo}</button>)}
       </div>
       <ol style={{ margin: "0 0 6px", paddingLeft: 20 }}>{PASOS[disp].pasos.map(t => <li key={t} style={{ marginBottom: 4 }}>{t}</li>)}</ol>
-      <p style={{ margin: "8px 0 0", color: C.gray, fontSize: 13 }}>Después, para la demostración: pulsa «Cargar los datos de ejemplo» y elige un perfil (Profesor/a, Tutor/a, Jefatura o Administración). Recuerda que en esta versión cada dispositivo tiene sus propios datos.</p>
+      <p style={{ margin: "8px 0 0", color: C.gray, fontSize: 14 }}>Después, para la demostración: pulsa «Cargar los datos de ejemplo» y elige un perfil (Profesor/a, Tutor/a, Jefatura o Administración). Recuerda que en esta versión cada dispositivo tiene sus propios datos.</p>
     </div>
   );
 }
@@ -5383,14 +5440,14 @@ function PreguntasFrecuentes() {
     <div role="dialog" aria-modal="true" aria-labelledby="rumbo-faq-titulo" onClick={() => setAbierto(false)}
       style={{ position: "fixed", inset: 0, zIndex: 2250, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, fontFamily: "system-ui,sans-serif" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "min(680px, 100%)", maxHeight: "92vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
-        <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ background: R.azul, color: "#fff", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div id="rumbo-faq-titulo" style={{ fontWeight: 900, fontSize: 18 }}>❓ Preguntas frecuentes</div>
           <button onClick={() => setAbierto(false)} aria-label="Cerrar preguntas frecuentes" style={{ background: "rgba(255,255,255,.2)", border: "1px solid rgba(255,255,255,.4)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>✕</button>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 18px 18px", fontSize: 14, lineHeight: 1.55, color: C.dark }}>
-          <a href="/manual/" target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 12, margin: "8px 0 4px", padding: "12px 14px", borderRadius: 12, background: "#E8F5F3", border: `2px solid ${C.teal}`, color: C.dark, textDecoration: "none" }}>
+          <a href="/manual/" target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 12, margin: "8px 0 4px", padding: "12px 14px", borderRadius: 12, background: "#DDF0F4", border: `2px solid ${C.teal}`, color: C.dark, textDecoration: "none" }}>
             <Icono nombre="como-se-usa" tam={36} />
-            <span><strong style={{ fontSize: 15 }}>📘 Manual de uso</strong><br /><span style={{ fontSize: 13, color: C.gray }}>Paso a paso, por perfiles, con las pantallas reales. Se abre en otra pestaña.</span></span>
+            <span><strong style={{ fontSize: 15 }}>📘 Manual de uso</strong><br /><span style={{ fontSize: 14, color: C.gray }}>Paso a paso, por perfiles, con las pantallas reales. Se abre en otra pestaña.</span></span>
           </a>
           {PREGUNTAS.map(({ id, q, a }) => (
             <details key={id} open={desplegada === id} onToggle={e => { if (e.currentTarget.open) setDesplegada(id); else if (desplegada === id) setDesplegada(""); }}
@@ -5465,7 +5522,7 @@ class RedSeguridad extends Component {
           <button style={{ ...btn, background: C.teal, color: "#fff" }} onClick={() => abrirCorreoInforme("RumboAula: algo ha fallado", informe)}>📧 Avisar a la responsable</button>
           <button style={{ ...btn, background: C.light, color: C.dark }} onClick={async () => this.setState({ copiado: await copiarTexto(informe) })}>{this.state.copiado ? "✅ Informe copiado" : "📋 Copiar el informe"}</button>
           <button style={{ ...btn, background: "transparent", color: C.blue }} onClick={() => window.location.reload()}>🔄 Volver a empezar</button>
-          <div style={{ fontSize: 11, color: C.gray, marginTop: 10 }}>Si no se abre el correo, copia el informe y envíalo a {CORREO_SOPORTE}. No incluye datos del alumnado.</div>
+          <div style={{ fontSize: 13, color: C.gray, marginTop: 10 }}>Si no se abre el correo, copia el informe y envíalo a {CORREO_SOPORTE}. No incluye datos del alumnado.</div>
         </div>
       </div>
     );
@@ -5487,14 +5544,14 @@ function InformarProblema() {
   const btn = { border: "none", borderRadius: 10, padding: "10px 14px", fontWeight: 800, fontSize: 14, cursor: "pointer" };
   return (<>
     {errorReciente && !abierto && (
-      <div role="status" style={{ position: "fixed", left: 12, bottom: 60, zIndex: 2150, background: "#FDF0EF", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: "10px 12px", maxWidth: "min(360px, calc(100% - 24px))", boxShadow: "0 6px 20px rgba(0,0,0,.15)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 180px", fontSize: 13, color: "#9f1239", fontWeight: 700 }}>⚠️ Algo no ha ido bien en esta pantalla.</div>
-        <button style={{ ...btn, background: "#be123c", color: "#fff", padding: "6px 10px", fontSize: 12 }} onClick={() => setAbierto(true)}>Avisar</button>
+      <div role="status" style={{ position: "fixed", left: 12, bottom: 60, zIndex: 2150, background: "#FDF1D9", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: "10px 12px", maxWidth: "min(360px, calc(100% - 24px))", boxShadow: "0 6px 20px rgba(0,0,0,.15)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 180px", fontSize: 14, color: "#275D8C", fontWeight: 700 }}>⚠️ Algo no ha ido bien en esta pantalla.</div>
+        <button style={{ ...btn, background: "#275D8C", color: "#fff", padding: "6px 10px", fontSize: 14 }} onClick={() => setAbierto(true)}>Avisar</button>
         <button aria-label="Cerrar" style={{ ...btn, background: "transparent", color: C.gray, padding: "6px 8px" }} onClick={() => setErrorReciente(null)}>✕</button>
       </div>
     )}
     <button className="rumbo-informar" onClick={() => setAbierto(true)} aria-label="Informar de un problema"
-      style={{ position: "fixed", left: 12, bottom: 12, zIndex: 240, background: "#fff", color: C.dark, border: `1px solid ${C.light}`, borderRadius: 20, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 3px 10px rgba(0,0,0,.12)", opacity: .92 }}>
+      style={{ position: "fixed", left: 12, bottom: 12, zIndex: 240, background: "#fff", color: C.dark, border: `1px solid ${C.light}`, borderRadius: 20, padding: "7px 12px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 3px 10px rgba(0,0,0,.12)", opacity: .92 }}>
       ⚠️ <span className="rumbo-informar-txt">Informar de un problema</span>
     </button>
     <style>{`@media (max-width: 600px) { .rumbo-informar-txt, .gd-faq-txt { display: none; } }`}</style>
@@ -5503,15 +5560,15 @@ function InformarProblema() {
         style={{ position: "fixed", inset: 0, zIndex: 2300, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
         <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: 20, width: "min(480px, 100%)", fontFamily: "system-ui,sans-serif" }}>
           <div id="rumbo-informar-titulo" style={{ fontSize: 19, fontWeight: 900, color: C.dark, marginBottom: 4 }}>⚠️ Informar de un problema</div>
-          <div style={{ fontSize: 13, color: C.gray, marginBottom: 10 }}>Cuéntale a la responsable de la app qué ha pasado o qué no te cuadra.</div>
+          <div style={{ fontSize: 14, color: C.gray, marginBottom: 10 }}>Cuéntale a la responsable de la app qué ha pasado o qué no te cuadra.</div>
           <textarea autoFocus value={texto} onChange={e => setTexto(e.target.value)} rows={4} placeholder="Ej.: al pulsar «Asignar» no ha pasado nada…"
             style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, border: `2px solid ${C.light}`, padding: 10, fontSize: 14, fontFamily: "inherit", resize: "vertical" }} />
-          {errorReciente && <div style={{ fontSize: 12, color: "#9f1239", marginTop: 6 }}>Se incluirá el error técnico que acaba de producirse.</div>}
+          {errorReciente && <div style={{ fontSize: 14, color: "#275D8C", marginTop: 6 }}>Se incluirá el error técnico que acaba de producirse.</div>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
             <button style={{ ...btn, background: C.teal, color: "#fff" }} onClick={() => { abrirCorreoInforme("RumboAula: informe de un problema", informe()); }}>📧 Abrir el correo</button>
             <button style={{ ...btn, background: C.light, color: C.dark }} onClick={async () => setCopiado(await copiarTexto(informe()))}>{copiado ? "✅ Copiado" : "📋 Copiar el informe"}</button>
           </div>
-          <div style={{ fontSize: 11, color: C.gray, marginTop: 10, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: C.gray, marginTop: 10, lineHeight: 1.5 }}>
             Se envía a {CORREO_SOPORTE} con la pantalla, tu perfil, la hora, la versión y los últimos errores técnicos. <strong>No se envían datos del alumnado.</strong> Si no se abre tu correo, copia el informe y envíalo tú.
           </div>
           <button style={{ ...btn, background: "transparent", color: C.gray, width: "100%", marginTop: 6 }} onClick={() => { setAbierto(false); setCopiado(false); }}>Cerrar</button>
@@ -5871,16 +5928,20 @@ function AppInterna() {
   }
 
   // Estilos base
-  const inpStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid #d1d5db`, fontSize: 14, boxSizing: "border-box", background: C.white, outline: "none" };
+  // Campos como los de Raíces: borde turquesa grueso, 48 px de alto y letra de 16 px
+  const inpStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", boxSizing: "border-box", background: C.white, color: R.noche };
   const selStyle = { ...inpStyle };
-  const labelStyle = { display: "block", fontWeight: 600, marginBottom: 6, color: C.dark, fontSize: 13 };
+  const labelStyle = { display: "block", fontWeight: 700, marginBottom: 8, color: R.petroleo, fontSize: 15 };
+  // Campos de la pantalla principal (rediseño): 48 px de alto, letra de 16 px y borde que se ve
+  const campoStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, lineHeight: 1.4, fontFamily: "inherit", boxSizing: "border-box", background: C.white, color: R.noche };
+  const etiquetaStyle = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontWeight: 700, marginBottom: 8, color: R.petroleo, fontSize: 15 };
 
   // ── Pantalla de carga ──
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg,${C.dark},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ color: "#fff", textAlign: "center" }}>
-        <div style={{ fontSize: 52 }}><Ic n="por-curso" tam={20} /></div>
-        <div style={{ fontSize: 18, fontWeight: 600, marginTop: 12 }}>Cargando {APP}…</div>
+    <div style={{ minHeight: "100vh", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE }}>
+      <div style={{ color: R.petroleo, textAlign: "center" }}>
+        <Logo alto={90} />
+        <div style={{ fontSize: 18, fontWeight: 600, marginTop: 16 }}>Cargando {APP}…</div>
       </div>
     </div>
   );
@@ -5921,16 +5982,16 @@ function AppInterna() {
       ? [
           { id: "partes",      label: "📋 Nuevo Parte", color: "#06b6d4" },
           { id: "parte_grupo", label: "👥 Parte de Grupo", color: "#ec4899" },
-          { id: "bano",        label: "🚻 Baños", color: "#10b981" },
-          { id: "historial",   label: "🗂 Mis Partes", color: "#8b5cf6" },
+          { id: "bano",        label: "🚻 Baños", color: "#63CBA1" },
+          { id: "historial",   label: "🗂 Mis Partes", color: "#2B647E" },
           { id: "mis_estadisticas", label: `📈 Estadísticas${avisosPendientes ? ` · 🔔 ${avisosPendientes}` : ""}`, color: "#06b6d4" },
         ]
       : moduloProfesor === "guardias"
       ? [
-          { id: "ahora",          label: "⏰ Ahora", color: "#f59e0b" },
+          { id: "ahora",          label: "⏰ Ahora", color: "#F6C862" },
           { id: "mi_guardia",     label: "🔄 Mi Guardia Hoy", color: "#06b6d4" },
           { id: "notif_ausencia", label: "📢 Notificar Ausencia", color: "#ec4899" },
-          { id: "guardias_ver",   label: "📄 Ver Guardias", color: "#10b981" },
+          { id: "guardias_ver",   label: "📄 Ver Guardias", color: "#63CBA1" },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "jefatura"
@@ -5938,206 +5999,174 @@ function AppInterna() {
       ? [
           { id: "dashboard",    label: "📊 Dashboard", color: "#06b6d4" },
           { id: "por_curso",    label: "🏫 Por Curso", color: "#ec4899" },
-          { id: "por_alumno",   label: "👤 Por Alumno", color: "#10b981" },
-          { id: "partes_todos", label: "📋 Partes", color: "#8b5cf6" },
+          { id: "por_alumno",   label: "👤 Por Alumno", color: "#63CBA1" },
+          { id: "partes_todos", label: "📋 Partes", color: "#2B647E" },
           { id: "bano_live",    label: "🚻 Baños", color: "#06b6d4" },
           { id: "alertas",      label: `🔔${alertasNoLeidas > 0 ? ` (${alertasNoLeidas})` : ""} Alertas`, color: "#ec4899" },
-          { id: "informe",      label: "📤 Informe", color: "#10b981" },
-          { id: "estadisticas", label: "📈 Estadísticas", color: "#8b5cf6" },
+          { id: "informe",      label: "📤 Informe", color: "#63CBA1" },
+          { id: "estadisticas", label: "📈 Estadísticas", color: "#2B647E" },
         ]
       : moduloJefatura === "guardias"
       ? [
-          { id: "ahora",         label: "⏰ Ahora", color: "#f59e0b" },
+          { id: "ahora",         label: "⏰ Ahora", color: "#F6C862" },
           { id: "cuadrante",     label: "📅 Cuadrante", color: "#06b6d4" },
-          { id: "coordinacion",  label: "🔄 Coordinación Diaria", color: "#8b5cf6" },
+          { id: "coordinacion",  label: "🔄 Coordinación Diaria", color: "#2B647E" },
           { id: "parte_dia",     label: "🔄 Parte del Día", color: "#ec4899" },
-          { id: "ausencias_jef", label: "📢 Ausencias de Profesores", color: "#10b981" },
+          { id: "ausencias_jef", label: "📢 Ausencias de Profesores", color: "#63CBA1" },
           { id: "firmas_jef",    label: "✍️ Firmas y listas", color: "#06b6d4" },
-          { id: "estadisticas",  label: "📈 Estadísticas", color: "#8b5cf6" },
+          { id: "estadisticas",  label: "📈 Estadísticas", color: "#2B647E" },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : [
         // Admin no necesita tabs adicionales, solo usa los módulos
       ];
 
+  // Módulos de cada perfil (franja turquesa o menú lateral)
+  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : (id === "guardias" ? "mi_guardia" : "mensajeria")); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : (id === "guardias" ? "cuadrante" : "mensajeria")); };
+  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : "admin_profesores"); };
+  const modulos = perfil.id === "profesor"
+    ? [
+        { id: "alumnos",  label: "👨‍🎓 Partes" },
+        { id: "guardias", label: "🔄 Guardias" },
+        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+      ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
+    : perfil.id === "jefatura"
+    ? [
+        { id: "alumnos",  label: "📋 Partes & Alumnos" },
+        { id: "guardias", label: "🔄 Guardias & Ausencias" },
+        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+      ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
+    : perfil.id === "admin"
+    ? [
+        { id: "alumnos",  label: "👥 Alumnos" },
+        { id: "guardias", label: "👨‍🏫 Profesores" },
+      ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
+    : [];
+  const moduloActivo = perfil.id === "profesor" ? moduloProfesor : moduloJefatura;
+
   return (
     <CorreosCentroCtx.Provider value={{ correos: correosCentro, setCorreos: setCorreosCentro, profes: profesores.map(p => ({ nombre: p, email: cuentas[p]?.email || (MODO_DEMO ? correoDemo(p) : "") })) }}>
-    <div style={{ minHeight: "100vh", background: C.cream, fontFamily: "system-ui,sans-serif", width: "100%" }}>
+    <div className="gd-app" style={{ minHeight: "100vh", background: C.white, color: R.petroleo, fontFamily: FUENTE, fontSize: 16, lineHeight: 1.5, width: "100%" }}>
       {usuario && <AvisosMensajes mensajes={mensajes} usuario={usuario} C={C} onAbrir={abrirMensajes}
         onActualizar={(id, cambios) => setMensajes(prev => prev.map(m => m.id === id ? { ...m, ...cambios } : m))} />}
+      {/* Estilo inspirado en Raíces: cabecera blanca, menú turquesa (lateral en pantallas anchas) y pestañas grises */}
       <style>{`
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; }
+        .gd-app :focus-visible { outline: 3px solid ${R.azul}; outline-offset: 2px; }
+        .gd-pulsable:active:not(:disabled) { transform: scale(.98); }
+        .gd-redondo { width: 52px; height: 52px; padding: 0; border-radius: 50%; border: none; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .gd-redondo:hover { filter: brightness(.95); }
+        .gd-solo-movil { display: none; }
+        .gd-modulos { background: ${R.turquesa}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+        .gd-modulo { min-height: 52px; padding: 0 10px; border: none; border-right: 1px solid rgba(255,255,255,.7); background: transparent; color: #fff; font-family: inherit; font-size: 18px; font-weight: 400; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+        .gd-modulo:last-child { border-right: none; }
+        .gd-modulo::before { content: ""; flex: none; border-left: 9px solid ${R.mostaza}; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+        .gd-modulo:hover { background: rgba(255,255,255,.18); }
+        .gd-modulo.activo { box-shadow: inset 0 -5px 0 ${R.mostaza}; }
+        .gd-modulo.activo::before { border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid ${R.mostaza}; border-bottom: none; }
+        .gd-tabs { display: flex; overflow-x: auto; background: ${R.gris}; border-bottom: 1px solid #D5DEE2; -webkit-overflow-scrolling: touch; }
+        .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
+        .gd-tab:hover { background: rgba(255,255,255,.6); }
+        .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
+        @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
+        @media (min-width: 900px) {
+          .gd-cuerpo { display: grid; grid-template-columns: 250px minmax(0, 1fr); align-items: stretch; min-height: calc(100vh - 110px); }
+          .gd-lateral { display: flex; flex-direction: column; background: ${R.turquesa}; }
+          .gd-modulos { display: contents; }
+          .gd-modulo { justify-content: flex-start; border-right: none; border-bottom: 1px solid rgba(255,255,255,.7); min-height: 50px; padding: 0 16px; font-size: 22px; }
+          .gd-modulo.activo { box-shadow: none; }
+          .gd-tabs { flex-direction: column; overflow: visible; background: ${R.turquesaClaro}; border-bottom: none; }
+          .gd-tab { border-right: none; border-bottom: 1px solid rgba(255,255,255,.8); padding: 6px 16px 6px 34px; white-space: normal; text-align: left; color: ${R.noche}; }
+          .gd-tab.activo { box-shadow: inset 5px 0 0 ${R.azul}; color: ${R.petroleo}; }
+        }
+        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } .gd-logo-grande { display: none !important; } .gd-logo-corto { display: block !important; } }
         @media (max-width: 600px) {
-          .gd-header { padding: 10px 12px !important; }
+          .gd-header { padding: 8px 12px !important; }
+          .gd-redondo { width: 46px; height: 46px; }
+          .gd-redondo img { width: 46px !important; height: 46px !important; }
+          .gd-titulo-bloque { font-size: 28px !important; }
           .gd-header-izq { gap: 8px !important; }
           .gd-logo { display: none; }
           .gd-header select { max-width: 120px !important; }
-          .gd-modulos { padding: 10px 8px !important; gap: 6px !important; }
-          .gd-modulos button { flex: 1 1 0; min-width: 0; padding: 10px 6px !important; font-size: 13px !important; }
+          .gd-modulo { font-size: 16px; padding: 0 6px; gap: 6px; }
+          .gd-contenido { padding: 16px 16px 32px !important; }
+          .gd-rejilla-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .gd-bloque { padding: 16px !important; }
         }
       `}</style>
       <AvisoDemo compacto />
-      {/* Header — ancho completo CON BOTÓN HOME */}
-      <div className="gd-header" style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
-        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
-          <button onClick={() => { 
-            setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes"); 
-            if (perfil.id === "profesor") setModuloProfesor("alumnos"); 
-            if (perfil.id === "jefatura") setModuloJefatura("alumnos"); 
-          }} 
-            onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.35)"; }}
-            onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-            style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 18, fontWeight: 600, transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            ↩️
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img className="gd-logo" src="/icono-rumboaula.png" alt="" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: 3 }} />
+      {/* Cabecera blanca, como Raíces: nombre, saludo y botones redondos con dibujo (inicio, preguntas, salir) */}
+      <div className="gd-header" style={{ background: C.white, color: R.petroleo, padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", width: "100%", gap: 8, borderBottom: "1px solid #E3E9EC" }}>
+        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: .5 }}>{APP}</div>
-              <div style={{ fontSize: 11, opacity: .8 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
+              <Logo alto={68} corto />
+              <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo, marginTop: 4 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
             </div>
           </div>
+          <div className="gd-saludo-cab" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: R.petroleo, minWidth: 0 }}>
+            <Icono nombre="perfil" tam={34} />
+            <span>Hola <span style={{ color: R.azul }}>{usuario}</span>, tu perfil es <span style={{ color: R.azul }}>{sinEmoji1(perfil.label)}</span> y tu centro es {CENTRO}.</span>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
-          <button onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes"
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-            ❓ <span className="gd-faq-txt">Preguntas</span>
-          </button>
-          <button onClick={salir} 
-            onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.25)"; }}
-            onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "background .2s" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="fuera-ahora" tam={22} />Salir</span>
-          </button>
+          <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
+            setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
+            if (perfil.id === "profesor") setModuloProfesor("alumnos");
+            if (perfil.id === "jefatura") setModuloJefatura("alumnos");
+          }}><Icono nombre="inicio" tam={52} /></button>
+          <button className="gd-redondo" onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes" title="Preguntas frecuentes"><Icono nombre="como-se-usa" tam={52} /></button>
+          <button className="gd-redondo" onClick={salir} aria-label="Salir" title="Salir"><Icono nombre="fuera-ahora" tam={52} /></button>
         </div>
       </div>
 
-      {/* Selector módulo Profesor */}
-      {perfil.id === "profesor" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "👨‍🎓 Partes",  icon: "📋" },
-            { id: "guardias", label: "🔄 Guardias",  icon: "⏰" },
-            { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}`, icon: "💬" },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloProfesor(m.id); setTab(m.id === "alumnos" ? "partes" : (m.id === "guardias" ? "mi_guardia" : "mensajeria")); }}
-              style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 15,
-                borderRadius: 10,
-                background: moduloProfesor === m.id ? "#FFE52A" : "#ffffff",
-                color: moduloProfesor === m.id ? "#2C4A52" : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloProfesor === m.id ? "0 4px 12px rgba(255, 229, 42, 0.3)" : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloProfesor === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
+      {/* Menú: franja turquesa en el móvil; en pantallas anchas, menú lateral con las pestañas debajo del módulo elegido.
+          Solo texto, como en Raíces */}
+      <div className="gd-cuerpo">
+      <nav className="gd-lateral no-print" aria-label="Secciones">
+      {modulos.length > 0 && (
+        <div className="gd-modulos">
+          {modulos.map((m, i) => (
+            <button key={m.id} className={"gd-modulo" + (moduloActivo === m.id ? " activo" : "")} style={{ order: 2 * i }}
+              onClick={m.ir}>
+              {sinEmoji1(m.label)}
             </button>
           ))}
         </div>
       )}
 
-      {/* Selector módulo Jefatura */}
-      {perfil.id === "jefatura" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "📋 Partes & Alumnos" },
-            { id: "guardias", label: "🔄 Guardias & Ausencias" },
-            { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "dashboard" : (m.id === "guardias" ? "cuadrante" : "mensajeria")); }}
-              style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 15,
-                borderRadius: 10,
-                background: moduloJefatura === m.id ? "#FFE52A" : "#ffffff",
-                color: moduloJefatura === m.id ? "#2C4A52" : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloJefatura === m.id ? "0 4px 12px rgba(255, 229, 42, 0.3)" : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloJefatura === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
+      {tabs.length > 0 && (
+        <div className="gd-tabs" style={{ order: 2 * Math.max(0, modulos.findIndex(m => m.id === moduloActivo)) + 1 }}>
+          {tabs.map(t => (
+            <button key={t.id} className={"gd-tab" + (tab === t.id ? " activo" : "")} onClick={() => setTab(t.id)}>
+              {sinEmoji1(t.label)}
             </button>
           ))}
         </div>
       )}
-
-      {/* Selector módulo Admin */}
-      {perfil.id === "admin" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "👥 Alumnos", color: "#06b6d4" },
-            { id: "guardias", label: "👨‍🏫 Profesores", color: "#ec4899" },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "admin_panel" : "admin_profesores"); }}
-              style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 15,
-                borderRadius: 10,
-                background: moduloJefatura === m.id ? m.color : "#ffffff",
-                color: moduloJefatura === m.id ? "#ffffff" : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloJefatura === m.id ? `0 4px 12px ${m.color}44` : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloJefatura === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Tabs — ancho completo con mejor responsive y diseño mejorado */}
-      <div style={{ background: "#ffffff", borderBottom: `1px solid #e2e8f0`, display: "flex", overflowX: "auto", padding: "8px 24px", gap: 8, WebkitOverflowScrolling: "touch", alignItems: "center" }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ 
-              padding: "10px 20px", 
-              border: "2px solid transparent",
-              cursor: "pointer", 
-              fontSize: 14, 
-              fontWeight: tab === t.id ? 700 : 500,
-              minHeight: 40,
-              borderRadius: 8,
-              background: tab === t.id ? t.color : "#FF7F11",
-              color: tab === t.id ? "#ffffff" : "#ffffff",
-              whiteSpace: "nowrap", 
-              transition: "all .3s ease",
-              flexShrink: 0,
-              boxShadow: tab === t.id ? `0 4px 12px ${t.color}44` : "0 1px 3px rgba(0,0,0,0.05)",
-              transform: tab === t.id ? "translateY(-1px)" : "translateY(0)"
-            }}>
-            <ConIcono texto={t.label} tam={26} />
-          </button>
-        ))}
-      </div>
+      </nav>
 
       {/* Contenido — centrado con max-width */}
-      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px" }}>
+      <div className="gd-contenido" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px 40px" }}>
 
         {/* Aviso al profesorado: alumnado con 3 o más partes para avisar a su familia */}
         {perfil.id === "profesor" && avisosPendientes > 0 && tab !== "mis_estadisticas" && (
-          <div role="status" className="no-print" style={{ background: "#FDF0EF", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ color: C.dark, fontSize: 14 }}>
-              <b><Ic n="alertas" tam={20} />{avisosPendientes} alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.</b>
-              <div style={{ fontSize: 12, color: C.gray }}>Conviene avisar a su familia. Tienes el informe y el correo preparados.</div>
+          <div role="status" className="no-print" style={{ marginBottom: 28 }}>
+            <TituloBloque titulo="Avisos" sub="Familias por avisar" icono="alertas" />
+            <div style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontSize: 16, lineHeight: 1.4 }}>
+              Hay <b style={{ fontSize: 20 }}>{avisosPendientes}</b> alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.
             </div>
-            <button onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
-              style={{ background: C.salmon, color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Ver avisos →</button>
+            <div style={{ background: R.crema, color: R.petroleo, padding: "12px 14px", fontSize: 16, fontWeight: 700, lineHeight: 1.4 }}>
+              Conviene avisar a su familia. Tienes el informe y el correo preparados.
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
+                style={{ background: "none", color: R.azul, border: "none", minHeight: 44, padding: "0 4px", cursor: "pointer", fontSize: 18, display: "inline-flex", alignItems: "center", gap: 10 }}>Ver avisos <span aria-hidden="true" style={triangulo} /></button>
+            </div>
           </div>
         )}
 
@@ -6146,10 +6175,10 @@ function AppInterna() {
 
         {/* Alerta flotante */}
         {showAlerta && (
-          <div style={{ background: "#FFF8E8", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative", boxShadow: "0 4px 12px rgba(236,143,141,0.2)" }}>
-            <strong style={{ color: C.dark }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
-            <button onClick={() => setShowAlerta(null)} style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", cursor: "pointer", fontSize: 18, color: C.gray }}>✕</button>
+          <div style={{ ...caja(R.mostaza), padding: "14px 56px 14px 16px", marginBottom: 16, position: "relative" }}>
+            <strong style={{ color: R.petroleo, fontSize: 16 }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: 15, color: R.petroleo }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
+            <button onClick={() => setShowAlerta(null)} aria-label="Cerrar aviso" style={{ position: "absolute", top: 6, right: 6, width: 44, height: 44, background: "none", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 20, color: R.petroleo }}>✕</button>
           </div>
         )}
 
@@ -6173,55 +6202,57 @@ function AppInterna() {
               const guardiasHoy = guardiasDeProfesor({ fecha: isoLocal(), profesor: usuario, profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias }).length;
               
               return (
-                <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
-                    <div style={{ flex: 1 }}>
-                      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                      <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                <div style={{ color: R.petroleo, marginBottom: 28 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                      <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                         Hoy has registrado <strong>{partesHoy} parte{partesHoy !== 1 ? 's' : ''}</strong>
                         {banoHoy > 0 && <> y <strong>{banoHoy} salida{banoHoy !== 1 ? 's' : ''}</strong> al baño</>}
                         {partesHoy === 0 && banoHoy === 0 && <>. ¡Buen día!</>}
                       </p>
                       {guardiasHoy > 0 && (
-                        <div style={{ marginTop: 12, background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 12px", border: "1px solid rgba(255,255,255,0.3)" }}>
-                          <strong style={{ fontSize: 14, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={28} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong>
-                          <div style={{ fontSize: 12, marginTop: 4, opacity: 0.9 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ background: R.verde, color: R.noche, padding: "8px 12px" }}><strong style={{ fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={26} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong></div>
+                          <div style={{ background: R.azulClaro, color: R.petroleo, padding: "8px 12px", fontSize: 15 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
                         </div>
                       )}
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Icono nombre="fecha" tam={32} />
+                      <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
                     </div>
                   </div>
                 </div>
               );
             })()}
 
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="nuevo-parte" tam={44} />Nuevo Parte de Incidencia</h2>
+            {/* Bloque como los de Raíces: título grande, línea azul y apartados sobre azul claro */}
+            <TituloBloque titulo="Nuevo Parte de Incidencia" sub="Registra lo ocurrido en clase" icono="nuevo-parte" />
+            <div className="gd-bloque" style={{ background: R.azulClaro, padding: 20 }}>
             {parteGenerado && (
-              <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong style={{ color: C.teal }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
+              <Card style={{ ...caja(R.verde), borderRadius: 0, boxShadow: "none", marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <strong style={{ color: R.petroleo, fontSize: 16 }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.blue, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><Ic n="buscar" tam={20} />Ver</button>
+                    <button className="gd-pulsable" onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}><Ic n="buscar" tam={20} />Ver</button>
                   </div>
                 </div>
                 <ComoAvisar parte={completar(parteGenerado)} />
               </Card>
             )}
-            <Card>
-              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={40} /></label>
+            <Card style={{ background: "transparent", boxShadow: "none", padding: 0 }}>
+              <label style={etiquetaStyle}><ConIcono texto="🔍 Buscar alumno" tam={32} /></label>
               <div style={{ position: "relative" }}>
                 <Icono nombre="curso" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <input value={fBusqueda} onChange={e => { setFBusqueda(e.target.value); setFAlumno(""); }} placeholder="Nombre o curso…" style={{ ...inpStyle, paddingLeft: 44 }} />
+                <input value={fBusqueda} onChange={e => { setFBusqueda(e.target.value); setFAlumno(""); }} placeholder="Nombre o curso…" style={{ ...campoStyle, paddingLeft: 46 }} />
               </div>
               {fBusqueda && !fAlumno && (
-                <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, marginTop: 4, background: C.white, maxHeight: 180, overflowY: "auto", marginBottom: 8 }}>
+                <div style={{ border: `1.5px solid ${C.gray}`, borderRadius: 10, marginTop: 6, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 8 }}>
                   {alumnos.filter(a => a.nombre.toLowerCase().includes(fBusqueda.toLowerCase()) || a.curso.toLowerCase().includes(fBusqueda.toLowerCase())).map(a => (
                     <div key={a.id} onClick={() => { setFAlumno(a.id); setFBusqueda(a.nombre); }}
-                      style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f3f4f6", fontSize: 13 }}
-                      onMouseOver={e => e.currentTarget.style.background = C.cream}
+                      style={{ minHeight: 48, padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid #CDE9ED", fontSize: 16, color: C.dark }}
+                      onMouseOver={e => e.currentTarget.style.background = "#EBF0F6"}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <strong>{a.nombre}</strong> — {a.curso}
                     </div>
@@ -6229,7 +6260,7 @@ function AppInterna() {
                 </div>
               )}
               {alumnoSel && (
-                <div style={{ background: C.cream, borderRadius: 8, padding: 12, margin: "8px 0 16px", fontSize: 13, border: `1px solid #ddd` }}>
+                <div style={{ background: C.white, color: R.petroleo, padding: "12px 14px", margin: "10px 0 18px", fontSize: 15, lineHeight: 1.45, border: `1px solid ${R.turquesaClaro}` }}>
                   {(() => {
                     // Datos del alumnado: solo los ve el profesorado implicado. El tutor/a del grupo ve
                     // el contacto y todos sus partes; el resto, solo los partes que le ha puesto él/ella.
@@ -6241,60 +6272,64 @@ function AppInterna() {
                       <div><strong>Curso:</strong> {alumnoSel.curso} | <strong>Tutor/a:</strong> {tutorAl || "—"}</div>
                       {esTutor ? (<>
                         <div style={{ marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{alumnoSel.email} · 📱 {alumnoSel.telefono}</div>
-                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: C.salmon, fontWeight: 600 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
-                        <div style={{ marginTop: 2, color: C.gray }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
+                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: R.petroleo, fontWeight: 700, borderLeft: `6px solid ${R.mostaza}`, paddingLeft: 8 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
+                        <div style={{ marginTop: 2, color: R.petroleo }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
                       </>) : (<>
-                        <div style={{ marginTop: 4, color: C.gray }}>Partes que le has puesto tú: <strong style={{ color: C.dark }}>{mios.length}</strong></div>
-                        <div style={{ marginTop: 2, fontSize: 12, color: C.gray }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
+                        <div style={{ marginTop: 4, color: R.petroleo }}>Partes que le has puesto tú: <strong style={{ color: R.petroleo }}>{mios.length}</strong></div>
+                        <div style={{ marginTop: 2, fontSize: 14, color: R.petroleo }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
                       </>)}
                     </>);
                   })()}
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16, marginTop: 8 }}>
-                <div><label style={labelStyle}><ConIcono texto="⏰ Hora de clase" tam={40} /></label><select value={fHora} onChange={e => setFHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="📂 Tipo de parte" tam={40} /></label><select value={fTipo} onChange={e => setFTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={40} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={selStyle}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
+              <div className="gd-rejilla-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 18, marginTop: 8 }}>
+                <div><label style={etiquetaStyle}><ConIcono texto="⏰ Hora de clase" tam={32} /></label><select value={fHora} onChange={e => setFHora(e.target.value)} style={campoStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
+                <div><label style={etiquetaStyle}><ConIcono texto="📂 Tipo de parte" tam={32} /></label><select value={fTipo} onChange={e => setFTipo(e.target.value)} style={campoStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
+                <div><label style={etiquetaStyle}><ConIcono texto="🎯 Gravedad" tam={32} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={{ ...campoStyle, borderLeft: `14px solid ${COLOR_GRAVEDAD[fGravedad] || C.gray}`, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
               </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><ConIcono texto="⚖️ Tipificación normativa" tam={40} /> <span style={{ fontWeight: 400, color: C.gray, fontSize: 11 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={etiquetaStyle}><ConIcono texto="⚖️ Tipificación normativa" tam={32} /> <span style={{ fontWeight: 400, color: R.petroleo, fontSize: 14 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
                 <div style={{ position: "relative" }}>
                 <Icono nombre="seleccionar" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...selStyle, paddingLeft: 44, borderColor: fTipificacion ? C.teal : "#d1d5db" }}>
+                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...campoStyle, paddingLeft: 46, borderColor: fTipificacion ? R.azul : R.turquesa }}>
                   <option value="">— Seleccionar tipificación (opcional) —</option>
                   {(TIPIFICACION[fGravedad] || []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
                 </div>
                 {fTipificacion && (
-                  <div style={{ marginTop: 6, background: "#E8F5F3", borderRadius: 6, padding: "6px 12px", fontSize: 12, color: C.teal, fontWeight: 600 }}>
+                  <div style={{ marginTop: 8, ...caja(R.verde), padding: "8px 12px", fontSize: 15, lineHeight: 1.4, color: R.petroleo, fontWeight: 700 }}>
                     ✓ {TIPIFICACION[fGravedad]?.find(t => t.id === fTipificacion)?.label}
                   </div>
                 )}
               </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}><ConIcono texto="📝 Descripción del incidente" tam={40} /></label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={etiquetaStyle}><ConIcono texto="📝 Descripción del incidente" tam={32} /></label>
                 <FrasesRapidas tipo={fTipo} tipificacion={fTipificacion} texto={fDesc} setTexto={setFDesc} />
-                <textarea value={fDesc} onChange={e => setFDesc(e.target.value)} rows={4} placeholder="Describe detalladamente lo ocurrido… o pulsa las frases rápidas de arriba" style={{ ...inpStyle, resize: "vertical" }} />
+                <textarea value={fDesc} onChange={e => setFDesc(e.target.value)} rows={4} placeholder="Describe detalladamente lo ocurrido… o pulsa las frases rápidas de arriba" style={{ ...campoStyle, resize: "vertical", fontFamily: "inherit" }} />
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}><ConIcono texto="👤 Profesor responsable" tam={40} /></label>
-                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={selStyle} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
+              <div style={{ marginBottom: 22 }}>
+                <label style={etiquetaStyle}><ConIcono texto="👤 Profesor responsable" tam={32} /></label>
+                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={{ ...campoStyle, ...(identidadFija ? { background: R.gris, borderColor: R.turquesaClaro } : {}) }} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
               </div>
-              <Btn onClick={crearParte} disabled={!fAlumno || !fDesc.trim()} color={C.teal} style={{ width: "100%", fontSize: 15, padding: "14px" }}>
+              {/* Acción principal: azul de Raíces con texto blanco (contraste 6,9:1) */}
+              <button className="gd-pulsable" onClick={crearParte} disabled={!fAlumno || !fDesc.trim()}
+                style={{ width: "100%", minHeight: 52, padding: "0 20px", borderRadius: 6, border: "none", cursor: !fAlumno || !fDesc.trim() ? "not-allowed" : "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+                  ...(!fAlumno || !fDesc.trim() ? { background: R.gris, color: R.petroleo, opacity: .7 } : { background: R.azul, color: "#fff" }) }}>
                 <ConIcono texto="📋 Generar Parte" tam={28} />
-              </Btn>
+              </button>
             </Card>
+            </div>
           </div>
         )}
 
         {/* ── Parte de grupo ── */}
         {tab === "parte_grupo" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="grupos" tam={44} />Parte de Grupo</h2>
-            {grupoGenerado && <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}><strong style={{ color: C.teal }}>✅ {grupoGenerado.total} partes generados para {grupoGenerado.curso} · {fmt(grupoGenerado.ts)}</strong></Card>}
-            <Card>
+            <TituloBloque titulo="Parte de Grupo" sub="Un parte para cada alumno/a del grupo" icono="grupos" />
+            {grupoGenerado && <Card style={{ ...caja(R.verde), marginTop: 16, marginBottom: 20 }}><strong style={{ color: R.petroleo, fontSize: 16 }}>✅ {grupoGenerado.total} partes generados para {grupoGenerado.curso} · {fmt(grupoGenerado.ts)}</strong></Card>}
+            <Card style={{ background: R.azulClaro, border: "none" }}>
               <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}><Ic n="por-curso" tam={20} />Seleccionar curso / grupo</label>
+                <label style={labelStyle}><Ic n="por-curso" tam={24} />Seleccionar curso / grupo</label>
                 <select value={gCurso} onChange={e => { setGCurso(e.target.value); setGExcluidos([]); }} style={selStyle}>
                   <option value="">— Selecciona un curso —</option>
                   {cursos.map(c => <option key={c}>{c}</option>)}
@@ -6305,24 +6340,24 @@ function AppInterna() {
                 const activos = grupo.filter(a => !gExcluidos.includes(a.id));
                 return (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <label style={{ ...labelStyle, marginBottom: 0 }}><Ic n="por-alumno" tam={20} />Alumnos <span style={{ color: C.gray, fontWeight: 400 }}>({activos.length} de {grupo.length})</span></label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <label style={{ ...labelStyle, marginBottom: 0 }}><Ic n="por-alumno" tam={24} />Alumnos <span style={{ color: R.petroleo, fontWeight: 400 }}>({activos.length} de {grupo.length})</span></label>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setGExcluidos(grupo.map(a => a.id))} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Excluir todos</button>
-                        <button onClick={() => setGExcluidos([])} style={{ background: "#E8F5F3", color: C.teal, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Incluir todos</button>
+                        <button onClick={() => setGExcluidos(grupo.map(a => a.id))} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Excluir todos</button>
+                        <button onClick={() => setGExcluidos([])} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Incluir todos</button>
                       </div>
                     </div>
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{ border: `1px solid ${R.turquesaClaro}`, overflow: "hidden", background: C.white }}>
                       {grupo.map(a => {
                         const excl = gExcluidos.includes(a.id);
                         return (
                           <div key={a.id}
                             onClick={() => setGExcluidos(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
-                            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid #f3f4f6", cursor: "pointer", background: excl ? "#FDF0EF" : C.white }}
-                            onMouseOver={e => e.currentTarget.style.background = excl ? "#FDE8E8" : C.cream}
-                            onMouseOut={e => e.currentTarget.style.background = excl ? "#FDF0EF" : C.white}>
-                            <span style={{ fontSize: 13, textDecoration: excl ? "line-through" : "none", color: excl ? "#9ca3af" : C.dark }}><strong>{a.nombre}</strong></span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: excl ? C.salmon : C.teal, background: excl ? "#FDF0EF" : "#E8F5F3", borderRadius: 6, padding: "2px 10px" }}>{excl ? "Excluido" : "✔ Incluido"}</span>
+                            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 52, padding: "8px 14px", borderBottom: `1px solid ${R.turquesaClaro}`, cursor: "pointer", background: excl ? R.gris : C.white }}
+                            onMouseOver={e => e.currentTarget.style.background = excl ? "#DDE4EC" : R.azulClaro}
+                            onMouseOut={e => e.currentTarget.style.background = excl ? R.gris : C.white}>
+                            <span style={{ fontSize: 16, textDecoration: excl ? "line-through" : "none", color: R.petroleo }}><strong>{a.nombre}</strong></span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: excl ? R.petroleo : R.noche, background: excl ? C.white : R.verde, border: excl ? `1px solid ${R.turquesaClaro}` : "none", borderRadius: 4, padding: "3px 10px", whiteSpace: "nowrap" }}>{excl ? "Excluido" : "✔ Incluido"}</span>
                           </div>
                         );
                       })}
@@ -6330,28 +6365,28 @@ function AppInterna() {
                   </div>
                 );
               })()}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
-                <div><label style={labelStyle}><ConIcono texto="⏰ Hora" tam={40} /></label><select value={gHora} onChange={e => setGHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="📂 Tipo" tam={40} /></label><select value={gTipo} onChange={e => setGTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={40} /></label><select value={gGravedad} onChange={e => { setGGravedad(e.target.value); setGTipificacion(""); }} style={selStyle}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
+              <div className="gd-rejilla-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
+                <div><label style={labelStyle}><ConIcono texto="⏰ Hora" tam={30} /></label><select value={gHora} onChange={e => setGHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
+                <div><label style={labelStyle}><ConIcono texto="📂 Tipo" tam={30} /></label><select value={gTipo} onChange={e => setGTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
+                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={30} /></label><select value={gGravedad} onChange={e => { setGGravedad(e.target.value); setGTipificacion(""); }} style={{ ...selStyle, borderLeft: `14px solid ${COLOR_GRAVEDAD[gGravedad] || R.turquesa}`, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
                 {gGravedad && TIPIFICACION[gGravedad]?.length > 0 && (
                   <div style={{ gridColumn: "1/-1" }}>
-                    <label style={labelStyle}><ConIcono texto="⚖️ Tipificación de la falta" tam={40} /></label>
+                    <label style={labelStyle}><ConIcono texto="⚖️ Tipificación de la falta" tam={30} /></label>
                     <select value={gTipificacion} onChange={e => setGTipificacion(e.target.value)} style={selStyle}>
                       <option value="">— Seleccionar tipificación —</option>
                       {TIPIFICACION[gGravedad].map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                     </select>
-                    {gGravedad !== "leve" && <div style={{ fontSize: 11, color: C.gray, marginTop: 4 }}>Decreto 32/2019 de la CAM</div>}
-                    {gGravedad === "leve" && <div style={{ fontSize: 11, color: C.gray, marginTop: 4 }}>Plan de Convivencia del Centro</div>}
+                    {gGravedad !== "leve" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Decreto 32/2019 de la CAM</div>}
+                    {gGravedad === "leve" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Plan de Convivencia del Centro</div>}
                   </div>
                 )}
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}><ConIcono texto="📝 Descripción" tam={40} /></label>
+                <label style={labelStyle}><ConIcono texto="📝 Descripción" tam={30} /></label>
                 <FrasesRapidas tipo={gTipo} tipificacion={gTipificacion} texto={gDesc} setTexto={setGDesc} />
                 <textarea value={gDesc} onChange={e => setGDesc(e.target.value)} rows={4} placeholder="Describe el comportamiento del grupo…" style={{ ...inpStyle, resize: "vertical" }} />
               </div>
-              <Btn onClick={crearParteGrupo} disabled={!gCurso || !gDesc.trim()} color={C.teal} style={{ width: "100%", fontSize: 15, padding: "14px" }}>
+              <Btn onClick={crearParteGrupo} disabled={!gCurso || !gDesc.trim()} style={{ width: "100%", minHeight: 52 }}>
                 <Ic n="grupos" tam={20} />Generar Parte para {gCurso ? `${alumnos.filter(a => a.curso === gCurso && !gExcluidos.includes(a.id)).length} alumnos de ${gCurso}` : "el grupo"}
               </Btn>
             </Card>
@@ -6361,46 +6396,46 @@ function AppInterna() {
         {/* ── Baños (profesor) ── */}
         {tab === "bano" && (
           <div>
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="banos" tam={44} />Control de Salidas al Baño</h2>
-            <Card>
-              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={40} /></label>
+            <TituloBloque titulo="Control de Salidas al Baño" sub="Quién sale y cuándo vuelve" icono="banos" />
+            <Card style={{ background: R.azulClaro, border: "none" }}>
+              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={30} /></label>
               <input value={bBusqueda} onChange={e => { setBBusqueda(e.target.value); setBAlumno(""); }} placeholder="Nombre o curso…" style={{ ...inpStyle, marginBottom: 8 }} />
               {bBusqueda && !bAlumno && (
-                <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, background: C.white, maxHeight: 160, overflowY: "auto", marginBottom: 12 }}>
+                <div style={{ border: `3px solid ${R.turquesa}`, borderRadius: 6, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 12 }}>
                   {alumnos.filter(a => a.nombre.toLowerCase().includes(bBusqueda.toLowerCase()) || a.curso.toLowerCase().includes(bBusqueda.toLowerCase())).map(a => (
                     <div key={a.id} onClick={() => { setBAlumno(a.id); setBBusqueda(a.nombre); }}
-                      style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f3f4f6", fontSize: 13 }}
-                      onMouseOver={e => e.currentTarget.style.background = C.cream}
+                      style={{ minHeight: 48, padding: "12px 14px", cursor: "pointer", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 16, color: R.noche }}
+                      onMouseOver={e => e.currentTarget.style.background = R.azulClaro}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <strong>{a.nombre}</strong> — {a.curso}
                     </div>
                   ))}
                 </div>
               )}
-              <Btn onClick={registrarSalida} disabled={!bAlumno} color={C.blue}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="banos" tam={24} />Registrar Salida</span></Btn>
+              <Btn onClick={registrarSalida} disabled={!bAlumno} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="banos" tam={24} />Registrar Salida</span></Btn>
             </Card>
             {banoActivos.length > 0 && (
-              <Card style={{ background: "#FFF8E8", border: `1px solid ${C.salmon}` }}>
-                <h3 style={{ margin: "0 0 12px", color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="fuera-ahora" tam={32} />Fuera ahora ({banoActivos.length})</h3>
+              <Card style={{ padding: 0, border: "none" }}>
+                <h3 style={{ margin: 0, padding: "10px 14px", background: R.mostaza, color: R.noche, fontSize: 18, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="fuera-ahora" tam={32} />Fuera ahora ({banoActivos.length})</h3>
                 {banoActivos.map(b => (
-                  <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.cream}` }}>
-                    <div style={{ fontSize: 13 }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>
+                  <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 14px", background: R.crema, borderBottom: `2px solid ${C.white}` }}>
+                    <div style={{ fontSize: 16, color: R.petroleo }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>
                     <button onClick={() => setBanos(prev => prev.map(x => x.id === b.id ? { ...x, regreso: new Date().toISOString() } : x))}
-                      style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>✅ Regresó</button>
+                      style={{ background: R.verde, color: R.noche, border: "none", borderRadius: 6, minHeight: 48, padding: "0 16px", cursor: "pointer", fontSize: 17, fontWeight: 700, flexShrink: 0 }}>✅ Regresó</button>
                   </div>
                 ))}
               </Card>
             )}
             <Card>
-              <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="horario" tam={32} />Historial de hoy</h3>
+              <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="horario" tam={32} />Historial de hoy</h3>
               {banos.filter(b => b.fecha === todayStr()).length === 0
-                ? <p style={{ color: C.gray }}>Sin registros hoy</p>
+                ? <p style={{ color: R.petroleo }}>Sin registros hoy</p>
                 : banos.filter(b => b.fecha === todayStr()).map(b => {
                   const mins = b.regreso ? Math.round((new Date(b.regreso) - new Date(b.salida)) / 60000) : null;
                   return (
-                    <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 13, display: "flex", justifyContent: "space-between" }}>
+                    <div key={b.id} style={{ padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.petroleo, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                       <span><strong>{b.alumno}</strong> — {b.curso}</span>
-                      <span style={{ color: C.gray }}>{fmt(b.salida)} {b.regreso ? `· ${mins} min` : "· 🔴 Fuera"}</span>
+                      <span>{fmt(b.salida)} {b.regreso ? `· ${mins} min` : "· 🔴 Fuera"}</span>
                     </div>
                   );
                 })}
@@ -6422,11 +6457,11 @@ function AppInterna() {
         {/* ── Registrar Guardia ── */}
         {tab === "guardias_prof" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Registrar Guardia</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Registrar Guardia" icono="guardias" /></div>
             {guardiaGenerada && (
-              <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
+              <Card style={{ background: "#DDF0F4", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
                 <strong style={{ color: C.teal }}>✅ Guardia registrada · {fmt(guardiaGenerada.ts)}</strong>
-                <div style={{ fontSize: 13, marginTop: 4, color: C.dark }}>{guardiaGenerada.hora} · {guardiaGenerada.curso} · Guardia: {guardiaGenerada.profesorGuardia}</div>
+                <div style={{ fontSize: 14, marginTop: 4, color: C.dark }}>{guardiaGenerada.hora} · {guardiaGenerada.curso} · Guardia: {guardiaGenerada.profesorGuardia}</div>
               </Card>
             )}
             <Card>
@@ -6463,9 +6498,10 @@ function AppInterna() {
         {/* ── Mis Partes ── */}
         {tab === "historial" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="documentos" tam={44} />Mis Partes Enviados</h2>
+            <TituloBloque titulo="Mis Partes Enviados" sub="Pulsa un parte para verlo en grande" icono="documentos" />
+            <div style={{ height: 16 }} />
             {partes.filter(p => p.profesor === fProfesor).length === 0
-              ? <Card style={{ textAlign: "center", color: C.gray, padding: 40 }}>No has generado ningún parte aún</Card>
+              ? <Card style={{ textAlign: "center", color: R.petroleo, padding: 40, fontSize: 16 }}>No has generado ningún parte aún</Card>
               : partes.filter(p => p.profesor === fProfesor).map(p => <ParteCard key={p.id} parte={p} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
           </div>
         )}
@@ -6487,26 +6523,26 @@ function AppInterna() {
               const ausenciasHoy = ausencias.filter(a => isoLocal(a.fecha) === hoyISO).length;
               
               return (
-                <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+                <div style={{ color: R.petroleo, marginBottom: 28 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
                     <div>
-                      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                      <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                      <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                         Hoy hay <strong>{guardiaHoy} zona{guardiaHoy !== 1 ? 's' : ''} de guardia</strong> programada{guardiaHoy !== 1 ? 's' : ''} 
                         {partesHoy > 0 && <> y <strong>{partesHoy} parte{partesHoy !== 1 ? 's' : ''}</strong> registrado{partesHoy !== 1 ? 's' : ''}</>}
                         {ausenciasHoy > 0 && <> con <strong>{ausenciasHoy} ausencia{ausenciasHoy !== 1 ? 's' : ''}</strong></>}
                       </p>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icono nombre="fecha" tam={32} />
+                <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
                     </div>
                   </div>
                 </div>
               );
             })()}
 
-            <h2 style={{color: C.dark, marginTop: 0, marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="dashboard" tam={44} />Estado General</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Estado General" icono="dashboard" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 14, marginBottom: 24 }}>
               {[
                 { label: "Total Partes", value: partes.length,                                              color: C.dark,   emoji: "📋", ic: "partes" },
@@ -6514,13 +6550,13 @@ function AppInterna() {
                 { label: "Graves",       value: partes.filter(p => p.gravedad === "grave").length,          color: C.amber,  emoji: "⚠️", ic: "grave" },
                 { label: "Muy Graves",   value: partes.filter(p => p.gravedad === "muy_grave").length,      color: C.salmon, emoji: "🔴", ic: "muy-grave" },
                 { label: "Fuera Ahora",  value: banoActivos.length,                                         color: C.blue,   emoji: "🚻", ic: "banos" },
-                { label: "Profes ausentes hoy", value: new Set(ausencias.filter(a => isoLocal(a.fecha) === isoLocal()).map(a => a.profesor)).size, color: "#7c3aed",emoji: "🔄", ic: "profe-ausente" },
+                { label: "Profes ausentes hoy", value: new Set(ausencias.filter(a => isoLocal(a.fecha) === isoLocal()).map(a => a.profesor)).size, color: "#2B647E",emoji: "🔄", ic: "profe-ausente" },
                 { label: "Alertas",      value: alertasNoLeidas,                                             color: C.salmon, emoji: "🔔", ic: "alertas" },
               ].map(s => (
                 <div key={s.label} style={{ background: C.white, borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", borderTop: `4px solid ${s.color}` }}>
                   <Icono nombre={s.ic} tam={52} style={{ margin: "0 auto" }} />
                   <div style={{ fontSize: 28, fontWeight: 800, color: s.color, marginTop: 8 }}>{s.value}</div>
-                  <div style={{ fontSize: 12, color: C.gray, marginTop: 8, fontWeight: 500 }}>{s.label}</div>
+                  <div style={{ fontSize: 14, color: C.gray, marginTop: 8, fontWeight: 500 }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -6531,9 +6567,9 @@ function AppInterna() {
                 if (!pC.length) return null;
                 return (
                   <div key={c} style={{ padding: "12px 20px", borderBottom: `1px solid ${C.cream}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontWeight: 700, color: C.dark }}><Ic n="por-curso" tam={20} />{c} <span style={{ color: C.gray, fontWeight: 400, fontSize: 13 }}>— {pC.length} parte(s)</span></div>
+                    <div style={{ fontWeight: 700, color: C.dark }}><Ic n="por-curso" tam={20} />{c} <span style={{ color: C.gray, fontWeight: 400, fontSize: 14 }}>— {pC.length} parte(s)</span></div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 10px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                     </div>
                   </div>
                 );
@@ -6545,12 +6581,12 @@ function AppInterna() {
               {alumnos.filter(a => partesDeAlumno(a.id).length > 0).sort((a, b) => partesDeAlumno(b.id).length - partesDeAlumno(a.id).length).map(a => (
                 <div key={a.id} style={{ padding: "12px 20px", borderBottom: `1px solid ${C.cream}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <strong style={{ color: C.dark }}>{a.nombre}</strong> <span style={{ color: C.gray, fontSize: 13 }}>— {a.curso}</span>
-                    {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FFF0CC", color: "#b45309", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⚠️ Acumulación</span>}
+                    <strong style={{ color: C.dark }}>{a.nombre}</strong> <span style={{ color: C.gray, fontSize: 14 }}>— {a.curso}</span>
+                    {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FDF1D9", color: "#16333F", borderRadius: 6, padding: "2px 8px", fontSize: 13, fontWeight: 600 }}>⚠️ Acumulación</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
-                    <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>Total: {partesDeAlumno(a.id).length}</span>
+                    {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 8px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                    <span style={{ background: "#DDF0F4", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 14, fontWeight: 700 }}>Total: {partesDeAlumno(a.id).length}</span>
                   </div>
                 </div>
               ))}
@@ -6562,21 +6598,21 @@ function AppInterna() {
         {/* ── Por Curso ── */}
         {tab === "por_curso" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="por-curso" tam={44} />Partes por Curso / Grupo</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Partes por Curso / Grupo" icono="por-curso" /></div>
             {cursos.map(curso => {
               const pC = partes.filter(p => p.curso === curso);
               const alC = alumnos.filter(a => a.curso === curso);
               return (
                 <div key={curso} style={{ background: C.white, borderRadius: 14, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                  <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ background: R.azul, color: "#fff", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>{curso}</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
-                      <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: 8, padding: "2px 10px", fontSize: 13 }}>Total: {pC.length}</span>
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "2px 10px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                      <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: 8, padding: "2px 10px", fontSize: 14 }}>Total: {pC.length}</span>
                     </div>
                   </div>
                   {pC.length === 0
-                    ? <div style={{ padding: "16px 20px", color: C.gray, fontSize: 13 }}>Sin partes en este curso</div>
+                    ? <div style={{ padding: "16px 20px", color: C.gray, fontSize: 14 }}>Sin partes en este curso</div>
                     : alC.map(a => {
                       const pA = partesDeAlumno(a.id);
                       if (!pA.length) return null;
@@ -6585,16 +6621,16 @@ function AppInterna() {
                           <div style={{ padding: "10px 20px", background: C.cream, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontWeight: 600, fontSize: 14, color: C.dark }}>{a.nombre}</span>
                             <div style={{ display: "flex", gap: 6 }}>
-                              {["leve", "grave", "muy_grave"].map(g => { const n = pA.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                              {["leve", "grave", "muy_grave"].map(g => { const n = pA.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "2px 8px", fontSize: 13, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                             </div>
                           </div>
                           {pA.map(p => (
-                            <div key={p.id} style={{ padding: "8px 20px 8px 36px", fontSize: 13, borderBottom: `1px solid ${C.cream}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <span style={{ color: "#374151" }}><Ic n="fecha-hora" tam={20} />{fmt(p.ts)} · {p.hora} · {p.tipo}{p.esGrupal ? " · grupal" : ""}</span>
+                            <div key={p.id} style={{ padding: "8px 20px 8px 36px", fontSize: 14, borderBottom: `1px solid ${C.cream}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ color: "#16333F" }}><Ic n="fecha-hora" tam={20} />{fmt(p.ts)} · {p.hora} · {p.tipo}{p.esGrupal ? " · grupal" : ""}</span>
                               <div style={{ display: "flex", gap: 6 }}>
                                 <Badge g={p.gravedad} />
-                                <button onClick={() => setShowParte(completar(p))} style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 6, padding: "2px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Ver</button>
-                                <button onClick={() => pdfParte(completar(p))} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 6, padding: "2px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Ic n="informe" tam={20} /></button>
+                                <button onClick={() => setShowParte(completar(p))} style={{ background: "#DDF0F4", color: C.blue, border: "none", borderRadius: 6, padding: "2px 10px", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Ver</button>
+                                <button onClick={() => pdfParte(completar(p))} style={{ background: "#FDF1D9", color: C.salmon, border: "none", borderRadius: 6, padding: "2px 10px", cursor: "pointer", fontSize: 14, fontWeight: 600 }}><Ic n="informe" tam={20} /></button>
                               </div>
                             </div>
                           ))}
@@ -6610,7 +6646,7 @@ function AppInterna() {
         {/* ── Por Alumno ── */}
         {tab === "por_alumno" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="por-alumno" tam={44} />Partes por Alumno</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Partes por Alumno" icono="por-alumno" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={selStyle}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
               <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={selStyle}><option value="">Seleccionar alumno</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre} — {a.curso}</option>)}</select>
@@ -6625,17 +6661,17 @@ function AppInterna() {
                       <div>
                         <div style={{ fontSize: 18, fontWeight: 700, color: C.dark }}>{al.nombre}</div>
                         <div style={{ color: C.gray, fontSize: 14, marginTop: 4 }}>{al.curso} · Tutor: {al.tutor}</div>
-                        <div style={{ fontSize: 13, marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{al.email} · 📱 {al.telefono}</div>
+                        <div style={{ fontSize: 14, marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{al.email} · 📱 {al.telefono}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 32, fontWeight: 800, color: C.dark }}>{pAl.length}</div>
-                        <div style={{ fontSize: 12, color: C.gray }}>partes totales</div>
+                        <div style={{ fontSize: 14, color: C.gray }}>partes totales</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pAl.filter(p => p.gravedad === g).length; const gv = gObj(g); return <div key={g} style={{ flex: 1, background: gv.bg, borderRadius: 10, padding: 12, textAlign: "center", border: `2px solid ${gv.color}` }}><div style={{ fontSize: 24, fontWeight: 800, color: gv.color }}>{n}</div><div style={{ fontSize: 12, color: gv.color, fontWeight: 600 }}>{gv.label}</div></div>; })}
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pAl.filter(p => p.gravedad === g).length; const gv = gObj(g); return <div key={g} style={{ flex: 1, background: gv.color, padding: 12, textAlign: "center" }}><div style={{ fontSize: 26, fontWeight: 700, color: gv.texto }}>{n}</div><div style={{ fontSize: 14, color: gv.texto, fontWeight: 700 }}>{gv.label}</div></div>; })}
                     </div>
-                    {partesLeves(al.id) >= 3 && <div style={{ marginTop: 12, background: "#FFF0CC", border: "1px solid #fbbf24", borderRadius: 8, padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "#92400e" }}>⚠️ Acumulación de {partesLeves(al.id)} partes leves — Considerar sanción</div>}
+                    {partesLeves(al.id) >= 3 && <div style={{ marginTop: 12, background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600, color: "#16333F" }}>⚠️ Acumulación de {partesLeves(al.id)} partes leves — Considerar sanción</div>}
                   </Card>
                   {pAl.length === 0
                     ? <Card style={{ textAlign: "center", color: C.gray }}>Sin partes registrados</Card>
@@ -6652,12 +6688,12 @@ function AppInterna() {
                       onMouseOver={e => e.currentTarget.style.background = C.cream}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <div>
-                        <strong style={{ color: C.dark }}>{a.nombre}</strong> <span style={{ color: C.gray, fontSize: 13 }}>— {a.curso}</span>
-                        {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FFF0CC", color: "#b45309", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⚠️</span>}
+                        <strong style={{ color: C.dark }}>{a.nombre}</strong> <span style={{ color: C.gray, fontSize: 14 }}>— {a.curso}</span>
+                        {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FDF1D9", color: "#16333F", borderRadius: 6, padding: "2px 8px", fontSize: 13, fontWeight: 600 }}>⚠️</span>}
                       </div>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
-                        <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{partesDeAlumno(a.id).length}</span>
+                        {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 8px", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                        <span style={{ background: "#DDF0F4", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 14, fontWeight: 700 }}>{partesDeAlumno(a.id).length}</span>
                         <span style={{ color: C.gray, fontSize: 16 }}>›</span>
                       </div>
                     </div>
@@ -6671,19 +6707,19 @@ function AppInterna() {
         {/* ── Todos los Partes ── */}
         {tab === "partes_todos" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="partes" tam={44} />Todos los Partes</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Todos los Partes" icono="partes" /></div>
             <Card>
               <div style={{ fontWeight: 600, color: C.dark, marginBottom: 10 }}><Ic n="buscar" tam={20} />Filtros</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-                <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={{ ...selStyle, padding: "8px 12px", fontSize: 13 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
-                <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={{ ...selStyle, padding: "8px 12px", fontSize: 13 }}><option value="">Todos los alumnos</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
-                <select value={filtGravedad} onChange={e => setFiltGravedad(e.target.value)} style={{ ...selStyle, padding: "8px 12px", fontSize: 13 }}><option value="">Toda gravedad</option>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select>
-                <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, padding: "8px 12px", fontSize: 13 }} />
-                <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, padding: "8px 12px", fontSize: 13 }} />
+                <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={{ ...selStyle, padding: "8px 12px", fontSize: 14 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
+                <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={{ ...selStyle, padding: "8px 12px", fontSize: 14 }}><option value="">Todos los alumnos</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+                <select value={filtGravedad} onChange={e => setFiltGravedad(e.target.value)} style={{ ...selStyle, padding: "8px 12px", fontSize: 14 }}><option value="">Toda gravedad</option>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select>
+                <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, padding: "8px 12px", fontSize: 14 }} />
+                <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, padding: "8px 12px", fontSize: 14 }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                <span style={{ fontSize: 13, color: C.gray }}>{partesFiltrados.length} parte(s)</span>
-                <button onClick={() => { setFiltCurso(""); setFiltAlumno(""); setFiltGravedad(""); setFiltFechaDesde(""); setFiltFechaHasta(""); }} style={{ background: "none", border: `1px solid #d1d5db`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, color: C.gray }}>Limpiar</button>
+                <span style={{ fontSize: 14, color: C.gray }}>{partesFiltrados.length} parte(s)</span>
+                <button onClick={() => { setFiltCurso(""); setFiltAlumno(""); setFiltGravedad(""); setFiltFechaDesde(""); setFiltFechaHasta(""); }} style={{ background: "none", border: `1px solid #CDE9ED`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 14, color: C.gray }}>Limpiar</button>
               </div>
             </Card>
             {partesFiltrados.length === 0
@@ -6695,12 +6731,12 @@ function AppInterna() {
         {/* ── Guardias (Jefatura) ── */}
         {tab === "guardias_jef" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Registro de Guardias</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Registro de Guardias" icono="guardias" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 14, marginBottom: 20 }}>
               {[{ label: "Guardias Hoy", value: guardias.filter(g => g.fecha === todayStr()).length, color: C.blue }, { label: "Esta Semana", value: guardias.filter(g => weekKey(g.fecha) === weekKey(new Date())).length, color: C.teal }, { label: "Total", value: guardias.length, color: C.dark }].map(s => (
                 <div key={s.label} style={{ background: C.white, borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", borderTop: `4px solid ${s.color}` }}>
                   <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{s.label}</div>
+                  <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -6709,10 +6745,10 @@ function AppInterna() {
               : guardias.map(g => (
                 <Card key={g.id} style={{ borderLeft: `4px solid ${C.blue}` }}>
                   <div style={{ fontWeight: 700, color: C.dark, fontSize: 15 }}><Ic n="guardias" tam={20} />{g.hora} · {g.modulo} · {g.curso}{g.materia && ` · ${g.materia}`}</div>
-                  <div style={{ fontSize: 13, color: C.gray, marginTop: 4 }}><Ic n="fecha-hora" tam={20} />{fmt(g.ts)}</div>
-                  <div style={{ fontSize: 13, marginTop: 6 }}><span style={{ color: C.salmon, fontWeight: 600 }}>Ausente:</span> {g.profesorAusente} <span style={{ color: C.gray, marginLeft: 8 }}>({g.motivo})</span></div>
-                  <div style={{ fontSize: 13, marginTop: 2 }}><span style={{ color: C.teal, fontWeight: 600 }}>Guardia:</span> {g.profesorGuardia}</div>
-                  {g.material && <div style={{ fontSize: 13, marginTop: 4, background: C.cream, borderRadius: 6, padding: "6px 10px" }}><Ic n="ejercicios" tam={20} />Material: {g.material}</div>}
+                  <div style={{ fontSize: 14, color: C.gray, marginTop: 4 }}><Ic n="fecha-hora" tam={20} />{fmt(g.ts)}</div>
+                  <div style={{ fontSize: 14, marginTop: 6 }}><span style={{ color: C.salmon, fontWeight: 600 }}>Ausente:</span> {g.profesorAusente} <span style={{ color: C.gray, marginLeft: 8 }}>({g.motivo})</span></div>
+                  <div style={{ fontSize: 14, marginTop: 2 }}><span style={{ color: C.teal, fontWeight: 600 }}>Guardia:</span> {g.profesorGuardia}</div>
+                  {g.material && <div style={{ fontSize: 14, marginTop: 4, background: C.cream, borderRadius: 6, padding: "6px 10px" }}><Ic n="ejercicios" tam={20} />Material: {g.material}</div>}
                 </Card>
               ))}
           </div>
@@ -6791,7 +6827,7 @@ function AppInterna() {
           <div>
             <div style={{ marginBottom: 14 }}>
               <button onClick={() => { setRegistroTelefono(v => !v); setAusProfesor(""); }}
-                style={{ background: registroTelefono ? "#f3f4f6" : C.salmon, color: registroTelefono ? C.dark : "#fff", border: "none", borderRadius: 10, padding: "11px 16px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
+                style={{ background: registroTelefono ? "#EBF0F6" : C.salmon, color: registroTelefono ? C.dark : "#fff", border: "none", borderRadius: 10, padding: "11px 16px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
                 <Ti tam={22}>{registroTelefono ? "✕ Cerrar el registro" : "📞 Registrar una ausencia comunicada por teléfono"}</Ti>
               </button>
             </div>
@@ -6834,8 +6870,8 @@ function AppInterna() {
 
         {tab === "bano_live" && (
           <div>
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="banos" tam={44} />Baños — Tiempo Real</h2>
-            <Card style={{ background: banoActivos.length > 0 ? "#FFF8E8" : "#E8F5F3", border: `2px solid ${banoActivos.length > 0 ? C.salmon : C.teal}` }}>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Baños — Tiempo Real" icono="banos" /></div>
+            <Card style={{ background: banoActivos.length > 0 ? "#FDF1D9" : "#DDF0F4", border: `2px solid ${banoActivos.length > 0 ? C.salmon : C.teal}` }}>
               <h3 style={{ margin: "0 0 12px", color: C.dark }}>{banoActivos.length > 0 ? <><Ic n="fuera-ahora" tam={26} />{banoActivos.length} alumno(s) fuera</> : "✅ Ningún alumno fuera"}</h3>
               {banoActivos.map(b => <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid rgba(0,0,0,0.08)`, fontSize: 14 }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>)}
             </Card>
@@ -6846,7 +6882,7 @@ function AppInterna() {
                 : banos.map(b => {
                   const mins = b.regreso ? Math.round((new Date(b.regreso) - new Date(b.salida)) / 60000) : null;
                   return (
-                    <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 13, display: "flex", justifyContent: "space-between" }}>
+                    <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 14, display: "flex", justifyContent: "space-between" }}>
                       <span><strong>{b.alumno}</strong> — {b.curso} — {b.fecha}</span>
                       <span style={{ color: C.gray }}>{b.regreso ? `${mins} min` : "🔴 Fuera"}</span>
                     </div>
@@ -6859,31 +6895,31 @@ function AppInterna() {
         {/* ── Alertas ── */}
         {tab === "alertas" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="alertas" tam={44} />Alertas</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Alertas" icono="alertas" /></div>
             {alertas.length === 0
               ? <Card style={{ textAlign: "center", color: C.gray, padding: 40 }}>Sin alertas</Card>
               : alertas.map(a => {
                 const config = {
-                  acumulacion_leves: { icon: "⚠️", color: "#b45309", bg: "#FFF0CC", border: "#fbbf24", label: "Acumulación de leves" },
-                  total_partes:      { icon: "📋", color: C.blue,     bg: "#EEF5F8", border: C.blue,    label: "Límite de partes" },
-                  fuera_horario:     { icon: "🕐", color: C.teal,     bg: "#E8F5F3", border: C.teal,    label: "Fuera de horario" },
-                  bano:              { icon: "🚻", color: C.salmon,   bg: "#FDF0EF", border: C.salmon,  label: "Abuso de baño" },
+                  acumulacion_leves: { icon: "⚠️", color: "#16333F", bg: "#FDF1D9", border: "#F6C862", label: "Acumulación de leves" },
+                  total_partes:      { icon: "📋", color: C.blue,     bg: "#DDF0F4", border: C.blue,    label: "Límite de partes" },
+                  fuera_horario:     { icon: "🕐", color: C.teal,     bg: "#DDF0F4", border: C.teal,    label: "Fuera de horario" },
+                  bano:              { icon: "🚻", color: C.salmon,   bg: "#FDF1D9", border: C.salmon,  label: "Abuso de baño" },
                 }[a.tipo] || { icon: "🔔", color: C.gray, bg: C.cream, border: "#ccc", label: "Alerta" };
                 return (
                   <div key={a.id}
                     onClick={() => setAlertas(prev => prev.map(x => x.id === a.id ? { ...x, leida: true } : x))}
-                    style={{ background: a.leida ? C.white : config.bg, border: `1px solid ${a.leida ? "#e5e7eb" : config.border}`, borderLeft: `4px solid ${a.leida ? "#e5e7eb" : config.border}`, borderRadius: 12, padding: 16, marginBottom: 10, cursor: "pointer", opacity: a.leida ? .7 : 1, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                    style={{ background: a.leida ? C.white : config.bg, border: `1px solid ${a.leida ? "#CDE9ED" : config.border}`, borderLeft: `4px solid ${a.leida ? "#CDE9ED" : config.border}`, borderRadius: 12, padding: 16, marginBottom: 10, cursor: "pointer", opacity: a.leida ? .7 : 1, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <Ti tam={30}>{config.icon}</Ti>
                         <div>
                           <div style={{ fontWeight: 700, color: a.leida ? C.gray : config.color }}>{config.label} — {a.alumno}</div>
-                          <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{a.curso} · {a.msg || a.msgs?.join(" · ")}</div>
+                          <div style={{ fontSize: 14, color: "#16333F", marginTop: 2 }}>{a.curso} · {a.msg || a.msgs?.join(" · ")}</div>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
-                        <div style={{ fontSize: 12, color: C.gray }}>{fmt(a.ts)}</div>
-                        {!a.leida && <div style={{ fontSize: 11, color: config.color, marginTop: 4, fontWeight: 600 }}>● Sin leer</div>}
+                        <div style={{ fontSize: 14, color: C.gray }}>{fmt(a.ts)}</div>
+                        {!a.leida && <div style={{ fontSize: 13, color: config.color, marginTop: 4, fontWeight: 600 }}>● Sin leer</div>}
                       </div>
                     </div>
                   </div>
@@ -6909,7 +6945,7 @@ function AppInterna() {
         {/* ── Informe ── */}
         {tab === "informe" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="informe" tam={44} />Exportar Informe</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Exportar Informe" icono="informe" /></div>
             
             {/* SELECTOR DE TIPO DE INFORME */}
             <Card style={{ marginBottom: 20 }}>
@@ -6917,42 +6953,42 @@ function AppInterna() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                 <button 
                   onClick={() => setInformeType("partes")}
-                  style={{ padding: 16, border: `2px solid ${informeType === "partes" ? C.teal : C.cream}`, borderRadius: 10, background: informeType === "partes" ? "#E8F5F3" : C.white, cursor: "pointer", fontWeight: 600, color: informeType === "partes" ? C.teal : C.gray, transition: "all .2s" }}>
+                  style={{ padding: 16, border: `2px solid ${informeType === "partes" ? C.teal : C.cream}`, borderRadius: 10, background: informeType === "partes" ? "#DDF0F4" : C.white, cursor: "pointer", fontWeight: 600, color: informeType === "partes" ? C.teal : C.gray, transition: "all .2s" }}>
                   <Ic n="partes" tam={20} />Informe de Partes
                 </button>
                 <button 
                   onClick={() => setInformeType("banos")}
-                  style={{ padding: 16, border: `2px solid ${informeType === "banos" ? C.teal : C.cream}`, borderRadius: 10, background: informeType === "banos" ? "#E8F5F3" : C.white, cursor: "pointer", fontWeight: 600, color: informeType === "banos" ? C.teal : C.gray, transition: "all .2s" }}>
+                  style={{ padding: 16, border: `2px solid ${informeType === "banos" ? C.teal : C.cream}`, borderRadius: 10, background: informeType === "banos" ? "#DDF0F4" : C.white, cursor: "pointer", fontWeight: 600, color: informeType === "banos" ? C.teal : C.gray, transition: "all .2s" }}>
                   <Ic n="banos" tam={20} />Informe de Salidas al Baño
                 </button>
               </div>
             </Card>
 
             <Card>
-              <div style={{ background: "#EEF5F8", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: C.blue }}>
+              <div style={{ background: "#DDF0F4", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 14, color: C.blue }}>
                 <Ic n="como-exportar" tam={20} />El informe se abrirá en pantalla completa. Pulsa <strong>⬇️ Descargar PDF</strong> para guardarlo o imprimirlo.
               </div>
               
               {informeType === "partes" ? (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 16 }}>
-                    <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={{ ...selStyle, fontSize: 13 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
-                    <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={{ ...selStyle, fontSize: 13 }}><option value="">Todos los alumnos</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
-                    <select value={filtGravedad} onChange={e => setFiltGravedad(e.target.value)} style={{ ...selStyle, fontSize: 13 }}><option value="">Toda gravedad</option>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select>
-                    <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, fontSize: 13 }} />
-                    <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, fontSize: 13 }} />
+                    <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={{ ...selStyle, fontSize: 14 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
+                    <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={{ ...selStyle, fontSize: 14 }}><option value="">Todos los alumnos</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+                    <select value={filtGravedad} onChange={e => setFiltGravedad(e.target.value)} style={{ ...selStyle, fontSize: 14 }}><option value="">Toda gravedad</option>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select>
+                    <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, fontSize: 14 }} />
+                    <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, fontSize: 14 }} />
                   </div>
                   {filtCurso
                     ? <TutoriasGrupos soloCurso={filtCurso} cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
-                    : <div style={{ fontSize: 12, color: C.gray, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icono nombre="tutor" tam={24} />El informe incluye el tutor/a de cada grupo. Elige un curso para ver o cambiar su tutor/a.</div>}
-                  <div style={{ background: C.cream, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: C.dark }}>
+                    : <div style={{ fontSize: 14, color: C.gray, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icono nombre="tutor" tam={24} />El informe incluye el tutor/a de cada grupo. Elige un curso para ver o cambiar su tutor/a.</div>}
+                  <div style={{ background: C.cream, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: C.dark }}>
                     El informe incluirá <strong>{partesFiltrados.length} parte(s)</strong>
                     {filtCurso && ` · ${filtCurso}`}{filtAlumno && ` · ${alumnos.find(a => a.id === parseInt(filtAlumno))?.nombre || "un alumno"}`}{filtGravedad && ` · ${GRAVEDAD.find(g => g.id === filtGravedad)?.label}`}
                     {filtFechaDesde && ` · Desde: ${fmtD(filtFechaDesde)}`}{filtFechaHasta && ` · Hasta: ${fmtD(filtFechaHasta)}`}
                   </div>
                   {(filtCurso || filtAlumno || filtGravedad || filtFechaDesde || filtFechaHasta) && (
                     <button onClick={() => { setFiltCurso(""); setFiltAlumno(""); setFiltGravedad(""); setFiltFechaDesde(""); setFiltFechaHasta(""); }}
-                      style={{ border: "none", background: "transparent", color: C.blue, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 12, fontSize: 13 }}>Limpiar filtros</button>
+                      style={{ border: "none", background: "transparent", color: C.blue, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 12, fontSize: 14 }}>Limpiar filtros</button>
                   )}
                   <Btn onClick={() => setPrintInforme(true)} disabled={partesFiltrados.length === 0} color={C.teal} style={{ width: "100%", fontSize: 15, padding: "14px" }}>
                     <Ic n="informe" tam={20} />Ver informe de partes y descargar PDF
@@ -6961,11 +6997,11 @@ function AppInterna() {
               ) : (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 16 }}>
-                    <select value={filtCurso} onChange={e => setFiltCurso(e.target.value)} style={{ ...selStyle, fontSize: 13 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
-                    <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, fontSize: 13 }} />
-                    <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, fontSize: 13 }} />
+                    <select value={filtCurso} onChange={e => setFiltCurso(e.target.value)} style={{ ...selStyle, fontSize: 14 }}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
+                    <input type="date" value={filtFechaDesde} onChange={e => setFiltFechaDesde(e.target.value)} style={{ ...inpStyle, fontSize: 14 }} />
+                    <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, fontSize: 14 }} />
                   </div>
-                  <div style={{ background: C.cream, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13, color: C.dark }}>
+                  <div style={{ background: C.cream, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: C.dark }}>
                     El informe incluirá <strong>{banosFiltrados.length} salida(s)</strong> al baño
                     {filtCurso && ` · ${filtCurso}`}
                     {filtFechaDesde && ` · Desde: ${fmtD(filtFechaDesde)}`}{filtFechaHasta && ` · Hasta: ${fmtD(filtFechaHasta)}`}
@@ -6991,7 +7027,7 @@ function AppInterna() {
         {/* ── Admin Profesores ── */}
         {tab === "admin_profesores" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="perfil" tam={44} />Gestión de Profesores</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Profesores" icono="perfil" /></div>
             <CorreosCentro C={C} />
             <Card>
               <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="anadir-profesor" tam={44} />Añadir profesor</h3>
@@ -7005,14 +7041,14 @@ function AppInterna() {
                   // Feedback visual
                   setFeedbackAñadirProfesor(true);
                   setTimeout(() => setFeedbackAñadirProfesor(false), 1500);
-                }} color={feedbackAñadirProfesor ? "#10b981" : C.teal} style={{ transition: "all .3s ease" }}>
+                }} color={feedbackAñadirProfesor ? "#63CBA1" : C.teal} style={{ transition: "all .3s ease" }}>
                   {feedbackAñadirProfesor ? "✅ ¡Agregado!" : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="grupos" tam={24} />Añadir</span>}
                 </Btn>
               </div>
             </Card>
             <Card style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ padding: "12px 20px", background: C.cream, borderBottom: `1px solid #e5e7eb`, fontWeight: 600, fontSize: 13, color: C.dark, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="profesorado" tam={30} />{profesores.length} profesor(es)</div>
-              <div style={{ padding: "10px 20px", fontSize: 12, color: C.gray, borderBottom: `1px solid ${C.cream}` }}>
+              <div style={{ padding: "12px 20px", background: C.cream, borderBottom: `1px solid #CDE9ED`, fontWeight: 600, fontSize: 14, color: C.dark, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="profesorado" tam={30} />{profesores.length} profesor(es)</div>
+              <div style={{ padding: "10px 20px", fontSize: 14, color: C.gray, borderBottom: `1px solid ${C.cream}` }}>
                 Marca todos los cargos de cada persona (puede tener varios: por ejemplo Profesor/a + Coordinación TIC + Jefatura). Los cargos deciden a qué perfiles entra: Jefatura y Orientación abren «Jefatura y Dirección»; Dirección abre también Administración; Secretaría y Coordinación TIC abren Administración. Cambia de perfil en cualquier momento desde el botón de arriba a la derecha.
               </div>
               {profesores.map((p, i) => {
@@ -7025,8 +7061,8 @@ function AppInterna() {
                         <div style={{ fontWeight: 600, color: C.dark }}>{p}{p === usuario ? " (tú)" : ""}</div>
                         <input type="email" aria-label={`Correo de ${p}`} placeholder={MODO_DEMO ? correoDemo(p) : "correo@educa.madrid.org"} value={cuenta.email || ""}
                           onChange={e => setCuentas(prev => ({ ...prev, [p]: { ...(prev[p] || {}), email: e.target.value } }))}
-                          style={{ margin: "4px 0", padding: "5px 8px", borderRadius: 6, border: `1px solid ${cuenta.email && !correoValido(cuenta.email) ? C.salmon : "#d1d5db"}`, fontSize: 12, width: 260, maxWidth: "100%" }} />
-                        <div style={{ fontSize: 11, color: cuenta.clave ? C.teal : C.gray, display: "flex", alignItems: "center", gap: 4 }}>{cuenta.clave ? "Clave creada" : <><Icono nombre="sin-clave" tam={18} />Sin clave: la creará al entrar por primera vez</>}</div>
+                          style={{ margin: "4px 0", padding: "5px 8px", borderRadius: 6, border: `1px solid ${cuenta.email && !correoValido(cuenta.email) ? C.salmon : "#CDE9ED"}`, fontSize: 14, width: 260, maxWidth: "100%" }} />
+                        <div style={{ fontSize: 13, color: cuenta.clave ? C.teal : C.gray, display: "flex", alignItems: "center", gap: 4 }}>{cuenta.clave ? "Clave creada" : <><Icono nombre="sin-clave" tam={18} />Sin clave: la creará al entrar por primera vez</>}</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -7041,8 +7077,8 @@ function AppInterna() {
                                     !window.confirm("Vas a quitarte el acceso a Administración. ¿Continuar?")) return;
                                 setCuentas(prev => ({ ...prev, [p]: { ...(prev[p] || {}), cargos: nuevos, cargo: undefined } }));
                               }}
-                              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px 3px 4px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: fijo ? "default" : "pointer",
-                                border: `2px solid ${on ? C.teal : "#d1d5db"}`, background: on ? "#E8F5F3" : "#fff", color: on ? C.dark : C.gray, opacity: fijo ? 0.85 : 1 }}>
+                              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px 3px 4px", borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: fijo ? "default" : "pointer",
+                                border: `2px solid ${on ? C.teal : "#CDE9ED"}`, background: on ? "#DDF0F4" : "#fff", color: on ? C.dark : C.gray, opacity: fijo ? 0.85 : 1 }}>
                               <Icono nombre={ICONO_CARGO[c.id]} tam={22} />{on ? "✓ " : "+ "}{c.label}
                             </button>
                           );
@@ -7050,9 +7086,9 @@ function AppInterna() {
                       </div>
                       {cuenta.clave && (
                         <button onClick={() => { if (window.confirm(`¿Restablecer la clave de ${p}? La próxima vez que entre tendrá que crear una nueva.`)) setCuentas(prev => ({ ...prev, [p]: { ...(prev[p] || {}), clave: null } })); }}
-                          style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="sin-clave" tam={20} />Restablecer clave</button>
+                          style={{ background: "#DDF0F4", color: C.blue, border: "none", borderRadius: 8, padding: "6px 10px", cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="sin-clave" tam={20} />Restablecer clave</button>
                       )}
-                      <button aria-label={`Eliminar a ${p}`} onClick={() => { if (window.confirm(`¿Eliminar a ${p} de la lista del profesorado?`)) setProfesores(prev => prev.filter((_, j) => j !== i)); }} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 8, padding: "4px 6px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex" }} title="Eliminar"><Icono nombre="eliminar" tam={26} /></button>
+                      <button aria-label={`Eliminar a ${p}`} onClick={() => { if (window.confirm(`¿Eliminar a ${p} de la lista del profesorado?`)) setProfesores(prev => prev.filter((_, j) => j !== i)); }} style={{ background: "#FDF1D9", color: C.salmon, border: "none", borderRadius: 8, padding: "4px 6px", cursor: "pointer", fontSize: 14, fontWeight: 600, display: "inline-flex" }} title="Eliminar"><Icono nombre="eliminar" tam={26} /></button>
                     </div>
                   </div>
                 );
@@ -7062,22 +7098,23 @@ function AppInterna() {
         )}
 
       </div>
+      </div>
 
       {/* ── Modal Ver Cuadrante Completo ── */}
       {showCuadrante && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: C.white, borderRadius: 16, maxWidth: "95vw", width: "100%", maxHeight: "80vh", overflowY: "auto" }}>
-            <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="fecha-hora" tam={20} />Cuadrante de Guardias</div>
                 <button onClick={() => setSemanaCuadrante(w => w - 1)} aria-label="Semana anterior" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>←</button>
-                <span style={{ fontSize: 13 }}>Semana del {sumarDias(lunesDe(), 7 * semanaCuadrante).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
+                <span style={{ fontSize: 14 }}>Semana del {sumarDias(lunesDe(), 7 * semanaCuadrante).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</span>
                 <button onClick={() => setSemanaCuadrante(w => w + 1)} aria-label="Semana siguiente" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>→</button>
               </div>
               <button onClick={() => { setShowCuadrante(false); setSemanaCuadrante(0); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
             <div style={{ padding: 20, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 900 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 900 }}>
                 <thead>
                   <tr style={{ background: C.dark }}>
                     <th style={{ padding: "10px 8px", color: "#fff", textAlign: "left", fontWeight: 600 }}>Hora</th>
@@ -7086,8 +7123,8 @@ function AppInterna() {
                 </thead>
                 <tbody>
                   {HORAS_GUARDIA.map((hora, idx) => (
-                    <tr key={hora} style={{ background: idx % 2 === 0 ? "#fff" : "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                      <td style={{ padding: "10px 8px", fontWeight: 700, color: C.dark, width: 90 }}>{hora}<div style={{ fontSize: 10, fontWeight: 500, color: C.gray }}>{HORARIO[hora]}</div></td>
+                    <tr key={hora} style={{ background: idx % 2 === 0 ? "#fff" : "#f9fafb", borderBottom: "1px solid #CDE9ED" }}>
+                      <td style={{ padding: "10px 8px", fontWeight: 700, color: C.dark, width: 90 }}>{hora}<div style={{ fontSize: 13, fontWeight: 500, color: C.gray }}>{HORARIO[hora]}</div></td>
                       {[0,1,2,3,4].map(i => {
                         const dia = isoLocal(sumarDias(lunesDe(), 7 * semanaCuadrante + i));
                         const asignaciones = [];
@@ -7107,15 +7144,15 @@ function AppInterna() {
                         });
                         
                         return (
-                          <td key={dia} style={{ padding: "8px", textAlign: "left", fontSize: 10, background: asignaciones.length > 0 ? "#E8F5F3" : "transparent", borderRight: "1px solid #e5e7eb" }}>
+                          <td key={dia} style={{ padding: "8px", textAlign: "left", fontSize: 13, background: asignaciones.length > 0 ? "#DDF0F4" : "transparent", borderRight: "1px solid #CDE9ED" }}>
                             {asignaciones.length > 0 ? (
                               <div style={{ color: C.teal }}>
                                 {asignaciones.map((a, idx) => (
                                   <div key={idx} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: idx < asignaciones.length - 1 ? "1px solid #d0e8e6" : "none" }}>
                                     <strong style={{ color: C.dark }}><Ic n="por-alumno" tam={20} />{a.profesor}</strong><br/>
-                                    <span style={{ color: C.teal, fontSize: 9 }}><Ic n="edificio" tam={20} />{a.zona}</span><br/>
-                                    {a.apoyo && <><span style={{ color: C.blue, fontSize: 9 }}><Ic n="grupos" tam={20} />Apoyo: {a.apoyo}</span><br/></>}
-                                    {a.sustituto && <span style={{ color: "#7c3aed", fontSize: 9 }}><Ic n="sustituto" tam={20} />Sustituto: {a.sustituto}</span>}
+                                    <span style={{ color: C.teal, fontSize: 13 }}><Ic n="edificio" tam={20} />{a.zona}</span><br/>
+                                    {a.apoyo && <><span style={{ color: C.blue, fontSize: 13 }}><Ic n="grupos" tam={20} />Apoyo: {a.apoyo}</span><br/></>}
+                                    {a.sustituto && <span style={{ color: "#2B647E", fontSize: 13 }}><Ic n="sustituto" tam={20} />Sustituto: {a.sustituto}</span>}
                                   </div>
                                 ))}
                               </div>
@@ -7129,7 +7166,7 @@ function AppInterna() {
                   ))}
                 </tbody>
               </table>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.gray, padding: "12px", background: "#f9fafb", borderRadius: 8 }}>
+              <div style={{ marginTop: 16, fontSize: 13, color: C.gray, padding: "12px", background: "#f9fafb", borderRadius: 8 }}>
                 <strong><Ic n="por-alumno" tam={20} /></strong> = Profesor | <strong><Ic n="edificio" tam={20} /></strong> = Lugar/Zona | <strong><Ic n="grupos" tam={20} /></strong> = Profesor de Apoyo
               </div>
             </div>
@@ -7141,20 +7178,20 @@ function AppInterna() {
       {showParte && (
         <div onClick={() => setShowParte(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: parteGrande ? 0 : 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: parteGrande ? 0 : 16, maxWidth: parteGrande ? "none" : 760, width: "100%", height: parteGrande ? "100%" : "auto", maxHeight: parteGrande ? "100%" : "92vh", overflowY: "auto", fontSize: parteGrande ? 18 : 15, zoom: parteGrande ? 1.25 : 1 }}>
-            <div style={{ position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: parteGrande ? 0 : "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: parteGrande ? 0 : "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{APP} · Parte de Incidencia</div>
-                <div style={{ fontSize: 12, opacity: .8 }}>Ref: PARTE-{showParte.id}</div>
+                <div style={{ fontSize: 14, opacity: .9 }}>Ref: PARTE-{showParte.id}</div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                <button onClick={() => pdfParte(showParte)} title="Descargar PDF" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}><Ic n="informe" tam={20} />PDF</button>
-                <button onClick={() => setParteGrande(v => !v)} title={parteGrande ? "Volver al tamaño normal" : "Ver a pantalla completa"} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>{parteGrande ? "🗗 Reducir" : "⛶ Pantalla completa"}</button>
+                <button onClick={() => pdfParte(showParte)} title="Descargar PDF" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, fontWeight: 700 }}><Ic n="informe" tam={20} />PDF</button>
+                <button onClick={() => setParteGrande(v => !v)} title={parteGrande ? "Volver al tamaño normal" : "Ver a pantalla completa"} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>{parteGrande ? "🗗 Reducir" : "⛶ Pantalla completa"}</button>
                 <button onClick={() => setShowParte(null)} aria-label="Cerrar" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 16 }}>✕</button>
               </div>
             </div>
             <div style={{ padding: 24, maxWidth: parteGrande ? 900 : "none", margin: "0 auto" }}>
-              {(() => { const g = gObj(showParte.gravedad); return <div style={{ background: g.bg, border: `2px solid ${g.color}`, borderRadius: 10, padding: 12, marginBottom: 20, textAlign: "center" }}><strong style={{ color: g.color, fontSize: 16 }}>{g.label} — {g.desc}</strong></div>; })()}
-              {showParte.esGrupal && <div style={{ background: "#E8F5F3", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: C.teal, fontWeight: 600, marginBottom: 12 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
+              {(() => { const g = gObj(showParte.gravedad); return <div style={{ background: g.color, padding: 12, marginBottom: 20, textAlign: "center" }}><strong style={{ color: g.texto, fontSize: 17 }}>{g.label} — {g.desc}</strong></div>; })()}
+              {showParte.esGrupal && <div style={{ background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, padding: "8px 14px", fontSize: 15, color: R.petroleo, fontWeight: 700, marginBottom: 12 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
               {[["Alumno", showParte.alumno], ["Curso", showParte.curso], ["Tutor/a del grupo", showParte.tutor || "—"], ["Correo del tutor/a", showParte.tutorEmail || "—"], ["Tipo", showParte.tipo], ["Hora", showParte.hora || "No especificada"], ["Fecha y hora", fmt(showParte.ts)], ["Profesor", showParte.profesor]].map(([k, v]) => (
                 <InfoRow key={k} label={k} value={v} />
               ))}
@@ -7162,31 +7199,31 @@ function AppInterna() {
                 const tipObj = TIPIFICACION[showParte.gravedad]?.find(t => t.id === showParte.tipificacion);
                 const fuente = showParte.gravedad === "leve" ? "Plan de Convivencia" : "Decreto 32/2019";
                 return (
-                  <div style={{ margin: "8px 0", padding: "8px 12px", background: "#EEF5F8", borderRadius: 8, border: `1px solid ${C.blue}`, fontSize: 12 }}>
-                    <span style={{ fontWeight: 700, color: C.blue }}><Ic n="tipificacion" tam={20} />Tipificación </span>
-                    <span style={{ color: C.gray }}>({fuente})</span>
-                    <div style={{ marginTop: 3, color: C.dark }}>{tipObj?.label}</div>
+                  <div style={{ margin: "10px 0", padding: "10px 12px", background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, fontSize: 15 }}>
+                    <span style={{ fontWeight: 700, color: R.petroleo }}><Ic n="tipificacion" tam={22} />Tipificación </span>
+                    <span style={{ color: R.petroleo }}>({fuente})</span>
+                    <div style={{ marginTop: 4, color: R.noche }}>{tipObj?.label}</div>
                   </div>
                 );
               })()}
-              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: C.dark, flexWrap: "wrap" }}>
-                <Icono nombre="descripcion" tam={40} />Descripción del incidente
+              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: R.petroleo, fontSize: 17, flexWrap: "wrap" }}>
+                <Icono nombre="descripcion" tam={36} />Descripción del incidente
                 {!rectificando && puedeRectificar(showParte) && (
-                  <button onClick={empezarRectificar} style={{ marginLeft: "auto", background: C.white, color: C.dark, border: `1px solid ${C.teal}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+                  <button onClick={empezarRectificar} style={{ marginLeft: "auto", background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
                     ✏️ Rectificar <span style={{ fontWeight: 400, color: C.gray }}>(quedan {Math.max(1, Math.ceil(HORAS_RECTIFICAR - horasDesde(showParte)))} h)</span>
                   </button>
                 )}
               </div>
               {rectificando ? (
                 <div style={{ marginTop: 8, border: `2px solid ${C.teal}`, borderRadius: 10, padding: 12 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: C.dark }}>Tipificación</label>
+                  <label style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>Tipificación</label>
                   <select value={rTip} onChange={e => setRTip(e.target.value)} style={{ ...selStyle, margin: "4px 0 10px" }}>
                     <option value="">— Sin tipificación —</option>
                     {(TIPIFICACION[showParte.gravedad] || []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                   <FrasesRapidas tipo={showParte.tipo} tipificacion={rTip} texto={rDesc} setTexto={setRDesc} />
                   <textarea value={rDesc} onChange={e => setRDesc(e.target.value)} rows={5} style={{ ...inpStyle, resize: "vertical" }} />
-                  <div style={{ fontSize: 12, color: C.gray, margin: "6px 0 10px" }}>Se guardará el texto original y quedará anotado quién rectifica y cuándo.</div>
+                  <div style={{ fontSize: 14, color: C.gray, margin: "6px 0 10px" }}>Se guardará el texto original y quedará anotado quién rectifica y cuándo.</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <Btn onClick={guardarRectificacion} disabled={!rDesc.trim()} color={C.teal}>💾 Guardar rectificación</Btn>
                     <Btn onClick={() => setRectificando(false)} color={C.gray}>Cancelar</Btn>
@@ -7196,22 +7233,22 @@ function AppInterna() {
                 <div style={{ marginTop: 8, background: C.cream, borderRadius: 8, padding: 14, fontSize: 14, lineHeight: 1.6, color: C.dark }}>{showParte.descripcion}</div>
               )}
               {!rectificando && showParte.rectificaciones?.length > 0 && (
-                <details style={{ marginTop: 8, background: "#FFF8E8", border: "1px solid #fbbf24", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: C.dark }}>
-                  <summary style={{ cursor: "pointer", fontWeight: 700, color: "#b45309" }}>
+                <details style={{ marginTop: 8, background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: "8px 12px", fontSize: 14, color: C.dark }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 700, color: "#16333F" }}>
                     ✏️ Parte rectificado {showParte.rectificaciones.length > 1 ? `${showParte.rectificaciones.length} veces` : ""} · última vez el {fmt(showParte.rectificaciones.at(-1).ts)} por {showParte.rectificaciones.at(-1).por}{showParte.rectificaciones.at(-1).perfil === "jefatura" ? " (Jefatura)" : ""}
                   </summary>
                   {showParte.rectificaciones.map((r, i) => (
-                    <div key={i} style={{ marginTop: 8, paddingTop: 8, borderTop: i ? "1px dashed #fbbf24" : "none" }}>
-                      <div style={{ fontSize: 12, color: C.gray }}>Texto antes de la rectificación del {fmt(r.ts)} ({r.por}):</div>
+                    <div key={i} style={{ marginTop: 8, paddingTop: 8, borderTop: i ? "1px dashed #F6C862" : "none" }}>
+                      <div style={{ fontSize: 14, color: C.gray }}>Texto antes de la rectificación del {fmt(r.ts)} ({r.por}):</div>
                       <div style={{ marginTop: 4, fontStyle: "italic" }}>{r.descripcionAnterior}</div>
                       {r.tipificacionAnterior !== undefined && r.tipificacionAnterior !== (showParte.rectificaciones[i + 1]?.tipificacionAnterior ?? showParte.tipificacion) && (
-                        <div style={{ marginTop: 4, fontSize: 12, color: C.gray }}>Tipificación anterior: {TIPIFICACION[showParte.gravedad]?.find(t => t.id === r.tipificacionAnterior)?.label || "sin tipificación"}</div>
+                        <div style={{ marginTop: 4, fontSize: 14, color: C.gray }}>Tipificación anterior: {TIPIFICACION[showParte.gravedad]?.find(t => t.id === r.tipificacionAnterior)?.label || "sin tipificación"}</div>
                       )}
                     </div>
                   ))}
                 </details>
               )}
-              <div style={{ marginTop: 12, background: "#EEF5F8", borderRadius: 8, padding: 12, fontSize: 13 }}>
+              <div style={{ marginTop: 12, background: "#DDF0F4", borderRadius: 8, padding: 12, fontSize: 14 }}>
                 <strong style={{ color: C.blue }}>📬 Familia:</strong> <Ic n="mensaje-enviar" tam={20} />{showParte.email} · 📱 {showParte.telefono}
               </div>
               <ComoAvisar parte={showParte} />
@@ -7224,7 +7261,7 @@ function AppInterna() {
       {showCoordinacion && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20, overflowY: "auto" }}>
           <div style={{ background: C.white, borderRadius: 16, maxWidth: "95vw", width: "100%", maxHeight: "90vh", overflowY: "auto", marginY: 20 }}>
-            <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="eventos" tam={24} />Coordinación Diaria de Ausencias</div>
               <button onClick={() => setShowCoordinacion(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
