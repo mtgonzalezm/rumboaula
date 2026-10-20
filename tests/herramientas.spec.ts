@@ -576,3 +576,38 @@ test('Ausencias: comprobaciones, clases del horario, consigna por clase, modific
   await sinFalloEnPantalla(page)
   expect(errores).toEqual([])
 })
+
+test('Coberturas: la guardia se asigna una clase, puede soltarla, Jefatura lo ve y sale en «Mis coberturas»', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page, new Date('2026-10-07T09:00:00+02:00'))
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Ahora')
+  await page.getByRole('button', { name: /^2ª hora/ }).first().click()
+  const clave = '2026-10-07|2ª hora|1'
+  await page.getByRole('button', { name: /Me la asigno/ }).click()
+  expect((await leer(page, 'coberturas_clase'))[clave]).toBe('Carmen López')
+  expect((await leer(page, 'coberturas_propias'))[clave]).toBe('Carmen López')
+  await expect(page.getByText(/La cubres tú/)).toBeVisible()
+  // Puede soltarla antes de que empiece la hora, y volver a asignársela
+  await page.getByRole('button', { name: 'Soltarla' }).click()
+  expect((await leer(page, 'coberturas_clase'))[clave]).toBeUndefined()
+  await page.getByRole('button', { name: /Me la asigno/ }).click()
+  // En «Mis coberturas»: la próxima y las ya cubiertas del curso
+  await pestaña(page, 'Mis Coberturas')
+  await expect(page.locator(`[data-cobertura="${clave}"]`)).toContainText('Te la asignaste')
+  await expect(page.locator('[data-total="Próximas"]')).toContainText('1')
+  const enCurso = Number((await page.locator('[data-total="En el curso"] div').first().innerText()).trim())
+  expect(enCurso).toBeGreaterThan(0)
+  await salir(page)
+  // Jefatura ve quién la cubre y que se la asignó; si la reasigna, deja de ser propia
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await pestaña(page, 'Ahora')
+  await page.getByRole('button', { name: /^2ª hora/ }).first().click()
+  await expect(page.getByText('✅ Cubre Carmen López · se la asignó')).toBeVisible()
+  await page.locator(`[data-cubrir="${clave}"]`).getByRole('button', { name: 'Cambiar' }).click()
+  await page.locator(`[data-cubrir="${clave}"]`).getByRole('button', { name: 'Asignar' }).first().click()
+  expect((await leer(page, 'coberturas_propias'))[clave]).toBeUndefined()
+  expect(errores).toEqual([])
+})
