@@ -324,6 +324,8 @@ async function hashClave(nombre, clave) {
 }
 
 // ─── Pantalla de entrada: nombre → clave → perfil ───────────────────────────
+// Reflejo de la ilustración en la portada: se ve junto a la tarjeta y se desvanece hacia abajo
+const REFLEJO = "linear-gradient(to bottom, #000 0%, rgba(0,0,0,.45) 40%, transparent 92%), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)";
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
   const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("galvandesk:globo"); } catch { return MODO_DEMO; } });
@@ -456,14 +458,15 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden",
-      // La ilustración ocupa todo el fondo; encima, la cabecera y la tarjeta de acceso
-      background: "#E3EAF0 url(/portada-ilustracion.jpg) center / cover no-repeat" }}>
+      // Fondo limpio, como el de Rayuela: gris muy claro arriba y «suelo» blanco abajo
+      background: "linear-gradient(#E4EAEE 0%, #F3F6F8 58%, #FFFFFF 58%)" }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }
         .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
         .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
         .gd-corto { display: none; }
         @media (max-width: 860px) {
-          .gd-portada-escena { padding: 0 !important; align-items: stretch !important; }
+          .gd-portada-escena { padding: 0 !important; align-items: stretch !important; justify-content: flex-start !important; }
+          .gd-portada-reflejo { height: 110px !important; }
           .gd-portada-banda { grid-template-columns: 1fr !important; padding: 14px 12px !important; gap: 10px !important; }
           .gd-portada-titulo div:last-child { display: none; }
           .gd-perfiles { grid-template-columns: 1fr !important; }
@@ -478,8 +481,8 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
       <AvisoDemo compacto />
 
       {/* Tarjeta centrada sobre la ilustración: cabecera, banda de acceso y enlaces */}
-      <div className="gd-portada-escena" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 24px 28px" }}>
-      <div className="gd-portada-tarjeta" style={{ width: "100%", maxWidth: 1000, background: "rgba(255, 255, 255, .97)", boxShadow: "0 24px 50px rgba(22, 51, 63, .28)" }}>
+      <div className="gd-portada-escena" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 24px 0" }}>
+      <div className="gd-portada-tarjeta" style={{ width: "100%", maxWidth: 1000, background: "#fff", boxShadow: "0 22px 40px rgba(22, 51, 63, .22)", position: "relative", zIndex: 1 }}>
       <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", flexWrap: "wrap", padding: "14px 32px" }}>
         <h1 style={{ margin: 0 }}><Logo alto={64} /></h1>
         <nav aria-label="Ayuda" className="gd-portada-menu" style={{ display: "flex", flexWrap: "wrap", gap: "0 22px", alignItems: "center" }}>
@@ -569,6 +572,11 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
             {verOlvido && <div style={{ fontSize: 15, color: R.noche, background: R.crema, padding: "8px 12px" }}>Pide a Administración del centro que restablezca tu clave. La próxima vez que entres crearás una nueva.</div>}
           </div>
         </div>
+      </div>
+      {/* La ilustración del camino, suave y reflejada en el «suelo» bajo la tarjeta */}
+      <div aria-hidden="true" className="gd-portada-reflejo" style={{ width: "100%", maxWidth: 1100, height: "clamp(120px, 24vh, 240px)", overflow: "hidden", marginTop: -2,
+        maskImage: REFLEJO, WebkitMaskImage: REFLEJO, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
+        <img src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 78%", display: "block", opacity: .4, transform: "scaleY(-1)" }} />
       </div>
       </div>
     </div>
