@@ -1241,9 +1241,9 @@ function ComoAvisar({ parte }) {
 }
 
 // ─── Medidas correctoras ─────────────────────────────────────────────────────
-// En las faltas leves, quien pone el parte elige una de las tres medidas habituales (aula de convivencia,
-// supresión del recreo o una hora más), con sus días. El resto de medidas las pone Jefatura.
-// Jefatura marca cada día si el alumno o alumna ha cumplido.
+// Como en el papel de siempre: en las faltas leves, quien pone el parte indica la medida (aula de convivencia,
+// supresión del recreo o una hora más) y cuántas veces; Jefatura de Estudios pone el día y el aula, y con eso
+// sale la lista del día. El resto de medidas las pone Jefatura. Jefatura marca después si se ha cumplido.
 const TIPOS_MEDIDA = [
   { id: "aula_conv",  label: "Aula de convivencia",            leve: true, sesiones: true, horas: true },
   { id: "recreo",     label: "Supresión del recreo",           leve: true, sesiones: true, hora: "Recreo" },
@@ -1253,12 +1253,14 @@ const TIPOS_MEDIDA = [
   { id: "comparecencia", label: "Comparecencia ante Jefatura" },
   { id: "extraescolar", label: "Sin actividades extraescolares" },
   { id: "expulsion_clase", label: "Expulsión de determinadas clases", sesiones: true, horas: true },
-  { id: "expulsion_centro", label: "Expulsión temporal del centro", sesiones: true, hora: "Todo el día" },
+  { id: "expulsion_centro", label: "Expulsión temporal del centro", sesiones: true, hora: "Todo el día", sinLugar: true },
   { id: "cambio_grupo", label: "Cambio de grupo" },
   { id: "otra",       label: "Otra medida" },
 ];
 const tipoMedida = id => TIPOS_MEDIDA.find(t => t.id === id) || TIPOS_MEDIDA[TIPOS_MEDIDA.length - 1];
+const LUGARES_MEDIDA = ["Aula de convivencia", "Biblioteca", "Jefatura de Estudios"];
 const ESTADO_MEDIDA = {
+  sin_programar: { label: "Por programar", color: R.crema,  texto: R.noche },
   pendiente:  { label: "Pendiente",   color: R.gris,     texto: R.petroleo },
   en_curso:   { label: "En curso",    color: R.azulClaro, texto: R.petroleo },
   cumplida:   { label: "Cumplida",    color: R.verde,    texto: R.noche },
@@ -1267,6 +1269,7 @@ const ESTADO_MEDIDA = {
 // Una medida con días está cumplida cuando se han cumplido todos; si falta a alguno, queda sin cumplir
 function estadoMedida(m) {
   const ses = (m.sesiones || []).filter(s => s.estado !== "movida");
+  if (tipoMedida(m.tipo).sesiones && !ses.length) return "sin_programar";
   if (!ses.length) return m.cumplida ? "cumplida" : "pendiente";
   if ((m.sesiones || []).some(s => s.estado === "ausente")) return "incumplida";
   if (ses.every(s => s.estado === "cumplida")) return "cumplida";
@@ -1280,9 +1283,9 @@ const proximosLectivos = (n, desde = new Date()) => {
 const fechaCorta = f => parseISO(f).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
 const ChipMedida = ({ m }) => {
   const e = ESTADO_MEDIDA[estadoMedida(m)];
-  return <span style={{ background: e.color, color: e.texto, borderRadius: 4, padding: "3px 10px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{e.label}</span>;
+  return <span style={{ background: e.color, color: e.texto, border: e.color === R.crema ? `1px solid ${R.mostaza}` : "none", borderRadius: 4, padding: "3px 10px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{e.label}</span>;
 };
-// Resumen de una medida: tipo, días y quién la puso
+// Resumen de una medida: tipo, días, lugar y quién la puso
 function ResumenMedida({ m }) {
   const t = tipoMedida(m.tipo);
   const ses = (m.sesiones || []).filter(s => s.estado !== "movida");
@@ -1290,8 +1293,12 @@ function ResumenMedida({ m }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
       <div style={{ minWidth: 0, flex: "1 1 220px" }}>
-        <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 16 }}>{t.label}{ses.length > 0 && <span style={{ fontWeight: 400 }}> · {hechas} de {ses.length} cumplido{ses.length !== 1 ? "s" : ""}</span>}</div>
-        {ses.length > 0 && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{ses.map(s => `${fechaCorta(s.fecha)}${s.hora && s.hora !== t.hora ? ` (${s.hora})` : ""}${s.estado === "cumplida" ? " ✓" : s.estado === "ausente" ? " ✗" : ""}`).join(" · ")}</div>}
+        <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 16 }}>
+          {t.label}
+          {ses.length > 0 ? <span style={{ fontWeight: 400 }}> · {hechas} de {ses.length} cumplido{ses.length !== 1 ? "s" : ""}</span>
+            : m.veces > 0 && <span style={{ fontWeight: 400 }}> · {m.veces} {m.veces === 1 ? "vez" : "veces"}</span>}
+        </div>
+        {ses.length > 0 && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{ses.map(s => `${fechaCorta(s.fecha)}${s.hora && s.hora !== t.hora ? ` (${s.hora})` : ""}${s.lugar ? ` · ${s.lugar}` : ""}${s.estado === "cumplida" ? " ✓" : s.estado === "ausente" ? " ✗" : ""}`).join(" | ")}</div>}
         {m.detalle && <div style={{ fontSize: 14, color: R.noche, marginTop: 2 }}>{m.detalle}</div>}
         <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>Puesta por {m.puestaPor} · {fmtD(m.ts)}</div>
       </div>
@@ -1300,29 +1307,95 @@ function ResumenMedida({ m }) {
   );
 }
 
+const estilosMedida = {
+  campo: { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" },
+  etiqueta: { display: "block", fontWeight: 700, fontSize: 15, color: R.petroleo, marginBottom: 8 },
+  boton: { minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" },
+  principal: listo => ({ minHeight: 48, padding: "0 20px", borderRadius: 6, border: "none", background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, opacity: listo ? 1 : .7, fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }),
+};
+
+// Elegir los días de una medida: atajos y fecha concreta
+function ElegirDias({ fechas, setFechas, id }) {
+  const [otra, setOtra] = useState(isoLocal());
+  const { campo, boton } = estilosMedida;
+  const anadir = fs => setFechas(prev => [...new Set([...prev, ...fs])].sort());
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+        <button type="button" style={boton} onClick={() => anadir([isoLocal()])}>Hoy</button>
+        <button type="button" style={boton} onClick={() => anadir(proximosLectivos(1, sumarDias(new Date(), 1)))}>Próximo día lectivo</button>
+        <button type="button" style={boton} onClick={() => anadir(proximosLectivos(3, sumarDias(new Date(), 1)))}>Próximos 3 días</button>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input type="date" id={id} aria-label="Otro día" value={otra} onChange={e => setOtra(e.target.value)} style={{ ...campo, flex: "1 1 0", minWidth: 0 }} />
+        <button type="button" style={boton} onClick={() => otra && anadir([otra])}>Añadir</button>
+      </div>
+      {fechas.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          {fechas.map(f => (
+            <span key={f} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.white, border: `2px solid ${R.turquesa}`, borderRadius: 22, padding: "2px 4px 2px 12px", fontSize: 15, fontWeight: 700, color: R.petroleo }}>
+              {fechaCorta(f)}
+              <button type="button" aria-label={`Quitar ${fechaCorta(f)}`} onClick={() => setFechas(prev => prev.filter(x => x !== f))}
+                style={{ width: 32, height: 32, border: "none", borderRadius: "50%", background: R.azulClaro, color: R.petroleo, fontSize: 18, cursor: "pointer" }}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Día, hora y lugar de una medida: lo que pone Jefatura (al programar o al poner la medida)
+function CamposProgramar({ t, fechas, setFechas, hora, setHora, lugar, setLugar, prefijo }) {
+  const { campo, etiqueta } = estilosMedida;
+  return (
+    <>
+      {t.horas && (
+        <div>
+          <label style={etiqueta} htmlFor={`${prefijo}-hora`}>Hora</label>
+          <select id={`${prefijo}-hora`} value={hora} onChange={e => setHora(e.target.value)} style={campo}>
+            {HORAS.filter(h => h !== "Recreo").map(h => <option key={h} value={h}>{conTramo(h)}</option>)}
+          </select>
+        </div>
+      )}
+      {!t.sinLugar && (
+        <div>
+          <label style={etiqueta} htmlFor={`${prefijo}-lugar`}>Aula o lugar</label>
+          <input id={`${prefijo}-lugar`} list="gd-lugares-medida" value={lugar} onChange={e => setLugar(e.target.value)} placeholder="Por ejemplo, Aula de convivencia" style={campo} />
+          <datalist id="gd-lugares-medida">{LUGARES_MEDIDA.map(l => <option key={l} value={l} />)}</datalist>
+        </div>
+      )}
+      <div>
+        <div style={etiqueta}>Días{t.hora ? ` · ${t.hora === "Todo el día" ? "todo el día" : conTramo(t.hora)}` : ""}</div>
+        <ElegirDias fechas={fechas} setFechas={setFechas} id={`${prefijo}-dia`} />
+      </div>
+    </>
+  );
+}
+
 // Formulario para poner una medida a partir de un parte
 function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
   const tipos = esJefatura ? TIPOS_MEDIDA : parte.gravedad === "leve" ? TIPOS_MEDIDA.filter(t => t.leve) : [];
   const [tipo, setTipo] = useState(tipos[0]?.id || "");
+  const [veces, setVeces] = useState(1);
   const [fechas, setFechas] = useState([]);
   const [hora, setHora] = useState("1ª hora");
-  const [otraFecha, setOtraFecha] = useState(isoLocal());
+  const [lugar, setLugar] = useState(LUGARES_MEDIDA[0]);
   const [detalle, setDetalle] = useState("");
   const t = tipoMedida(tipo);
-  const campo = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
-  const etiqueta = { display: "block", fontWeight: 700, fontSize: 15, color: R.petroleo, marginBottom: 8 };
-  const boton = { minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" };
-  const anadir = fs => setFechas(prev => [...new Set([...prev, ...fs])].sort());
+  const { campo, etiqueta, boton, principal } = estilosMedida;
   if (!tipos.length) return (
     <div style={{ background: R.crema, padding: 14, color: R.petroleo, fontSize: 15 }}>
       Las medidas de las faltas graves y muy graves las pone Jefatura de Estudios.
       <div><button type="button" onClick={onCancelar} style={{ ...boton, marginTop: 10 }}>Cerrar</button></div>
     </div>
   );
-  const listo = tipo && (!t.sesiones || fechas.length > 0) && (tipo !== "otra" || detalle.trim());
+  // Jefatura puede programarla ya; si no pone días, queda «por programar» como la del profesorado
+  const listo = tipo && (tipo !== "otra" || detalle.trim()) && (!esJefatura || !fechas.length || t.sinLugar || lugar.trim());
   const guardar = () => onGuardar({
     id: Date.now(), parteId: parte.id, alumnoId: parte.alumnoId, alumno: parte.alumno, curso: parte.curso, gravedad: parte.gravedad, tipo,
-    sesiones: t.sesiones ? fechas.map(f => ({ fecha: f, hora: t.hora || hora, estado: "pendiente" })) : [],
+    veces: t.sesiones ? (esJefatura && fechas.length ? fechas.length : veces) : 0,
+    sesiones: esJefatura && t.sesiones ? fechas.map(f => ({ fecha: f, hora: t.hora || hora, lugar: t.sinLugar ? "" : lugar.trim(), estado: "pendiente" })) : [],
     detalle: detalle.trim(), puestaPor: usuario, ts: new Date().toISOString(),
   });
   return (
@@ -1333,48 +1406,23 @@ function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
         <select id="gd-medida-tipo" value={tipo} onChange={e => { setTipo(e.target.value); setFechas([]); }} style={campo}>
           {tipos.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
         </select>
-        {!esJefatura && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Las demás medidas las pone Jefatura de Estudios.</div>}
       </div>
-      {t.horas && (
+      {!esJefatura && t.sesiones && (
         <div>
-          <label style={etiqueta} htmlFor="gd-medida-hora">Hora</label>
-          <select id="gd-medida-hora" value={hora} onChange={e => setHora(e.target.value)} style={campo}>
-            {HORAS.filter(h => h !== "Recreo").map(h => <option key={h} value={h}>{conTramo(h)}</option>)}
+          <label style={etiqueta} htmlFor="gd-medida-veces">¿Cuántas veces?</label>
+          <select id="gd-medida-veces" value={veces} onChange={e => setVeces(Number(e.target.value))} style={campo}>
+            {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} {n === 1 ? "vez" : "veces"}</option>)}
           </select>
+          <div style={{ fontSize: 15, color: R.petroleo, marginTop: 8 }}>Jefatura de Estudios pondrá el día y el aula. Las demás medidas las pone Jefatura.</div>
         </div>
       )}
-      {t.sesiones && (
-        <div>
-          <div style={etiqueta}>Días{t.hora ? ` · ${t.hora === "Todo el día" ? "todo el día" : conTramo(t.hora)}` : ""}</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <button type="button" style={boton} onClick={() => anadir([isoLocal()])}>Hoy</button>
-            <button type="button" style={boton} onClick={() => anadir(proximosLectivos(1, sumarDias(new Date(), 1)))}>Próximo día lectivo</button>
-            <button type="button" style={boton} onClick={() => anadir(proximosLectivos(3, sumarDias(new Date(), 1)))}>Próximos 3 días</button>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input type="date" aria-label="Otro día" value={otraFecha} onChange={e => setOtraFecha(e.target.value)} style={{ ...campo, flex: "1 1 0", minWidth: 0 }} />
-            <button type="button" style={boton} onClick={() => otraFecha && anadir([otraFecha])}>Añadir</button>
-          </div>
-          {fechas.length > 0 && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-              {fechas.map(f => (
-                <span key={f} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.white, border: `2px solid ${R.turquesa}`, borderRadius: 22, padding: "2px 4px 2px 12px", fontSize: 15, fontWeight: 700, color: R.petroleo }}>
-                  {fechaCorta(f)}
-                  <button type="button" aria-label={`Quitar ${fechaCorta(f)}`} onClick={() => setFechas(prev => prev.filter(x => x !== f))}
-                    style={{ width: 32, height: 32, border: "none", borderRadius: "50%", background: R.azulClaro, color: R.petroleo, fontSize: 18, cursor: "pointer" }}>×</button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {esJefatura && t.sesiones && <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugar={lugar} setLugar={setLugar} prefijo="gd-medida" />}
       <div>
         <label style={etiqueta} htmlFor="gd-medida-detalle">{tipo === "otra" ? "Describe la medida" : "Observaciones (opcional)"}</label>
         <textarea id="gd-medida-detalle" rows={2} value={detalle} onChange={e => setDetalle(e.target.value)} placeholder="Por ejemplo, la tarea que tiene que hacer" style={{ ...campo, resize: "vertical" }} />
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button type="button" onClick={guardar} disabled={!listo}
-          style={{ minHeight: 48, padding: "0 20px", borderRadius: 6, border: "none", background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, opacity: listo ? 1 : .7, fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }}>Guardar medida</button>
+        <button type="button" onClick={guardar} disabled={!listo} style={principal(listo)}>Guardar medida</button>
         <button type="button" onClick={onCancelar} style={{ minHeight: 48, padding: "0 12px", border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 16, cursor: "pointer" }}>Cancelar</button>
       </div>
     </div>
@@ -1390,45 +1438,96 @@ function MedidasDeParte({ parte, medidas, setMedidas, esJefatura, usuario, abier
     <div style={{ marginTop: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: R.petroleo, fontSize: 17, marginBottom: 8 }}><Icono nombre="tipificacion" tam={32} />Medidas correctoras</div>
       {lista.length === 0 && !abierta && <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 8 }}>Todavía no tiene ninguna medida.</div>}
-      {lista.map(m => <div key={m.id} style={{ border: `1px solid ${R.turquesaClaro}`, borderLeft: `8px solid ${ESTADO_MEDIDA[estadoMedida(m)].color}`, padding: 12, marginBottom: 8, background: C.white }}><ResumenMedida m={m} /></div>)}
+      {lista.map(m => <div key={m.id} style={{ border: `1px solid ${R.turquesaClaro}`, borderLeft: `8px solid ${estadoMedida(m) === "sin_programar" ? R.mostaza : ESTADO_MEDIDA[estadoMedida(m)].color}`, padding: 12, marginBottom: 8, background: C.white }}><ResumenMedida m={m} /></div>)}
       {abierta
         ? <FormMedida parte={parte} esJefatura={esJefatura} usuario={usuario} onCancelar={() => setAbierta(false)} onGuardar={m => { setMedidas(prev => [m, ...prev]); setAbierta(false); }} />
         : !puede && parte.gravedad !== "leve"
           ? <div style={{ fontSize: 15, color: R.petroleo, background: R.crema, padding: "10px 12px" }}>Las medidas de las faltas graves y muy graves las pone Jefatura de Estudios.</div>
-          : puede && <button type="button" onClick={() => setAbierta(true)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>➕ Poner medida correctora</button>}
+          : puede && <button type="button" onClick={() => setAbierta(true)} style={estilosMedida.boton}>➕ Poner medida correctora</button>}
     </div>
   );
 }
 
-// Pestaña de Jefatura: qué medidas hay hoy, quién ha cumplido y qué queda pendiente
+// Jefatura programa una medida: días, hora y lugar
+function ProgramarMedida({ m, onProgramar }) {
+  const t = tipoMedida(m.tipo);
+  const [fechas, setFechas] = useState([]);
+  const [hora, setHora] = useState("1ª hora");
+  const [lugar, setLugar] = useState(LUGARES_MEDIDA[0]);
+  const listo = fechas.length > 0 && (t.sinLugar || lugar.trim());
+  return (
+    <div style={{ background: R.azulClaro, padding: 12, marginTop: 10, display: "grid", gap: 12 }}>
+      <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugar={lugar} setLugar={setLugar} prefijo={`gd-prog-${m.id}`} />
+      {m.veces > 0 && fechas.length > 0 && fechas.length !== m.veces && <div style={{ fontSize: 15, color: R.petroleo }}>El parte pedía {m.veces} {m.veces === 1 ? "vez" : "veces"} y has elegido {fechas.length} {fechas.length === 1 ? "día" : "días"}.</div>}
+      <div><button type="button" disabled={!listo} onClick={() => onProgramar(fechas.map(f => ({ fecha: f, hora: t.hora || hora, lugar: t.sinLugar ? "" : lugar.trim(), estado: "pendiente" })))} style={estilosMedida.principal(listo)}>Programar</button></div>
+    </div>
+  );
+}
+
+// Lista del día en PDF, para imprimirla o dejarla en el aula
+function pdfListaMedidas(fecha, filas) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const y = cabeceraPDF(doc, "Medidas correctoras del día", parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  autoTable(doc, { ...estiloTabla, startY: y,
+    head: [["Hora", "Aula o lugar", "Alumno/a", "Curso", "Medida", "Puesta por", "¿Ha venido?"]],
+    body: filas.map(({ m, s }) => [conTramo(s.hora), s.lugar || "-", m.alumno, m.curso, tipoMedida(m.tipo).label, m.puestaPor, s.estado === "cumplida" ? "Sí" : s.estado === "ausente" ? "No" : ""].map(sinEmoji)) });
+  guardarPDF(doc, `medidas-${fecha}.pdf`);
+}
+
+// Pestaña de Jefatura: qué hay que programar, quién tiene que cumplir hoy y qué queda pendiente
 function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimiento, onVerParte }) {
   const [verCumplidas, setVerCumplidas] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState({});
+  const [programando, setProgramando] = useState(null);
   const hoy = isoLocal();
   const cambiar = (id, fn) => setMedidas(prev => prev.map(m => m.id === id ? fn(m) : m));
   const marcar = (m, i, estado) => {
     cambiar(m.id, x => ({ ...x, sesiones: x.sesiones.map((s, j) => j === i ? { ...s, estado } : s) }));
-    if (estado === "ausente") onAlerta({ id: Date.now(), tipo: "medida_incumplida", alumno: m.alumno, curso: m.curso, msg: `No se ha presentado a «${tipoMedida(m.tipo).label}» (${fechaCorta(m.sesiones[i].fecha)} · ${m.sesiones[i].hora})`, ts: new Date().toISOString(), leida: false });
+    if (estado === "ausente") onAlerta({ id: Date.now(), tipo: "medida_incumplida", alumno: m.alumno, curso: m.curso, msg: `No se ha presentado a «${tipoMedida(m.tipo).label}» (${fechaCorta(m.sesiones[i].fecha)} · ${m.sesiones[i].hora}${m.sesiones[i].lugar ? ` · ${m.sesiones[i].lugar}` : ""})`, ts: new Date().toISOString(), leida: false });
   };
-  const moverDia = (m, fecha) => cambiar(m.id, x => ({ ...x, sesiones: [...x.sesiones.map(s => s.estado === "ausente" ? { ...s, estado: "movida" } : s), { fecha, hora: x.sesiones.find(s => s.estado === "ausente")?.hora || tipoMedida(x.tipo).hora || "Recreo", estado: "pendiente" }] }));
+  const moverDia = (m, fecha) => cambiar(m.id, x => {
+    const falta = x.sesiones.find(s => s.estado === "ausente") || {};
+    return { ...x, sesiones: [...x.sesiones.map(s => s.estado === "ausente" ? { ...s, estado: "movida" } : s), { fecha, hora: falta.hora || tipoMedida(x.tipo).hora || "Recreo", lugar: falta.lugar || "", estado: "pendiente" }] };
+  });
   const deHoy = medidas.flatMap(m => (m.sesiones || []).map((s, i) => ({ m, s, i })).filter(({ s }) => s.fecha === hoy && s.estado !== "movida"))
-    .sort((a, b) => HORAS.indexOf(a.s.hora) - HORAS.indexOf(b.s.hora));
+    .sort((a, b) => HORAS.indexOf(a.s.hora) - HORAS.indexOf(b.s.hora) || (a.s.lugar || "").localeCompare(b.s.lugar || "") || a.m.alumno.localeCompare(b.m.alumno));
   const porEstado = e => medidas.filter(m => estadoMedida(m) === e);
   const tarjeta = { background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12, marginBottom: 8 };
   const boton = (fondo, letra) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: fondo === C.white ? `2px solid ${R.azul}` : "none", background: fondo, color: letra, fontSize: 15, fontWeight: 700, cursor: "pointer" });
+  const enlace = { minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" };
   const verParte = m => { const p = partes.find(x => x.id === m.parteId); if (p) onVerParte(p); };
   const barra = (texto, fondo) => <div style={{ background: fondo, color: R.noche, padding: "10px 14px", fontSize: 17, fontWeight: 700, marginTop: 22 }}>{texto}</div>;
+  const nombre = m => <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>;
   return (
     <div>
-      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Medidas correctoras" sub="Quién tiene que cumplir hoy y qué queda pendiente" icono="tipificacion" /></div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Medidas correctoras" sub="Programar las medidas, la lista de hoy y su seguimiento" icono="tipificacion" /></div>
+
+      {barra(`Por programar (${porEstado("sin_programar").length})`, R.mostaza)}
+      <div style={{ background: R.crema, padding: 12 }}>
+        {porEstado("sin_programar").length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas por programar.</div>}
+        {porEstado("sin_programar").map(m => (
+          <div key={m.id} data-medida={m.id} style={tarjeta}>
+            {nombre(m)}
+            <ResumenMedida m={m} />
+            {programando === m.id
+              ? <ProgramarMedida m={m} onProgramar={ses => { cambiar(m.id, x => ({ ...x, sesiones: ses })); setProgramando(null); }} />
+              : <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  <button type="button" onClick={() => setProgramando(m.id)} style={boton(R.azul, "#fff")}>Poner día y aula</button>
+                  <button type="button" onClick={() => verParte(m)} style={enlace}>Ver el parte</button>
+                </div>}
+          </div>
+        ))}
+      </div>
+
       {barra(`Hoy, ${fechaCorta(hoy)}`, R.mostaza)}
       <div style={{ background: R.crema, padding: 12 }}>
         {deHoy.length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>Hoy no hay medidas que cumplir.</div>}
+        {deHoy.length > 0 && <div style={{ marginBottom: 10 }}><button type="button" onClick={() => pdfListaMedidas(hoy, deHoy)} style={boton(C.white, R.petroleo)}>📄 Descargar la lista de hoy</button></div>}
         {deHoy.map(({ m, s, i }) => (
           <div key={`${m.id}-${i}`} data-medida={m.id} style={{ ...tarjeta, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div style={{ minWidth: 0, flex: "1 1 220px" }}>
-              <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
-              <div style={{ fontSize: 15, color: R.petroleo }}>{tipoMedida(m.tipo).label} · {conTramo(s.hora) || s.hora} · puesta por {m.puestaPor}</div>
+              {nombre(m)}
+              <div style={{ fontSize: 15, color: R.petroleo }}><b>{conTramo(s.hora)}{s.lugar ? ` · ${s.lugar}` : ""}</b> · {tipoMedida(m.tipo).label} · puesta por {m.puestaPor}</div>
             </div>
             {s.estado === "pendiente" ? (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1438,7 +1537,7 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
             ) : (
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ fontWeight: 700, fontSize: 15, color: R.petroleo }}>{s.estado === "cumplida" ? "✓ Ha venido" : "✗ No se ha presentado"}</span>
-                <button type="button" onClick={() => marcar(m, i, "pendiente")} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Deshacer</button>
+                <button type="button" onClick={() => marcar(m, i, "pendiente")} style={enlace}>Deshacer</button>
               </div>
             )}
           </div>
@@ -1450,7 +1549,7 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
         {porEstado("incumplida").length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas sin cumplir.</div>}
         {porEstado("incumplida").map(m => (
           <div key={m.id} data-medida={m.id} style={tarjeta}>
-            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            {nombre(m)}
             <ResumenMedida m={m} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
               <input type="date" aria-label={`Nuevo día para ${m.alumno}`} value={nuevaFecha[m.id] || proximosLectivos(1, sumarDias(new Date(), 1))[0]} onChange={e => setNuevaFecha(v => ({ ...v, [m.id]: e.target.value }))}
@@ -1459,22 +1558,22 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
               {m.parteIncumplimiento
                 ? <span style={{ fontSize: 15, color: R.petroleo, fontWeight: 700 }}>✓ Parte 9L puesto</span>
                 : <button type="button" onClick={() => { const id = onParteIncumplimiento(m); cambiar(m.id, x => ({ ...x, parteIncumplimiento: id })); }} style={boton(R.azul, "#fff")}>Poner parte por no cumplirla</button>}
-              <button type="button" onClick={() => verParte(m)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Ver el parte</button>
+              <button type="button" onClick={() => verParte(m)} style={enlace}>Ver el parte</button>
             </div>
           </div>
         ))}
       </div>
 
-      {barra(`Pendientes y en curso (${porEstado("pendiente").length + porEstado("en_curso").length})`, R.turquesa)}
+      {barra(`Programadas y en curso (${porEstado("pendiente").length + porEstado("en_curso").length})`, R.turquesa)}
       <div style={{ background: R.azulClaro, padding: 12 }}>
-        {[...porEstado("en_curso"), ...porEstado("pendiente")].length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas pendientes.</div>}
+        {[...porEstado("en_curso"), ...porEstado("pendiente")].length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas programadas.</div>}
         {[...porEstado("en_curso"), ...porEstado("pendiente")].map(m => (
           <div key={m.id} style={tarjeta}>
-            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            {nombre(m)}
             <ResumenMedida m={m} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {!(m.sesiones || []).length && <button type="button" onClick={() => cambiar(m.id, x => ({ ...x, cumplida: true }))} style={boton(R.verde, R.noche)}>✓ Marcar como cumplida</button>}
-              <button type="button" onClick={() => verParte(m)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Ver el parte</button>
+              <button type="button" onClick={() => verParte(m)} style={enlace}>Ver el parte</button>
             </div>
           </div>
         ))}
@@ -1485,7 +1584,7 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
         <button type="button" onClick={() => setVerCumplidas(v => !v)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, fontSize: 16, fontWeight: 700, cursor: "pointer", padding: 0 }}>{verCumplidas ? "▾ Ocultar" : "▸ Ver las medidas cumplidas"}</button>
         {verCumplidas && porEstado("cumplida").map(m => (
           <div key={m.id} style={{ ...tarjeta, marginTop: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            {nombre(m)}
             <ResumenMedida m={m} />
           </div>
         ))}
@@ -1496,16 +1595,19 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
 
 // Medidas de ejemplo para la demostración, a partir de partes leves recientes (todo ficticio)
 function medidasEjemplo(partes) {
-  const leves = partes.filter(p => p.gravedad === "leve").slice(0, 5);
-  if (leves.length < 5) return [];
+  const leves = partes.filter(p => p.gravedad === "leve").slice(0, 7);
+  if (leves.length < 7) return [];
   const hoy = isoLocal(), ayer = isoLocal(sumarDias(new Date(), -1)), manana = proximosLectivos(1, sumarDias(new Date(), 1))[0];
   const base = (p, extra) => ({ id: p.id + 7, parteId: p.id, alumnoId: p.alumnoId, alumno: p.alumno, curso: p.curso, gravedad: p.gravedad, detalle: "", puestaPor: p.profesor, ts: p.ts, ...extra });
+  const ses = (fecha, hora, lugar, estado = "pendiente") => ({ fecha, hora, lugar, estado });
   return [
-    base(leves[0], { tipo: "recreo", sesiones: [{ fecha: hoy, hora: "Recreo", estado: "pendiente" }, { fecha: manana, hora: "Recreo", estado: "pendiente" }] }),
-    base(leves[1], { tipo: "aula_conv", sesiones: [{ fecha: hoy, hora: "3ª hora", estado: "pendiente" }] }),
-    base(leves[2], { tipo: "hora_mas", sesiones: [{ fecha: ayer, hora: "7ª hora", estado: "cumplida" }, { fecha: hoy, hora: "7ª hora", estado: "pendiente" }] }),
-    base(leves[3], { tipo: "recreo", sesiones: [{ fecha: ayer, hora: "Recreo", estado: "ausente" }] }),
-    base(leves[4], { tipo: "aula_conv", sesiones: [{ fecha: ayer, hora: "2ª hora", estado: "cumplida" }] }),
+    base(leves[0], { tipo: "recreo", veces: 2, sesiones: [ses(hoy, "Recreo", "Aula de convivencia"), ses(manana, "Recreo", "Aula de convivencia")] }),
+    base(leves[1], { tipo: "aula_conv", veces: 1, sesiones: [ses(hoy, "3ª hora", "Aula de convivencia")] }),
+    base(leves[2], { tipo: "hora_mas", veces: 2, sesiones: [ses(ayer, "7ª hora", "Biblioteca", "cumplida"), ses(hoy, "7ª hora", "Biblioteca")] }),
+    base(leves[3], { tipo: "recreo", veces: 1, sesiones: [ses(ayer, "Recreo", "Aula de convivencia", "ausente")] }),
+    base(leves[4], { tipo: "aula_conv", veces: 1, sesiones: [ses(ayer, "2ª hora", "Aula de convivencia", "cumplida")] }),
+    base(leves[5], { tipo: "recreo", veces: 3, sesiones: [] }),
+    base(leves[6], { tipo: "hora_mas", veces: 1, sesiones: [] }),
   ];
 }
 
@@ -2675,9 +2777,10 @@ const AYUDAS = {
     "Pulsa «Ver» para consultar un parte o «PDF» para guardarlo."] },
   bano_live: { titulo: "Baños en tiempo real", pasos: ["Arriba, los alumnos que están fuera del aula ahora mismo; debajo, el historial del día."] },
   medidas: { titulo: "Medidas correctoras", pasos: [
-    "Arriba, quién tiene que cumplir hoy una medida (recreo, aula de convivencia, una hora más…). Marca «Ha venido» o «No se ha presentado».",
+    "«Por programar»: las medidas que ha puesto el profesorado. Pulsa «Poner día y aula» y elige los días, la hora y el aula o lugar.",
+    "«Hoy»: la lista del día, que puedes descargar en PDF. Marca «Ha venido» o «No se ha presentado».",
     "Si no se presenta, sale una alerta y la medida pasa a «Sin cumplir»: pásala a otro día o pon el parte por no cumplirla (9L).",
-    "Debajo, las medidas pendientes y las cumplidas. Las medidas se ponen desde cada parte, con «Poner medida correctora»."] },
+    "Las medidas de faltas graves y muy graves las pones tú desde cada parte, con «Poner medida correctora»."] },
   alertas: { titulo: "Alertas", pasos: [
     "Avisos automáticos: tercer parte leve, tercer parte de un alumno, parte fuera de horario, salidas al baño repetidas y medidas sin cumplir.",
     "Pulsa una alerta para marcarla como leída."] },
@@ -6268,7 +6371,8 @@ function AppInterna() {
   );
 
   const avisosPendientes = perfil.id === "profesor" && usuario ? alumnosParaAvisar({ partes, usuario, tutores, avisos: avisosFamilia }).lista.filter(x => x.pendiente).length : 0;
-  const medidasHoy = medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
+  // Número de la pestaña «Medidas»: las que hay que programar y las que tocan hoy
+  const medidasHoy = medidas.filter(m => estadoMedida(m) === "sin_programar").length + medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
   const tabs = perfil.id === "profesor"
     ? moduloProfesor === "alumnos"
       ? [
