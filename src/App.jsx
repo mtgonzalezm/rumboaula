@@ -347,19 +347,20 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil");
   }
 
-  const inp = { width: "100%", padding: "12px 14px", borderRadius: 10, border: `2px solid ${C.cream}`, fontSize: 15, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 };
-  const lbl = { display: "block", fontSize: 14, fontWeight: 600, color: C.dark, marginBottom: 8 };
-  const btnPrincipal = { display: "block", width: "100%", padding: "14px 20px", marginTop: 6, background: C.teal, color: "#fff", border: "none", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 700 };
-  const enlace = { background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 14, fontWeight: 600, marginTop: 14, padding: 0 };
+  // Como el acceso a Raíces: campos con borde turquesa y botón grande
+  const inp = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box", marginBottom: 10 };
+  const lbl = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 8 };
+  const btnPrincipal = { display: "block", width: "100%", minHeight: 52, padding: "0 20px", marginTop: 6, background: R.azul, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 19, fontWeight: 700 };
+  const enlace = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 14, minHeight: 32, padding: 0 };
 
-  const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? C.teal : "#EBF0F6", color: "#fff", fontSize: 14, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
+  const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? R.azul : R.gris, color: activo ? "#fff" : R.petroleo, fontSize: 14, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
   const tutora = tutoraDemo || { nombre: "Carmen López", curso: "1º ESO A" };
   const accesoDemo = MODO_DEMO ? (
-    <div style={{ background: "#DDF0F4", border: `2px solid ${C.teal}`, borderRadius: 12, padding: 14, marginBottom: 22 }}>
+    <div style={{ background: R.azulClaro, border: `3px solid ${R.verde}`, borderLeftWidth: 12, padding: 14, marginBottom: 22 }}>
       <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>{pasoNum(1, !ejemploListo)} Carga los datos de ejemplo</div>
       {ejemploListo
         ? <div style={{ background: "#DDF0F4", color: "#16333F", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 700, marginBottom: 14 }}>✅ Datos de ejemplo cargados. Ahora, el paso 2.</div>
-        : <button onClick={cargarEjemplo} style={{ width: "100%", background: C.teal, color: "#fff", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
+        : <button onClick={cargarEjemplo} style={{ width: "100%", background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
             🧪 Pulsa aquí para cargar los datos de ejemplo
           </button>}
       <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 2 }}>{pasoNum(2, ejemploListo)} Elige qué quieres probar</div>
@@ -371,7 +372,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         { txt: "⚙️ Administración", sub: "Entras como Elena Vega: alumnado, profesorado, tutorías y cargos", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
       ].map(b => (
         <button key={b.txt} onClick={() => { if (!ejemploListo) cargarEjemplo(); b.accion(); }}
-          style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", marginBottom: 8, background: C.cream, border: `2px solid ${C.teal}`, borderRadius: 10, cursor: "pointer" }}>
+          style={{ display: "block", width: "100%", textAlign: "left", minHeight: 56, padding: "10px 14px", marginBottom: 8, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><ConIcono texto={b.txt} tam={26} /></div>
           <div style={{ fontSize: 13, color: C.gray }}>{b.sub}</div>
         </button>
@@ -382,11 +383,11 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         const resto = profesores.filter(p => !sinLeerPor[p]).sort((a, b) => a.localeCompare(b));
         const etiqueta = p => { const n = sinLeerPor[p]; return n ? `${p} · ${n.urgentes ? "🚨" : "🔔"} ${n.total} mensaje(s) nuevo(s)` : p; };
         return (
-          <div style={{ background: C.cream, border: `2px dashed ${C.teal}`, borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
+          <div style={{ background: C.white, border: `3px dashed ${R.turquesa}`, borderRadius: 6, padding: "10px 14px", marginBottom: 8 }}>
             <label htmlFor="gd-otro-profe" style={{ fontSize: 14, fontWeight: 700, color: C.dark, display: "block" }}>👥 Entrar como otro profe del claustro</label>
             <div style={{ fontSize: 13, color: C.gray, marginBottom: 6 }}>Para ver un mensaje de Galvángram, entra como quien lo ha recibido.</div>
             <select id="gd-otro-profe" value="" onChange={e => { if (e.target.value) onEntrar(e.target.value, PERFILES[0], { otro: true }); }}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.teal}`, fontSize: 14, background: "#fff" }}>
+              style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
               <option value="">— Elige un profe —</option>
               {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
               <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
@@ -405,9 +406,9 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const globoBienvenida = MODO_DEMO && globo ? (
     <div role="dialog" aria-modal="true" aria-labelledby="gd-globo-titulo" onClick={cerrarGlobo}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 20, maxWidth: 460, width: "100%", padding: "28px 26px", textAlign: "left", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 12, maxWidth: 460, width: "100%", padding: "28px 26px", textAlign: "left", borderTop: `8px solid ${R.mostaza}` }}>
         <Icono nombre="saludo" tam={64} style={{ margin: "0 auto" }} />
-        <h2 id="gd-globo-titulo" style={{ color: C.dark, textAlign: "center", margin: "6px 0 4px", fontSize: 22 }}>Bienvenida/o a la demostración</h2>
+        <h2 id="gd-globo-titulo" style={{ color: R.petroleo, textAlign: "center", margin: "6px 0 4px", fontSize: 26, fontFamily: TITULO, fontWeight: 400 }}>Bienvenida/o a la demostración</h2>
         <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
           ["Carga los datos de ejemplo", "El botón verde de abajo lo hace por ti."],
@@ -427,12 +428,12 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   ) : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg,${C.dark},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif", padding: 20 }}>
+    <div style={{ minHeight: "100vh", background: C.white, color: R.petroleo, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE, padding: 20 }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }`}</style>
-      <div style={{ background: C.white, borderRadius: 20, padding: "36px 32px", maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <h1 style={{ margin: "0 0 6px" }}><img src="/logo-rumboaula.png" alt={APP} style={{ width: 260, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }} /></h1>
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderRadius: 12, padding: "32px 28px", maxWidth: 440, width: "100%", textAlign: "center" }}>
+        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo tam={48} /></h1>
         <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
-        <p style={{ color: C.gray, marginBottom: 20, fontSize: 14 }}>Todo lo que importa en tu aula</p>
+        <p style={{ color: R.petroleo, marginBottom: 20, fontSize: 16 }}>Todo lo que importa en tu aula</p>
         <AvisoDemo />
         {globoBienvenida}
 
@@ -476,7 +477,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
             <button onClick={entrar} style={btnPrincipal}>Entrar</button>
             {MODO_DEMO && (
               <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }}
-                style={{ display: "block", width: "100%", padding: "12px 20px", marginTop: 10, background: C.cream, color: C.dark, border: `2px solid ${C.teal}`, borderRadius: 12, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>
+                style={{ display: "block", width: "100%", minHeight: 48, padding: "0 20px", marginTop: 10, background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
                 🧪 Entrar sin clave (solo en la demostración)
               </button>
             )}
@@ -491,7 +492,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
             <div style={{ fontSize: 14, color: C.gray, marginBottom: 14 }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div>
             {permitidos.map(p => (
               <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
-                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 16px", marginBottom: 12, background: C.cream, border: `2px solid ${C.teal}`, borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
+                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "8px 16px", marginBottom: 12, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
                 <Icono nombre={iconoPerfil(p)} tam={44} />{sinEmoji1(p.label)}
               </button>
             ))}
@@ -1401,7 +1402,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
 
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="grupos" tam={44} />Gestión de Alumnos</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Alumnos" icono="grupos" /></div>
       <div style={{ background: C.white, borderRadius: 12, marginBottom: 14, display: "flex", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderBottom: `2px solid ${C.cream}` }}>
         <button style={stb(subTab === "importar")} onClick={() => setSubTab("importar")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="importar" tam={30} />Importar CSV/Excel</span></button>
         <button style={stb(subTab === "manual")}   onClick={() => setSubTab("manual")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="anadir-manual" tam={30} />Añadir manual</span></button>
@@ -1691,7 +1692,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
   // ── Vista principal ──
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="horario" tam={44} />Planificador de Guardias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Planificador de Guardias" icono="horario" /></div>
 
       {planGuardia && (
         <Card style={{ background: "#DDF0F4", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
@@ -2260,7 +2261,7 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
   const pend = debidas.length - firmadas;
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="tareas" tam={44} />Firmas de guardia y listas</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Firmas de guardia y listas" icono="tareas" /></div>
       <div className="no-print" style={{ background: C.white, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 180 }}>
           <label style={{ display: "block", fontWeight: 600, fontSize: 14, color: C.dark, marginBottom: 6 }}>Fecha</label>
@@ -2752,11 +2753,11 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
         else saludo = "¡Buenas noches";
         
         return (
-          <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+          <div style={{ color: R.petroleo, marginBottom: 28 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                   {guardiasDia.length > 0 ? (
                     <>Hoy tienes <strong>{guardiasDia.length} guardia{guardiasDia.length !== 1 ? 's' : ''}</strong> asignada{guardiasDia.length !== 1 ? 's' : ''}</>
                   ) : esFinde ? (
@@ -2766,16 +2767,16 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                   )}
                 </p>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icono nombre="fecha" tam={32} />
+                <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
               </div>
             </div>
           </div>
         );
       })()}
 
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Mi Guardia Hoy</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Mi Guardia Hoy" icono="guardias" /></div>
       <div style={{ background:C.white, borderRadius:12, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
         <label style={labelStyle}>Soy el/la profesor/a</label>
         <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={selStyle} disabled={profesores.includes(usuario)}>
@@ -3022,7 +3023,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
       {diaSeleccionadoGuardias && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 50 }} onClick={() => setDiaSeleccionadoGuardias(null)}>
           <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: "min(400px, 100vw)", background: C.white, boxShadow: "-4px 0 20px rgba(0,0,0,0.15)", overflowY: "auto", animation: "slideIn 0.3s ease" }} onClick={e => e.stopPropagation()}>
-            <div style={{ background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`, color: "#fff", padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ background: R.azul, color: "#fff", padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="fecha-hora" tam={22} />{diaSeleccionadoGuardias.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "short" })}</div>
                 <div style={{ fontSize: 14, opacity: 0.9, marginTop: 4 }}>Guardias asignadas</div>
@@ -3138,7 +3139,7 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
 
   return (
     <div>
-      <h2 style={{ color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="profe-ausente" tam={44} />{modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"}</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"} icono="profe-ausente" /></div>
       {modoJefatura && <p style={{ marginTop: -6, color: C.gray, fontSize: 14 }}>Para cuando un profesor llama al instituto y no puede avisar desde la app. Su guardia y la tarea llegan igual a quien le cubre.</p>}
       {enviado && (
         <div style={{ background:"#DDF0F4", border:`2px solid ${C.teal}`, borderRadius:12, padding:16, marginBottom:16, fontWeight:700, color:C.teal, fontSize:15 }}>
@@ -3305,7 +3306,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
   
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="horario" tam={44} />Cuadrante de Guardias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Cuadrante de Guardias" icono="horario" /></div>
       
       {/* SELECTOR DE PROFESOR */}
       <div style={{ background:C.white, borderRadius:12, padding:20, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
@@ -3484,7 +3485,7 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
   
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="eventos" tam={44} />Coordinación Diaria de Ausencias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Coordinación Diaria de Ausencias" icono="eventos" /></div>
       
       {/* SELECTOR DE FECHA */}
       <div style={{ background: C.white, borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
@@ -3839,7 +3840,7 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
   
   return (
     <div>
-      <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="mensajes" tam={44} />Galvángram</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Galvángram" icono="mensajes" /></div>
       
       {/* TABS */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, borderBottom: `2px solid ${C.light}` }}>
@@ -4178,7 +4179,7 @@ function ParteDia({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia
 
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="estado-general" tam={44} />Parte del Día — {diaHoy}</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={`Parte del Día — ${diaHoy}`} icono="estado-general" /></div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))", gap:12, marginBottom:16 }}>
         {[
           { label:"Zonas de guardia",   value:asignaciones.length,                                   color:C.dark   },
@@ -4466,7 +4467,7 @@ function GestionAusencias({ ausencias, setAusencias, profesores, C, fmt }) {
 
   return (
     <div>
-      <h2 style={{color:C.dark, marginTop:0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="profe-ausente" tam={44} />Gestión de Ausencias</h2>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Ausencias" icono="profe-ausente" /></div>
       <div style={{ background:C.white, borderRadius:12, padding:16, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div>
@@ -5940,10 +5941,10 @@ function AppInterna() {
 
   // ── Pantalla de carga ──
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg,${C.dark},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ color: "#fff", textAlign: "center" }}>
-        <div style={{ fontSize: 52 }}><Ic n="por-curso" tam={20} /></div>
-        <div style={{ fontSize: 18, fontWeight: 600, marginTop: 12 }}>Cargando {APP}…</div>
+    <div style={{ minHeight: "100vh", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE }}>
+      <div style={{ color: R.petroleo, textAlign: "center" }}>
+        <Logo tam={44} />
+        <div style={{ fontSize: 18, fontWeight: 600, marginTop: 16 }}>Cargando {APP}…</div>
       </div>
     </div>
   );
@@ -6101,7 +6102,7 @@ function AppInterna() {
       `}</style>
       <AvisoDemo compacto />
       {/* Cabecera blanca, como Raíces: nombre, saludo y botones redondos con dibujo (inicio, preguntas, salir) */}
-      <div className="gd-header" style={{ background: C.white, color: R.petroleo, padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 12, borderBottom: "1px solid #E3E9EC" }}>
+      <div className="gd-header" style={{ background: C.white, color: R.petroleo, padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", width: "100%", gap: 8, borderBottom: "1px solid #E3E9EC" }}>
         <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ minWidth: 0 }}>
@@ -6114,7 +6115,7 @@ function AppInterna() {
             <span>Hola <span style={{ color: R.azul }}>{usuario}</span>, tu perfil es <span style={{ color: R.azul }}>{sinEmoji1(perfil.label)}</span> y tu centro es {CENTRO}.</span>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
             setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
@@ -6459,7 +6460,7 @@ function AppInterna() {
         {/* ── Registrar Guardia ── */}
         {tab === "guardias_prof" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Registrar Guardia</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Registrar Guardia" icono="guardias" /></div>
             {guardiaGenerada && (
               <Card style={{ background: "#DDF0F4", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
                 <strong style={{ color: C.teal }}>✅ Guardia registrada · {fmt(guardiaGenerada.ts)}</strong>
@@ -6525,26 +6526,26 @@ function AppInterna() {
               const ausenciasHoy = ausencias.filter(a => isoLocal(a.fecha) === hoyISO).length;
               
               return (
-                <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+                <div style={{ color: R.petroleo, marginBottom: 28 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
                     <div>
-                      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                      <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                      <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                         Hoy hay <strong>{guardiaHoy} zona{guardiaHoy !== 1 ? 's' : ''} de guardia</strong> programada{guardiaHoy !== 1 ? 's' : ''} 
                         {partesHoy > 0 && <> y <strong>{partesHoy} parte{partesHoy !== 1 ? 's' : ''}</strong> registrado{partesHoy !== 1 ? 's' : ''}</>}
                         {ausenciasHoy > 0 && <> con <strong>{ausenciasHoy} ausencia{ausenciasHoy !== 1 ? 's' : ''}</strong></>}
                       </p>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                      <div style={{ fontSize: 14, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icono nombre="fecha" tam={32} />
+                <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
                     </div>
                   </div>
                 </div>
               );
             })()}
 
-            <h2 style={{color: C.dark, marginTop: 0, marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="dashboard" tam={44} />Estado General</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Estado General" icono="dashboard" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 14, marginBottom: 24 }}>
               {[
                 { label: "Total Partes", value: partes.length,                                              color: C.dark,   emoji: "📋", ic: "partes" },
@@ -6600,7 +6601,7 @@ function AppInterna() {
         {/* ── Por Curso ── */}
         {tab === "por_curso" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="por-curso" tam={44} />Partes por Curso / Grupo</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Partes por Curso / Grupo" icono="por-curso" /></div>
             {cursos.map(curso => {
               const pC = partes.filter(p => p.curso === curso);
               const alC = alumnos.filter(a => a.curso === curso);
@@ -6648,7 +6649,7 @@ function AppInterna() {
         {/* ── Por Alumno ── */}
         {tab === "por_alumno" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="por-alumno" tam={44} />Partes por Alumno</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Partes por Alumno" icono="por-alumno" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <select value={filtCurso} onChange={e => { setFiltCurso(e.target.value); setFiltAlumno(""); }} style={selStyle}><option value="">Todos los cursos</option>{cursos.map(c => <option key={c}>{c}</option>)}</select>
               <select value={filtAlumno} onChange={e => setFiltAlumno(e.target.value)} style={selStyle}><option value="">Seleccionar alumno</option>{alumnos.filter(a => !filtCurso || a.curso === filtCurso).map(a => <option key={a.id} value={a.id}>{a.nombre} — {a.curso}</option>)}</select>
@@ -6709,7 +6710,7 @@ function AppInterna() {
         {/* ── Todos los Partes ── */}
         {tab === "partes_todos" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="partes" tam={44} />Todos los Partes</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Todos los Partes" icono="partes" /></div>
             <Card>
               <div style={{ fontWeight: 600, color: C.dark, marginBottom: 10 }}><Ic n="buscar" tam={20} />Filtros</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
@@ -6733,7 +6734,7 @@ function AppInterna() {
         {/* ── Guardias (Jefatura) ── */}
         {tab === "guardias_jef" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="guardias" tam={44} />Registro de Guardias</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Registro de Guardias" icono="guardias" /></div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 14, marginBottom: 20 }}>
               {[{ label: "Guardias Hoy", value: guardias.filter(g => g.fecha === todayStr()).length, color: C.blue }, { label: "Esta Semana", value: guardias.filter(g => weekKey(g.fecha) === weekKey(new Date())).length, color: C.teal }, { label: "Total", value: guardias.length, color: C.dark }].map(s => (
                 <div key={s.label} style={{ background: C.white, borderRadius: 12, padding: 16, textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", borderTop: `4px solid ${s.color}` }}>
@@ -6872,7 +6873,7 @@ function AppInterna() {
 
         {tab === "bano_live" && (
           <div>
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="banos" tam={44} />Baños — Tiempo Real</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Baños — Tiempo Real" icono="banos" /></div>
             <Card style={{ background: banoActivos.length > 0 ? "#FDF1D9" : "#DDF0F4", border: `2px solid ${banoActivos.length > 0 ? C.salmon : C.teal}` }}>
               <h3 style={{ margin: "0 0 12px", color: C.dark }}>{banoActivos.length > 0 ? <><Ic n="fuera-ahora" tam={26} />{banoActivos.length} alumno(s) fuera</> : "✅ Ningún alumno fuera"}</h3>
               {banoActivos.map(b => <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid rgba(0,0,0,0.08)`, fontSize: 14 }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>)}
@@ -6897,7 +6898,7 @@ function AppInterna() {
         {/* ── Alertas ── */}
         {tab === "alertas" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="alertas" tam={44} />Alertas</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Alertas" icono="alertas" /></div>
             {alertas.length === 0
               ? <Card style={{ textAlign: "center", color: C.gray, padding: 40 }}>Sin alertas</Card>
               : alertas.map(a => {
@@ -6947,7 +6948,7 @@ function AppInterna() {
         {/* ── Informe ── */}
         {tab === "informe" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="informe" tam={44} />Exportar Informe</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Exportar Informe" icono="informe" /></div>
             
             {/* SELECTOR DE TIPO DE INFORME */}
             <Card style={{ marginBottom: 20 }}>
@@ -7029,7 +7030,7 @@ function AppInterna() {
         {/* ── Admin Profesores ── */}
         {tab === "admin_profesores" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="perfil" tam={44} />Gestión de Profesores</h2>
+            <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Profesores" icono="perfil" /></div>
             <CorreosCentro C={C} />
             <Card>
               <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="anadir-profesor" tam={44} />Añadir profesor</h3>
