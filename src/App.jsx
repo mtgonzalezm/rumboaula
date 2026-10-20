@@ -4,8 +4,15 @@ import autoTable from "jspdf-autotable";
 // ─── Paleta de colores ───────────────────────────────────────────────────────
 // ─── Nombre de la aplicación y del centro (cámbialos aquí para otro instituto) ─
 const APP = "RumboAula";
-const CENTRO = "Centro educativo";
-const CIUDAD = "Madrid";
+// Nombre y localidad del centro: se cambian en Administración › Alumnos › «Datos del centro».
+// Se guardan con los demás datos y se aplican aquí para que los usen también los PDF y los correos.
+const CENTRO_POR_DEFECTO = { nombre: "Centro educativo", ciudad: "Madrid" };
+let CENTRO = CENTRO_POR_DEFECTO.nombre;
+let CIUDAD = CENTRO_POR_DEFECTO.ciudad;
+function fijarCentro(d) {
+  CENTRO = d?.nombre?.trim() || CENTRO_POR_DEFECTO.nombre;
+  CIUDAD = d?.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
+}
 
 // Colores con los que se pinta toda la app. Los nombres son los de siempre, pero los valores
 // son ya los de Raíces (petróleo, azul, gris azulado, crema), con contraste suficiente para leer.
@@ -5423,6 +5430,34 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
 }
 
 // Correos del centro, en Administración
+// Datos del centro (Administración): nombre y localidad que salen en la app, los PDF y los correos
+function DatosCentro({ datos, setDatos }) {
+  const campo = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
+  const etiqueta = { display: "block", fontWeight: 700, fontSize: 15, color: R.petroleo, marginBottom: 8 };
+  const nombre = datos.nombre?.trim() || CENTRO_POR_DEFECTO.nombre, ciudad = datos.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <TituloBloque titulo="Datos del centro" sub="Aparecen en la entrada, en la cabecera, en los PDF y en los correos a las familias" icono="edificio" />
+      <div style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+          <div>
+            <label style={etiqueta} htmlFor="gd-centro-nombre">Nombre del centro</label>
+            <input id="gd-centro-nombre" value={datos.nombre || ""} onChange={e => setDatos(d => ({ ...d, nombre: e.target.value }))} placeholder="Por ejemplo, IES Enrique Tierno Galván" style={campo} />
+          </div>
+          <div>
+            <label style={etiqueta} htmlFor="gd-centro-ciudad">Localidad</label>
+            <input id="gd-centro-ciudad" value={datos.ciudad || ""} onChange={e => setDatos(d => ({ ...d, ciudad: e.target.value }))} placeholder="Por ejemplo, Madrid" style={campo} />
+          </div>
+        </div>
+        <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: "10px 14px", fontSize: 15, color: R.petroleo }}>
+          Así aparecerá: <b>{nombre.toUpperCase()} · {ciudad.toUpperCase()}</b>
+          <div style={{ marginTop: 4 }}>En los correos a las familias: «Les escribimos desde el {nombre}…». Los cambios se guardan solos.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CorreosCentro({ C }) {
   const { correos, setCorreos } = useContext(CorreosCentroCtx);
   return (
@@ -6043,6 +6078,8 @@ function AppInterna() {
   const [loading, setLoading]     = useState(true);
   const [showParte, setShowParte] = useState(null);
   const [avisosFamilia, setAvisosFamilia] = useState({});
+  const [datosCentro, setDatosCentro] = useState(CENTRO_POR_DEFECTO);
+  fijarCentro(datosCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
   useEffect(() => {
@@ -6166,6 +6203,7 @@ function AppInterna() {
       const li = await sGet("listas_guardia"); if (li) setListas(li);
       const avf = await sGet("avisos_familia"); if (avf) setAvisosFamilia(avf);
       const cc = await sGet("correos_centro"); if (cc) setCorreosCentro(cc);
+      const dc = await sGet("datos_centro"); if (dc) setDatosCentro(dc);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -6203,6 +6241,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("listas_guardia", listas); }, [listas, loading]);
   useEffect(() => { if (!loading) sSet("avisos_familia", avisosFamilia); }, [avisosFamilia, loading]);
   useEffect(() => { if (!loading) sSet("correos_centro", correosCentro); }, [correosCentro, loading]);
+  useEffect(() => { if (!loading) sSet("datos_centro", datosCentro); }, [datosCentro, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
   useEffect(() => { if (identidadFija) { setFProfesor(usuario); setAusProfesor(usuario); } }, [usuario, identidadFija]);
@@ -7479,6 +7518,7 @@ function AppInterna() {
         )}
 
         {/* ── Admin Alumnos ── */}
+        {tab === "admin_panel" && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
         {tab === "admin_panel" && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
