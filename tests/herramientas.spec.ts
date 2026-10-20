@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import fs from 'fs'
 import { vigilarErrores, empezar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
 
 // ───────────────────────── PROFESORADO: partes ─────────────────────────
@@ -409,5 +410,30 @@ test('Horario del centro: Administración cambia las horas de una franja y se us
   await expect(page.locator('option', { hasText: '1ª hora · 8:00 – 8:55' }).first()).toBeAttached()
   await expect(page.locator('option', { hasText: '2ª hora · 9:25 – 10:20' }).first()).toBeAttached()
   await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
+
+test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoAdmin(page)
+  await page.locator('#gd-centro-logo').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAFAAAAAYCAIAAADieO37AAAAQ0lEQVR4nOXOQQEAIBCAMKSMqWxkaFucD5Zga59LicRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjL8D0x41WQFAHGL7QQAAAABJRU5ErkJggg==', 'base64') })
+  await expect(page.getByAltText('Logotipo para los documentos')).toBeVisible()
+  expect((await leer(page, 'datos_centro')).logo.data).toMatch(/^data:image\/png;base64,/)
+  // Un PDF del profesorado lleva la imagen
+  await salir(page)
+  await comoProfe(page)
+  await pestaña(page, 'Mis Partes')
+  await page.getByRole('button', { name: 'PDF', exact: true }).first().click()
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Descargar PDF/ }).first().click()
+  const pdf = fs.readFileSync(await (await descarga).path())
+  expect(pdf.toString('latin1')).toContain('/Subtype /Image')
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  // Se puede quitar
+  await salir(page)
+  await comoAdmin(page)
+  await page.getByRole('button', { name: 'Quitar logotipo' }).click()
+  expect((await leer(page, 'datos_centro')).logo).toBeNull()
   expect(errores).toEqual([])
 })

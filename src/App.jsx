@@ -9,9 +9,11 @@ const APP = "RumboAula";
 const CENTRO_POR_DEFECTO = { nombre: "Centro educativo", ciudad: "Madrid" };
 let CENTRO = CENTRO_POR_DEFECTO.nombre;
 let CIUDAD = CENTRO_POR_DEFECTO.ciudad;
+let LOGO_CENTRO = null; // { data, w, h }: imagen que el centro pone al pie de los PDF
 function fijarCentro(d) {
   CENTRO = d?.nombre?.trim() || CENTRO_POR_DEFECTO.nombre;
   CIUDAD = d?.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
+  LOGO_CENTRO = d?.logo?.data ? d.logo : null;
 }
 
 // Colores con los que se pinta toda la app. Los nombres son los de siempre, pero los valores
@@ -692,6 +694,13 @@ function guardarPDF(doc, archivo) {
   const hoy = new Date().toLocaleDateString("es-ES");
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GRIS);
+    // Logotipo del centro al pie (Administración › Datos del centro): 1 cm de alto como mucho
+    if (LOGO_CENTRO) {
+      const prop = LOGO_CENTRO.w / LOGO_CENTRO.h;
+      let alto = 10, ancho = alto * prop;
+      if (ancho > 120) { ancho = 120; alto = ancho / prop; }
+      try { doc.addImage(LOGO_CENTRO.data, "PNG", (w - ancho) / 2, h - 12 - alto, ancho, alto); } catch { /* imagen no válida: el PDF sale sin ella */ }
+    }
     doc.text(`${APP} · ${CENTRO} · ${hoy} · Página ${i} de ${n}`, w / 2, h - 8, { align: "center" });
   }
   // Si el visor está abierto en la página, el informe se ve primero en pantalla
@@ -792,7 +801,7 @@ export function VisorDocumentos() {
     </div>
   );
 }
-const estiloTabla = { styles: { fontSize: 13, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 16 } };
+const estiloTabla = { styles: { fontSize: 13, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 28 } };
 const textoTipificacion = p => {
   const t = TIPIFICACION[p.gravedad]?.find(t => t.id === p.tipificacion)?.label;
   return t ? `${t} (${p.gravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})` : "-";
@@ -5479,7 +5488,7 @@ function DatosCentro({ datos, setDatos }) {
   const nombre = datos.nombre?.trim() || CENTRO_POR_DEFECTO.nombre, ciudad = datos.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
   return (
     <div style={{ marginBottom: 24 }}>
-      <TituloBloque titulo="Datos del centro" sub="Aparecen en la entrada, en la cabecera, en los PDF y en los correos a las familias" icono="edificio" />
+      <TituloBloque titulo="Datos del centro" sub="Nombre, localidad y logotipo: salen en la entrada, la cabecera, los PDF y los correos a las familias" icono="edificio" />
       <div style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           <div>
@@ -5490,6 +5499,32 @@ function DatosCentro({ datos, setDatos }) {
             <label style={etiqueta} htmlFor="gd-centro-ciudad">Localidad</label>
             <input id="gd-centro-ciudad" value={datos.ciudad || ""} onChange={e => setDatos(d => ({ ...d, ciudad: e.target.value }))} placeholder="Por ejemplo, Madrid" style={campo} />
           </div>
+        </div>
+        <div>
+          <div style={etiqueta}>Logotipo para los documentos <span style={{ fontWeight: 400 }}>(opcional)</span></div>
+          <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>Sale al pie de cada página de los PDF. Usa solo imágenes que el centro tenga permiso para usar.</div>
+          {datos.logo?.data
+            ? <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 10 }}>
+                <img src={datos.logo.data} alt="Logotipo para los documentos" style={{ maxHeight: 60, maxWidth: "100%", display: "block" }} />
+                <button type="button" onClick={() => setDatos(d => ({ ...d, logo: null }))} style={{ minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Quitar logotipo</button>
+              </div>
+            : <input id="gd-centro-logo" type="file" accept="image/png,image/jpeg" aria-label="Logotipo para los documentos" onChange={e => {
+                const f = e.target.files?.[0]; if (!f) return;
+                const lector = new FileReader();
+                lector.onload = () => {
+                  const img = new Image();
+                  img.onload = () => {
+                    // Se reduce para que ocupe poco: como mucho 900 × 240 píxeles
+                    const k = Math.min(1, 900 / img.width, 240 / img.height);
+                    const lienzo = document.createElement("canvas");
+                    lienzo.width = Math.round(img.width * k); lienzo.height = Math.round(img.height * k);
+                    lienzo.getContext("2d").drawImage(img, 0, 0, lienzo.width, lienzo.height);
+                    setDatos(d => ({ ...d, logo: { data: lienzo.toDataURL("image/png"), w: lienzo.width, h: lienzo.height } }));
+                  };
+                  img.src = lector.result;
+                };
+                lector.readAsDataURL(f);
+              }} style={{ fontSize: 16, color: R.petroleo }} />}
         </div>
         <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: "10px 14px", fontSize: 15, color: R.petroleo }}>
           Así aparecerá: <b>{nombre.toUpperCase()} · {ciudad.toUpperCase()}</b>
