@@ -467,3 +467,39 @@ test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cu
   await sinFalloEnPantalla(page)
   expect(errores).toEqual([])
 })
+
+// ───────────────────────── Portada ─────────────────────────
+test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  // Nombre que no está en la lista
+  await page.locator('#gd-nombre').fill('Nadie Inventado')
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('no está en la lista')
+  // Primera vez: crea su clave y entra
+  await page.locator('#gd-nombre').fill('Pablo Díaz')
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await page.locator('#gd-clave').fill('clave-segura-1')
+  await page.locator('#gd-clave2').fill('clave-segura-1')
+  await page.getByLabel('Mostrar la clave').check()
+  await expect(page.locator('#gd-clave')).toHaveAttribute('type', 'text')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  // Vuelve a entrar: clave incorrecta y luego correcta
+  await page.getByRole('button', { name: /Salir/ }).first().click()
+  await page.locator('#gd-nombre').fill('Pablo Díaz')
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await page.locator('#gd-clave').fill('otra')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Clave incorrecta')
+  await page.locator('#gd-clave').fill('clave-segura-1')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  // Ayuda de la portada
+  await page.getByRole('button', { name: /Salir/ }).first().click()
+  await page.getByRole('button', { name: '¿Has olvidado tu clave?' }).click()
+  await expect(page.getByText(/Pide a Administración del centro que restablezca tu clave/)).toBeVisible()
+  await page.getByRole('button', { name: /Preguntas frecuentes/ }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Preguntas frecuentes' })).toBeVisible()
+  expect(errores).toEqual([])
+})

@@ -361,9 +361,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil");
   }
 
-  // Como el acceso a Raíces: campos con borde turquesa y botón grande
-  const inp = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box", marginBottom: 10 };
-  const lbl = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 8 };
+  // Estilos del acceso de la demostración
   const btnPrincipal = { display: "block", width: "100%", minHeight: 52, padding: "0 20px", marginTop: 6, background: R.azul, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 19, fontWeight: 700 };
   const enlace = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 14, minHeight: 32, padding: 0 };
 
@@ -441,79 +439,134 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     </div>
   ) : null;
 
+  // Portada: cabecera con el logotipo y la ayuda, ilustración del camino y tarjeta de acceso.
+  // Los pasos de acceso (nombre, clave, perfil) y el acceso de la demostración son los de siempre.
+  const [verOlvido, setVerOlvido] = useState(false);
+  const [verClave, setVerClave] = useState(false);
+  const campo = { width: "100%", minHeight: 50, padding: "10px 14px", borderRadius: 8, border: `3px solid ${R.turquesa}`, fontSize: 17, fontFamily: "inherit", color: R.noche, background: "#F4F9FC", boxSizing: "border-box" };
+  const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 6 };
+  const principal = { width: "100%", minHeight: 52, background: R.turquesa, color: R.noche, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 20, fontWeight: 700 };
+  const secundario = { width: "100%", minHeight: 48, background: "#fff", color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 700 };
+  const enlaceAcceso = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, minHeight: 40, padding: 0, fontFamily: "inherit" };
+  const fallo = error && <div role="alert" style={{ background: R.crema, color: R.noche, borderLeft: `6px solid ${R.mostaza}`, fontSize: 15, fontWeight: 600, padding: "8px 12px" }}>⚠️ {error}</div>;
+  const menu = [
+    { txt: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("oficial") },
+    { txt: "Manual de uso", icono: "deberes", href: "/manual/" },
+    { txt: "Preguntas frecuentes", icono: "mensajes", accion: () => abrirPreguntas() },
+    { txt: "Instalar la app", icono: "importar", accion: () => abrirPreguntas("instalar") },
+  ];
+  const mostrarClave = (
+    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, color: R.noche, minHeight: 40, cursor: "pointer" }}>
+      <input type="checkbox" checked={verClave} onChange={e => setVerClave(e.target.checked)} style={{ width: 22, height: 22, accentColor: R.azul }} />Mostrar la clave
+    </label>
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: C.white, color: R.petroleo, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE, padding: 20 }}>
-      <style>{`* { box-sizing: border-box; } body { margin: 0; }`}</style>
-      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderRadius: 12, padding: "32px 28px", maxWidth: 440, width: "100%", textAlign: "center" }}>
-        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo alto={110} /></h1>
-        <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
-        <p style={{ color: R.petroleo, marginBottom: 20, fontSize: 16 }}>Todo lo que importa en tu aula</p>
-        <AvisoDemo />
-        {globoBienvenida}
+    <div style={{ minHeight: "100vh", background: "#fff", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden" }}>
+      <style>{`* { box-sizing: border-box; } body { margin: 0; }
+        .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
+        .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
+        @media (max-width: 860px) {
+          .gd-portada-hero { grid-template-columns: 1fr !important; padding: 12px 16px 24px !important; }
+          .gd-portada-ilu { max-height: 260px; object-fit: cover; object-position: center 40%; }
+          .gd-portada-cab { padding: 14px 16px !important; }
+          .gd-portada-menu { gap: 0 10px !important; }
+          .gd-portada-menu a, .gd-portada-menu button { font-size: 15px; }
+          .gd-portada-demo { padding: 20px 16px 32px !important; }
+        }`}</style>
+      {globoBienvenida}
 
-        {paso === "nombre" && (
-          <div style={{ textAlign: "left" }}>
-            {accesoDemo}
-            {MODO_DEMO && <div style={{ fontSize: 14, color: C.gray, marginBottom: 8 }}>En el centro, cada docente entrará con su nombre y su clave:</div>}
-            <label style={lbl} htmlFor="gd-nombre">¿Quién eres?</label>
-            <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
-              onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={inp} />
-            <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
-            <small style={{ color: C.gray, display: "block", marginBottom: 8 }}>Escribe y elige tu nombre de la lista.</small>
-            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
-            <button onClick={continuar} style={btnPrincipal}>Continuar</button>
-          </div>
-        )}
+      {/* Cabecera: logotipo y ayuda */}
+      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px 24px", flexWrap: "wrap", padding: "18px 40px", maxWidth: 1280, margin: "0 auto" }}>
+        <h1 style={{ margin: 0 }}><Logo alto={92} /></h1>
+        <nav aria-label="Ayuda" className="gd-portada-menu" style={{ display: "flex", flexWrap: "wrap", gap: "0 22px", alignItems: "center" }}>
+          {menu.map(m => m.href
+            ? <a key={m.txt} href={m.href} target="_blank" rel="noopener"><Icono nombre={m.icono} tam={34} />{m.txt}</a>
+            : <button key={m.txt} type="button" onClick={m.accion}><Icono nombre={m.icono} tam={34} />{m.txt}</button>)}
+        </nav>
+      </header>
 
-        {paso === "clave" && (
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.dark }}>Hola, {nombre}</div>
-            <div style={{ fontSize: 14, color: C.gray, marginBottom: 16 }}>Cargo: {cargo.label}</div>
-            {tieneClave ? (
-              <>
-                <label style={lbl} htmlFor="gd-clave">Tu clave</label>
-                <input id="gd-clave" type="password" autoComplete="current-password" autoFocus value={clave}
-                  onChange={e => { setClave(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={inp} />
-              </>
-            ) : (
-              <>
-                <div style={{ background: "#DDF0F4", borderRadius: 10, padding: "10px 12px", fontSize: 14, color: C.blue, marginBottom: 12 }}>
-                  Es la primera vez que entras. Crea tu clave personal (mínimo {MIN_CLAVE} caracteres).
+      {/* Ilustración y tarjeta de acceso */}
+      <div style={{ background: "#E3EAF0" }}>
+        <div className="gd-portada-hero" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(320px, 420px)", gap: 28, alignItems: "center", maxWidth: 1280, margin: "0 auto", padding: "28px 40px" }}>
+          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 12px 32px rgba(22, 51, 63, .14)", padding: "28px 28px 20px", display: "grid", gap: 14 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: TITULO, fontSize: 32, color: R.petroleo, lineHeight: 1.1 }}>Acceso</div>
+              <div style={{ fontSize: 15, marginTop: 6 }}>{CENTRO} · {CIUDAD}</div>
+            </div>
+
+            {paso === "nombre" && <>
+              <div>
+                <label style={etiqueta} htmlFor="gd-nombre">¿Quién eres?</label>
+                <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
+                  onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={campo} />
+                <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
+                <div style={{ fontSize: 14, marginTop: 6 }}>Escribe y elige tu nombre de la lista.</div>
+              </div>
+              {fallo}
+              <button onClick={continuar} style={principal}>Continuar</button>
+            </>}
+
+            {paso === "clave" && <>
+              <div style={{ fontSize: 17, color: R.noche }}><b>Hola, {nombre}</b><div style={{ fontSize: 15, color: R.petroleo }}>{cargo.label}</div></div>
+              {tieneClave ? (
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave">Tu clave</label>
+                  <input id="gd-clave" type={verClave ? "text" : "password"} autoComplete="current-password" autoFocus value={clave}
+                    onChange={e => { setClave(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={campo} />
                 </div>
-                <label style={lbl} htmlFor="gd-clave">Nueva clave</label>
-                <input id="gd-clave" type="password" autoComplete="new-password" autoFocus value={clave} onChange={e => { setClave(e.target.value); setError(""); }} style={inp} />
-                <label style={lbl} htmlFor="gd-clave2">Repite la clave</label>
-                <input id="gd-clave2" type="password" autoComplete="new-password" value={clave2}
-                  onChange={e => { setClave2(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={inp} />
-              </>
-            )}
-            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
-            <button onClick={entrar} style={btnPrincipal}>Entrar</button>
-            {MODO_DEMO && (
-              <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }}
-                style={{ display: "block", width: "100%", minHeight: 48, padding: "0 20px", marginTop: 10, background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
-                🧪 Entrar sin clave (solo en la demostración)
-              </button>
-            )}
-            {tieneClave && <div style={{ fontSize: 14, color: C.gray, marginTop: 10 }}>¿Has olvidado tu clave? Pide a Administración que la restablezca.</div>}
-            <button onClick={() => { setPaso("nombre"); setClave(""); setClave2(""); setError(""); }} style={enlace}>← No soy {nombre}</button>
-          </div>
-        )}
+              ) : <>
+                <div style={{ fontSize: 15, background: R.azulClaro, padding: "8px 12px" }}>Es la primera vez que entras. Crea tu clave personal (mínimo {MIN_CLAVE} caracteres).</div>
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave">Nueva clave</label>
+                  <input id="gd-clave" type={verClave ? "text" : "password"} autoComplete="new-password" autoFocus value={clave} onChange={e => { setClave(e.target.value); setError(""); }} style={campo} />
+                </div>
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave2">Repite la clave</label>
+                  <input id="gd-clave2" type={verClave ? "text" : "password"} autoComplete="new-password" value={clave2}
+                    onChange={e => { setClave2(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={campo} />
+                </div>
+              </>}
+              {mostrarClave}
+              {fallo}
+              <button onClick={entrar} style={principal}>Entrar</button>
+              {MODO_DEMO && (
+                <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }} style={secundario}>
+                  🧪 Entrar sin clave (solo en la demostración)
+                </button>
+              )}
+              <button onClick={() => { setPaso("nombre"); setClave(""); setClave2(""); setError(""); }} style={{ ...enlaceAcceso, justifySelf: "start" }}>← No soy {nombre}</button>
+            </>}
 
-        {paso === "perfil" && (
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 4 }}>¿Con qué perfil entras?</div>
-            <div style={{ fontSize: 14, color: C.gray, marginBottom: 14 }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div>
-            {permitidos.map(p => (
-              <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
-                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "8px 16px", marginBottom: 12, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
-                <Icono nombre={iconoPerfil(p)} tam={44} />{sinEmoji1(p.label)}
-              </button>
-            ))}
-            <button onClick={() => setPaso("nombre")} style={enlace}>← Cambiar de persona</button>
+            {paso === "perfil" && <>
+              <div style={{ fontSize: 16, color: R.noche }}><b>¿Con qué perfil entras?</b><div style={{ fontSize: 15, color: R.petroleo }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div></div>
+              {permitidos.map(p => (
+                <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "6px 14px", background: "#fff", border: `3px solid ${R.turquesa}`, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 700, color: R.petroleo, textAlign: "left" }}>
+                  <Icono nombre={iconoPerfil(p)} tam={40} />{sinEmoji1(p.label)}
+                </button>
+              ))}
+              <button onClick={() => setPaso("nombre")} style={{ ...enlaceAcceso, justifySelf: "start" }}>← Cambiar de persona</button>
+            </>}
+
+            <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, paddingTop: 8, display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "0 10px" }}>
+              <button type="button" onClick={() => setVerOlvido(v => !v)} style={enlaceAcceso}>¿Has olvidado tu clave?</button>
+              <span aria-hidden="true" style={{ color: R.turquesa }}>|</span>
+              <button type="button" onClick={() => abrirPreguntas("datos")} style={enlaceAcceso}>Protección de datos</button>
+            </div>
+            {verOlvido && <div style={{ fontSize: 15, color: R.noche, background: R.crema, padding: "8px 12px" }}>Pide a Administración del centro que restablezca tu clave. La próxima vez que entres crearás una nueva.</div>}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Demostración: entrar sin nombre ni clave */}
+      {MODO_DEMO && (
+        <div className="gd-portada-demo" style={{ maxWidth: 980, margin: "0 auto", padding: "28px 40px 40px", display: "grid", gap: 16 }}>
+          <AvisoDemo />
+          {paso === "nombre" && accesoDemo}
+        </div>
+      )}
     </div>
   );
 }
