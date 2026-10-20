@@ -13,6 +13,17 @@ const C = {
   amber: "#d97706", amberBg: "#fef3c7",
 };
 
+// Letra de la app (guardada en public/fonts, ver index.css)
+const FUENTE = `"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif`;
+
+// Color de texto (azul oscuro o blanco) que mejor se lee sobre un fondo de la paleta
+const luminancia = hex => {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contraste = (a, b) => { const [x, y] = [luminancia(a), luminancia(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+const textoSobre = fondo => contraste(C.dark, fondo) >= contraste("#ffffff", fondo) ? C.dark : "#ffffff";
+
 // ─── Datos demo ──────────────────────────────────────────────────────────────
 const DEMO_ALUMNOS = [
   { id: 1, nombre: "Lucía Martínez García",    curso: "1º ESO A", tutor: "Carmen López",   email: "familia.martinez@email.com", telefono: "612345678", nia: "" },
@@ -452,7 +463,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 }
 const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
   <div role="note" style={compacto
-    ? { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 600, textAlign: "center", padding: "6px 12px", borderBottom: "1px solid #fbbf24" }
+    ? { background: "#fef3c7", color: "#92400e", fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px", borderBottom: "1px solid #fbbf24" }
     : { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 600, borderRadius: 10, padding: "10px 12px", marginBottom: 20, border: "1px solid #fbbf24", lineHeight: 1.4 }}>
     ⚠️ Versión de demostración: no introducir datos reales de alumnos ni familias.
     {!compacto && <div style={{ marginTop: 6, fontWeight: 500 }}>Sigue los pasos <b>1</b> y <b>2</b> del recuadro verde de abajo. No necesitas nombre ni clave.</div>}
@@ -554,7 +565,7 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setAbierto(v => !v)} aria-haspopup="listbox" aria-expanded={abierto} title="Cambiar de perfil"
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "4px 10px 4px 4px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minHeight: 44, padding: "4px 12px 4px 6px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
         <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 10 }}>▼</span>
       </button>
       {abierto && (
@@ -2393,18 +2404,18 @@ function AyudaPantalla({ id, C }) {
   const cerrar = () => { setAbierta(false); try { localStorage.setItem(clave, "1"); } catch { /* sin almacenamiento */ } };
   if (!abierta) return (
     <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-      <button onClick={() => setAbierta(true)} style={{ background: "none", border: `1px solid ${C.blue}`, color: C.blue, borderRadius: 20, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="como-se-usa" tam={22} />Cómo se usa</button>
+      <button onClick={() => setAbierta(true)} style={{ background: C.white, border: `2px solid ${C.blue}`, color: C.dark, borderRadius: 22, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="como-se-usa" tam={24} />Cómo se usa</button>
     </div>
   );
   return (
-    <div className="no-print" role="note" style={{ background: "#EEF5F8", border: `1px solid ${C.blue}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-        <div style={{ fontWeight: 700, color: C.blue, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={26} />Cómo se usa: {ayuda.titulo}</div>
-        <button onClick={cerrar} style={{ background: C.blue, color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
+    <div className="no-print" role="note" style={{ background: "#EEF5F8", border: `2px solid ${C.blue}`, borderLeftWidth: 8, borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontWeight: 700, color: C.dark, fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={28} />Cómo se usa: {ayuda.titulo}</div>
+        <button onClick={cerrar} style={{ background: C.white, color: C.dark, border: `2px solid ${C.blue}`, borderRadius: 10, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
       </div>
       {ayuda.pasos.length === 1
-        ? <p style={{ margin: "8px 0 0", fontSize: 13, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
-        : <ol style={{ margin: "8px 0 0", paddingLeft: 20, fontSize: 13, color: C.dark, lineHeight: 1.55 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
+        ? <p style={{ margin: "8px 0 0", fontSize: 16, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
+        : <ol style={{ margin: "8px 0 0", paddingLeft: 22, fontSize: 16, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
     </div>
   );
 }
@@ -2471,16 +2482,16 @@ function FrasesRapidas({ tipo, tipificacion, texto, setTexto }) {
   if (!frases.length) return null;
   const anadir = f => setTexto(prev => { const t = prev.trim(); return t ? `${t} ${f}` : f; });
   return (
-    <div style={{ background: C.cream, border: "1px solid #e5e7eb", borderRadius: 10, padding: "10px 12px", marginBottom: 8 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: C.dark, marginBottom: 8 }}>
-        💬 Frases rápidas <span style={{ fontWeight: 400, color: C.gray }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
+    <div style={{ background: C.white, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, marginBottom: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 10, lineHeight: 1.4 }}>
+        💬 Frases rápidas <span style={{ fontWeight: 400, color: C.dark }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {frases.map(f => {
           const usada = texto.includes(f);
           return (
             <button key={f} type="button" onClick={() => !usada && anadir(f)} disabled={usada}
-              style={{ fontSize: 12, padding: "6px 10px", borderRadius: 16, border: `1px solid ${usada ? "#e5e7eb" : C.teal}`, background: usada ? "#f3f4f6" : C.white, color: usada ? C.gray : C.dark, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
+              style={{ fontSize: 15, lineHeight: 1.3, minHeight: 44, padding: "8px 14px", borderRadius: 22, border: `2px solid ${usada ? "#e2e8f0" : C.teal}`, background: usada ? "#f3f4f6" : C.white, color: C.dark, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
               {usada ? "✓ " : "+ "}{f}
             </button>
           );
@@ -5874,6 +5885,9 @@ function AppInterna() {
   const inpStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid #d1d5db`, fontSize: 14, boxSizing: "border-box", background: C.white, outline: "none" };
   const selStyle = { ...inpStyle };
   const labelStyle = { display: "block", fontWeight: 600, marginBottom: 6, color: C.dark, fontSize: 13 };
+  // Campos de la pantalla principal (rediseño): 48 px de alto, letra de 16 px y borde que se ve
+  const campoStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${C.gray}`, fontSize: 16, lineHeight: 1.4, boxSizing: "border-box", background: C.white, color: C.dark };
+  const etiquetaStyle = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontWeight: 700, marginBottom: 8, color: C.dark, fontSize: 15 };
 
   // ── Pantalla de carga ──
   if (loading) return (
@@ -5962,54 +5976,61 @@ function AppInterna() {
 
   return (
     <CorreosCentroCtx.Provider value={{ correos: correosCentro, setCorreos: setCorreosCentro, profes: profesores.map(p => ({ nombre: p, email: cuentas[p]?.email || (MODO_DEMO ? correoDemo(p) : "") })) }}>
-    <div style={{ minHeight: "100vh", background: C.cream, fontFamily: "system-ui,sans-serif", width: "100%" }}>
+    <div className="gd-app" style={{ minHeight: "100vh", background: C.white, color: C.dark, fontFamily: FUENTE, fontSize: 16, lineHeight: 1.5, width: "100%" }}>
       {usuario && <AvisosMensajes mensajes={mensajes} usuario={usuario} C={C} onAbrir={abrirMensajes}
         onActualizar={(id, cambios) => setMensajes(prev => prev.map(m => m.id === id ? { ...m, ...cambios } : m))} />}
       <style>{`
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; }
+        .gd-app :focus-visible { outline: 3px solid ${C.dark}; outline-offset: 2px; }
+        .gd-header :focus-visible { outline-color: #fff; }
+        .gd-pulsable:active:not(:disabled) { transform: scale(.98); }
+        @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
         @media (max-width: 600px) {
-          .gd-header { padding: 10px 12px !important; }
+          .gd-header { padding: 8px 12px !important; }
           .gd-header-izq { gap: 8px !important; }
           .gd-logo { display: none; }
           .gd-header select { max-width: 120px !important; }
-          .gd-modulos { padding: 10px 8px !important; gap: 6px !important; }
-          .gd-modulos button { flex: 1 1 0; min-width: 0; padding: 10px 6px !important; font-size: 13px !important; }
+          .gd-modulos { padding: 8px !important; gap: 6px !important; }
+          .gd-modulos button { flex: 1 1 0; min-width: 0; padding: 0 6px !important; font-size: 15px !important; }
+          .gd-tabs { padding: 8px 12px !important; }
+          .gd-contenido { padding: 16px 16px 32px !important; }
+          .gd-rejilla-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
         }
       `}</style>
       <AvisoDemo compacto />
       {/* Header — ancho completo CON BOTÓN HOME */}
-      <div className="gd-header" style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
-        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
-          <button onClick={() => { 
-            setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes"); 
-            if (perfil.id === "profesor") setModuloProfesor("alumnos"); 
-            if (perfil.id === "jefatura") setModuloJefatura("alumnos"); 
-          }} 
+      <div className="gd-header" style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
+        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <button onClick={() => {
+            setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
+            if (perfil.id === "profesor") setModuloProfesor("alumnos");
+            if (perfil.id === "jefatura") setModuloJefatura("alumnos");
+          }}
             onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.35)"; }}
             onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-            style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontSize: 18, fontWeight: 600, transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.45)", color: "#fff", borderRadius: 10, minWidth: 48, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 20, fontWeight: 700, transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
             ↩️
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <img className="gd-logo" src="/icono-rumboaula.png" alt="" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: 3 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: .5 }}>{APP}</div>
-              <div style={{ fontSize: 11, opacity: .8 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
+              <div style={{ fontWeight: 700, fontSize: 19, lineHeight: 1.2 }}>{APP}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.3, opacity: .95 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
             </div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
           <button onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes"
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+            style={{ background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minWidth: 44, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
             ❓ <span className="gd-faq-txt">Preguntas</span>
           </button>
-          <button onClick={salir} 
-            onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.25)"; }}
-            onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "background .2s" }}>
+          <button onClick={salir}
+            onMouseOver={e => { e.currentTarget.style.background = "rgba(44,74,82,0.85)"; }}
+            onMouseOut={e => { e.currentTarget.style.background = "rgba(44,74,82,0.6)"; }}
+            style={{ background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700, transition: "background .2s" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="fuera-ahora" tam={22} />Salir</span>
           </button>
         </div>
@@ -6026,11 +6047,12 @@ function AppInterna() {
             <button key={m.id}
               onClick={() => { setModuloProfesor(m.id); setTab(m.id === "alumnos" ? "partes" : (m.id === "guardias" ? "mi_guardia" : "mensajeria")); }}
               style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
+                padding: "0 24px", 
+                minHeight: 48,
+                border: "1px solid #e2e8f0",
                 cursor: "pointer", 
                 fontWeight: 700, 
-                fontSize: 15,
+                fontSize: 16,
                 borderRadius: 10,
                 background: moduloProfesor === m.id ? "#FFE52A" : "#ffffff",
                 color: moduloProfesor === m.id ? "#2C4A52" : "#64748b",
@@ -6055,11 +6077,12 @@ function AppInterna() {
             <button key={m.id}
               onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "dashboard" : (m.id === "guardias" ? "cuadrante" : "mensajeria")); }}
               style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
+                padding: "0 24px", 
+                minHeight: 48,
+                border: "1px solid #e2e8f0",
                 cursor: "pointer", 
                 fontWeight: 700, 
-                fontSize: 15,
+                fontSize: 16,
                 borderRadius: 10,
                 background: moduloJefatura === m.id ? "#FFE52A" : "#ffffff",
                 color: moduloJefatura === m.id ? "#2C4A52" : "#64748b",
@@ -6083,14 +6106,15 @@ function AppInterna() {
             <button key={m.id}
               onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "admin_panel" : "admin_profesores"); }}
               style={{ 
-                padding: "12px 28px", 
-                border: "2px solid transparent",
+                padding: "0 24px", 
+                minHeight: 48,
+                border: "1px solid #e2e8f0",
                 cursor: "pointer", 
                 fontWeight: 700, 
-                fontSize: 15,
+                fontSize: 16,
                 borderRadius: 10,
                 background: moduloJefatura === m.id ? m.color : "#ffffff",
-                color: moduloJefatura === m.id ? "#ffffff" : "#64748b",
+                color: moduloJefatura === m.id ? textoSobre(m.color) : "#64748b",
                 transition: "all .3s ease",
                 boxShadow: moduloJefatura === m.id ? `0 4px 12px ${m.color}44` : "0 2px 6px rgba(0,0,0,0.05)",
                 transform: moduloJefatura === m.id ? "translateY(-2px)" : "translateY(0)"
@@ -6102,19 +6126,20 @@ function AppInterna() {
       )}
 
       {/* Tabs — ancho completo con mejor responsive y diseño mejorado */}
-      <div style={{ background: "#ffffff", borderBottom: `1px solid #e2e8f0`, display: "flex", overflowX: "auto", padding: "8px 24px", gap: 8, WebkitOverflowScrolling: "touch", alignItems: "center" }}>
+      {/* Texto de 19 px en negrita: con el color de la paleta, el contraste vale para texto grande */}
+      <div className="gd-tabs" style={{ background: "#ffffff", borderBottom: `1px solid #e2e8f0`, display: "flex", overflowX: "auto", padding: "10px 24px", gap: 8, WebkitOverflowScrolling: "touch", alignItems: "center" }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ 
-              padding: "10px 20px", 
-              border: "2px solid transparent",
-              cursor: "pointer", 
-              fontSize: 14, 
-              fontWeight: tab === t.id ? 700 : 500,
-              minHeight: 40,
-              borderRadius: 8,
+            style={{
+              padding: "0 18px",
+              border: `2px solid ${tab === t.id ? C.dark : "transparent"}`,
+              cursor: "pointer",
+              fontSize: 19,
+              fontWeight: 700,
+              minHeight: 48,
+              borderRadius: 10,
               background: tab === t.id ? t.color : "#FF7F11",
-              color: tab === t.id ? "#ffffff" : "#ffffff",
+              color: textoSobre(tab === t.id ? t.color : "#FF7F11"),
               whiteSpace: "nowrap", 
               transition: "all .3s ease",
               flexShrink: 0,
@@ -6127,17 +6152,17 @@ function AppInterna() {
       </div>
 
       {/* Contenido — centrado con max-width */}
-      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px" }}>
+      <div className="gd-contenido" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px 40px" }}>
 
         {/* Aviso al profesorado: alumnado con 3 o más partes para avisar a su familia */}
         {perfil.id === "profesor" && avisosPendientes > 0 && tab !== "mis_estadisticas" && (
-          <div role="status" className="no-print" style={{ background: "#FDF0EF", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ color: C.dark, fontSize: 14 }}>
-              <b><Ic n="alertas" tam={20} />{avisosPendientes} alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.</b>
-              <div style={{ fontSize: 12, color: C.gray }}>Conviene avisar a su familia. Tienes el informe y el correo preparados.</div>
+          <div role="status" className="no-print" style={{ background: "#FDF0EF", border: `2px solid ${C.salmon}`, borderLeftWidth: 8, borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ color: C.dark, fontSize: 16, lineHeight: 1.4 }}>
+              <b><Ic n="alertas" tam={22} />{avisosPendientes} alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.</b>
+              <div style={{ fontSize: 15, color: C.dark, marginTop: 2 }}>Conviene avisar a su familia. Tienes el informe y el correo preparados.</div>
             </div>
-            <button onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
-              style={{ background: C.salmon, color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Ver avisos →</button>
+            <button className="gd-pulsable" onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
+              style={{ background: C.salmon, color: textoSobre(C.salmon), border: "none", borderRadius: 10, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 19 }}>Ver avisos →</button>
           </div>
         )}
 
@@ -6146,10 +6171,10 @@ function AppInterna() {
 
         {/* Alerta flotante */}
         {showAlerta && (
-          <div style={{ background: "#FFF8E8", border: `2px solid ${C.salmon}`, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative", boxShadow: "0 4px 12px rgba(236,143,141,0.2)" }}>
-            <strong style={{ color: C.dark }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
-            <button onClick={() => setShowAlerta(null)} style={{ position: "absolute", top: 10, right: 10, background: "none", border: "none", cursor: "pointer", fontSize: 18, color: C.gray }}>✕</button>
+          <div style={{ background: "#FFF8E8", border: `2px solid ${C.salmon}`, borderLeftWidth: 8, borderRadius: 12, padding: "14px 56px 14px 16px", marginBottom: 16, position: "relative" }}>
+            <strong style={{ color: C.dark, fontSize: 16 }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: 15, color: C.dark }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
+            <button onClick={() => setShowAlerta(null)} aria-label="Cerrar aviso" style={{ position: "absolute", top: 6, right: 6, width: 44, height: 44, background: "none", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 20, color: C.dark }}>✕</button>
           </div>
         )}
 
@@ -6173,54 +6198,54 @@ function AppInterna() {
               const guardiasHoy = guardiasDeProfesor({ fecha: isoLocal(), profesor: usuario, profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias }).length;
               
               return (
-                <div style={{ background: `linear-gradient(135deg, ${C.blue} 0%, ${C.teal} 100%)`, color: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
-                    <div style={{ flex: 1 }}>
-                      <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={40} /></h1>
-                      <p style={{ margin: 0, fontSize: 15, opacity: 0.9, lineHeight: 1.5 }}>
+                <div style={{ background: "#E8F5F3", color: C.dark, border: `2px solid ${C.teal}`, borderLeftWidth: 8, borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                    <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                      <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 700, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                         Hoy has registrado <strong>{partesHoy} parte{partesHoy !== 1 ? 's' : ''}</strong>
                         {banoHoy > 0 && <> y <strong>{banoHoy} salida{banoHoy !== 1 ? 's' : ''}</strong> al baño</>}
                         {partesHoy === 0 && banoHoy === 0 && <>. ¡Buen día!</>}
                       </p>
                       {guardiasHoy > 0 && (
-                        <div style={{ marginTop: 12, background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 12px", border: "1px solid rgba(255,255,255,0.3)" }}>
-                          <strong style={{ fontSize: 14, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={28} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong>
-                          <div style={{ fontSize: 12, marginTop: 4, opacity: 0.9 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
+                        <div style={{ marginTop: 12, background: C.amberBg, borderRadius: 10, padding: "10px 12px", border: `2px solid ${C.amber}`, borderLeftWidth: 8 }}>
+                          <strong style={{ fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={28} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong>
+                          <div style={{ fontSize: 15, marginTop: 2 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
                         </div>
                       )}
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Icono nombre="fecha" tam={60} style={{ marginLeft: "auto" }} />
-                      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Icono nombre="fecha" tam={32} />
+                      <div style={{ fontSize: 15 }}>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</div>
                     </div>
                   </div>
                 </div>
               );
             })()}
 
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="nuevo-parte" tam={44} />Nuevo Parte de Incidencia</h2>
+            <h2 style={{ color: C.dark, margin: "0 0 16px", fontSize: 24, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 12, textWrap: "balance" }}><Icono nombre="nuevo-parte" tam={40} />Nuevo Parte de Incidencia</h2>
             {parteGenerado && (
-              <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong style={{ color: C.teal }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
+              <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, borderLeftWidth: 8, boxShadow: "none", marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <strong style={{ color: C.dark, fontSize: 16 }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.blue, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}><Ic n="buscar" tam={20} />Ver</button>
+                    <button className="gd-pulsable" onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.white, color: C.dark, border: `2px solid ${C.blue}`, borderRadius: 10, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}><Ic n="buscar" tam={20} />Ver</button>
                   </div>
                 </div>
                 <ComoAvisar parte={completar(parteGenerado)} />
               </Card>
             )}
-            <Card>
-              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={40} /></label>
+            <Card style={{ border: "1px solid #e2e8f0", boxShadow: "none" }}>
+              <label style={etiquetaStyle}><ConIcono texto="🔍 Buscar alumno" tam={32} /></label>
               <div style={{ position: "relative" }}>
                 <Icono nombre="curso" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <input value={fBusqueda} onChange={e => { setFBusqueda(e.target.value); setFAlumno(""); }} placeholder="Nombre o curso…" style={{ ...inpStyle, paddingLeft: 44 }} />
+                <input value={fBusqueda} onChange={e => { setFBusqueda(e.target.value); setFAlumno(""); }} placeholder="Nombre o curso…" style={{ ...campoStyle, paddingLeft: 46 }} />
               </div>
               {fBusqueda && !fAlumno && (
-                <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, marginTop: 4, background: C.white, maxHeight: 180, overflowY: "auto", marginBottom: 8 }}>
+                <div style={{ border: `1.5px solid ${C.gray}`, borderRadius: 10, marginTop: 6, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 8 }}>
                   {alumnos.filter(a => a.nombre.toLowerCase().includes(fBusqueda.toLowerCase()) || a.curso.toLowerCase().includes(fBusqueda.toLowerCase())).map(a => (
                     <div key={a.id} onClick={() => { setFAlumno(a.id); setFBusqueda(a.nombre); }}
-                      style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f3f4f6", fontSize: 13 }}
+                      style={{ minHeight: 48, padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid #e2e8f0", fontSize: 16, color: C.dark }}
                       onMouseOver={e => e.currentTarget.style.background = C.cream}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <strong>{a.nombre}</strong> — {a.curso}
@@ -6229,7 +6254,7 @@ function AppInterna() {
                 </div>
               )}
               {alumnoSel && (
-                <div style={{ background: C.cream, borderRadius: 8, padding: 12, margin: "8px 0 16px", fontSize: 13, border: `1px solid #ddd` }}>
+                <div style={{ background: C.cream, color: C.dark, borderRadius: 10, padding: "12px 14px", margin: "10px 0 18px", fontSize: 15, lineHeight: 1.45, border: "1px solid #e2e8f0" }}>
                   {(() => {
                     // Datos del alumnado: solo los ve el profesorado implicado. El tutor/a del grupo ve
                     // el contacto y todos sus partes; el resto, solo los partes que le ha puesto él/ella.
@@ -6241,48 +6266,51 @@ function AppInterna() {
                       <div><strong>Curso:</strong> {alumnoSel.curso} | <strong>Tutor/a:</strong> {tutorAl || "—"}</div>
                       {esTutor ? (<>
                         <div style={{ marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{alumnoSel.email} · 📱 {alumnoSel.telefono}</div>
-                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: C.salmon, fontWeight: 600 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
-                        <div style={{ marginTop: 2, color: C.gray }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
+                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: C.dark, fontWeight: 700, borderLeft: `6px solid ${C.salmon}`, paddingLeft: 8 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
+                        <div style={{ marginTop: 2, color: C.dark }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
                       </>) : (<>
-                        <div style={{ marginTop: 4, color: C.gray }}>Partes que le has puesto tú: <strong style={{ color: C.dark }}>{mios.length}</strong></div>
-                        <div style={{ marginTop: 2, fontSize: 12, color: C.gray }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
+                        <div style={{ marginTop: 4, color: C.dark }}>Partes que le has puesto tú: <strong style={{ color: C.dark }}>{mios.length}</strong></div>
+                        <div style={{ marginTop: 2, fontSize: 14, color: C.dark }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
                       </>)}
                     </>);
                   })()}
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16, marginTop: 8 }}>
-                <div><label style={labelStyle}><ConIcono texto="⏰ Hora de clase" tam={40} /></label><select value={fHora} onChange={e => setFHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="📂 Tipo de parte" tam={40} /></label><select value={fTipo} onChange={e => setFTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={40} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={selStyle}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
+              <div className="gd-rejilla-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 18, marginTop: 8 }}>
+                <div><label style={etiquetaStyle}><ConIcono texto="⏰ Hora de clase" tam={32} /></label><select value={fHora} onChange={e => setFHora(e.target.value)} style={campoStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
+                <div><label style={etiquetaStyle}><ConIcono texto="📂 Tipo de parte" tam={32} /></label><select value={fTipo} onChange={e => setFTipo(e.target.value)} style={campoStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
+                <div><label style={etiquetaStyle}><ConIcono texto="🎯 Gravedad" tam={32} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={{ ...campoStyle, border: `2px solid ${gObj(fGravedad)?.color || C.gray}`, borderLeftWidth: 8, background: gObj(fGravedad)?.bg || C.white, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
               </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><ConIcono texto="⚖️ Tipificación normativa" tam={40} /> <span style={{ fontWeight: 400, color: C.gray, fontSize: 11 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={etiquetaStyle}><ConIcono texto="⚖️ Tipificación normativa" tam={32} /> <span style={{ fontWeight: 400, color: C.dark, fontSize: 14 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
                 <div style={{ position: "relative" }}>
                 <Icono nombre="seleccionar" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...selStyle, paddingLeft: 44, borderColor: fTipificacion ? C.teal : "#d1d5db" }}>
+                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...campoStyle, paddingLeft: 46, borderColor: fTipificacion ? C.teal : C.gray, borderWidth: fTipificacion ? 2 : 1.5 }}>
                   <option value="">— Seleccionar tipificación (opcional) —</option>
                   {(TIPIFICACION[fGravedad] || []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
                 </div>
                 {fTipificacion && (
-                  <div style={{ marginTop: 6, background: "#E8F5F3", borderRadius: 6, padding: "6px 12px", fontSize: 12, color: C.teal, fontWeight: 600 }}>
+                  <div style={{ marginTop: 8, background: "#E8F5F3", borderLeft: `6px solid ${C.teal}`, borderRadius: 8, padding: "8px 12px", fontSize: 15, lineHeight: 1.4, color: C.dark, fontWeight: 700 }}>
                     ✓ {TIPIFICACION[fGravedad]?.find(t => t.id === fTipificacion)?.label}
                   </div>
                 )}
               </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}><ConIcono texto="📝 Descripción del incidente" tam={40} /></label>
+              <div style={{ marginBottom: 18 }}>
+                <label style={etiquetaStyle}><ConIcono texto="📝 Descripción del incidente" tam={32} /></label>
                 <FrasesRapidas tipo={fTipo} tipificacion={fTipificacion} texto={fDesc} setTexto={setFDesc} />
-                <textarea value={fDesc} onChange={e => setFDesc(e.target.value)} rows={4} placeholder="Describe detalladamente lo ocurrido… o pulsa las frases rápidas de arriba" style={{ ...inpStyle, resize: "vertical" }} />
+                <textarea value={fDesc} onChange={e => setFDesc(e.target.value)} rows={4} placeholder="Describe detalladamente lo ocurrido… o pulsa las frases rápidas de arriba" style={{ ...campoStyle, resize: "vertical", fontFamily: "inherit" }} />
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}><ConIcono texto="👤 Profesor responsable" tam={40} /></label>
-                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={selStyle} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
+              <div style={{ marginBottom: 22 }}>
+                <label style={etiquetaStyle}><ConIcono texto="👤 Profesor responsable" tam={32} /></label>
+                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={{ ...campoStyle, ...(identidadFija ? { background: "#f3f4f6", borderColor: "#e2e8f0" } : {}) }} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
               </div>
-              <Btn onClick={crearParte} disabled={!fAlumno || !fDesc.trim()} color={C.teal} style={{ width: "100%", fontSize: 15, padding: "14px" }}>
+              {/* Acción principal: azul oscuro con franja teal (contraste 9,5:1) */}
+              <button className="gd-pulsable" onClick={crearParte} disabled={!fAlumno || !fDesc.trim()}
+                style={{ width: "100%", minHeight: 52, padding: "0 20px", borderRadius: 10, border: "none", cursor: !fAlumno || !fDesc.trim() ? "not-allowed" : "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+                  ...(!fAlumno || !fDesc.trim() ? { background: "#94a3b8", color: C.dark } : { background: C.dark, color: "#fff", boxShadow: `inset 0 -5px 0 ${C.teal}` }) }}>
                 <ConIcono texto="📋 Generar Parte" tam={28} />
-              </Btn>
+              </button>
             </Card>
           </div>
         )}
