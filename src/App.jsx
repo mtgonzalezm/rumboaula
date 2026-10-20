@@ -32,6 +32,8 @@ const FUENTE = `"Helvetica Neue", Helvetica, Arial, sans-serif`;
 const R = {
   petroleo: "#2B647E", noche: "#16333F", azul: "#275D8C", turquesa: "#65B9C9", turquesaClaro: "#CDE9ED",
   mostaza: "#F6C862", verde: "#63CBA1", azulClaro: "#DDF0F4", crema: "#FDF1D9", gris: "#EBF0F6",
+  // Del camino de la portada: morado para cubrir clases y verde para «la cubres tú»
+  morado: "#8A4ECC", moradoClaro: "#F1E9FA", verdeCamino: "#5ABE4C", verdeCaminoClaro: "#E6F6E2", verdeOscuro: "#2E7D23",
 };
 // Gravedad de menos a más intensa, con colores de Raíces
 const COLOR_GRAVEDAD = { leve: R.verde, grave: R.mostaza, muy_grave: R.azul };
@@ -324,6 +326,8 @@ async function hashClave(nombre, clave) {
 }
 
 // ─── Pantalla de entrada: nombre → clave → perfil ───────────────────────────
+// Reflejo de la ilustración en la portada: se ve junto a la tarjeta y se desvanece hacia abajo
+const REFLEJO = "linear-gradient(to bottom, #000 0%, rgba(0,0,0,.45) 40%, transparent 92%), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)";
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
   const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("galvandesk:globo"); } catch { return MODO_DEMO; } });
@@ -361,59 +365,48 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil");
   }
 
-  // Como el acceso a Raíces: campos con borde turquesa y botón grande
-  const inp = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, boxSizing: "border-box", marginBottom: 10 };
-  const lbl = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 8 };
+  // Estilos del acceso de la demostración
   const btnPrincipal = { display: "block", width: "100%", minHeight: 52, padding: "0 20px", marginTop: 6, background: R.azul, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 19, fontWeight: 700 };
   const enlace = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 14, minHeight: 32, padding: 0 };
 
   const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? R.azul : R.gris, color: activo ? "#fff" : R.petroleo, fontSize: 14, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
   const tutora = tutoraDemo || { nombre: "Carmen López", curso: "1º ESO A" };
+  // Demostración: elegir un perfil carga los datos de ejemplo (ficticios) y entra, sin nombre ni clave
+  const entrarDemo = accion => { if (!ejemploListo) cargarEjemplo(); accion(); };
+  const perfilesDemo = [
+    { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
+    { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
+    { txt: "📊 Jefatura y Dirección", sub: "Ana Jiménez · convivencia, guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
+    { txt: "⚙️ Administración", sub: "Elena Vega · alumnado, profesorado y centro", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
+  ];
   const accesoDemo = MODO_DEMO ? (
-    <div style={{ background: R.azulClaro, border: `3px solid ${R.verde}`, borderLeftWidth: 12, padding: 14, marginBottom: 22 }}>
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>{pasoNum(1, !ejemploListo)} Carga los datos de ejemplo</div>
-      {ejemploListo
-        ? <div style={{ background: "#DDF0F4", color: "#16333F", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 700, marginBottom: 14 }}>✅ Datos de ejemplo cargados. Ahora, el paso 2.</div>
-        : <button onClick={cargarEjemplo} style={{ width: "100%", background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
-            🧪 Pulsa aquí para cargar los datos de ejemplo
-          </button>}
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 2 }}>{pasoNum(2, ejemploListo)} Elige qué quieres probar</div>
-      <div style={{ fontSize: 14, color: C.gray, marginBottom: 10, marginLeft: 32 }}>Pulsa uno. No hace falta nombre ni clave.</div>
-      {[
-        { txt: "👨‍🏫 Profesor/a", sub: `Entras como ${nombreSugerido || "María Fernández"}: poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
-        { txt: "🏫 Tutor/a de un grupo", sub: `Entras como ${tutora.nombre}, tutor/a de ${tutora.curso}: estadísticas de su grupo e informes para las familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]), tutora: true },
-        { txt: "📊 Jefatura y Dirección", sub: "Entras como Ana Jiménez: convivencia, estadísticas, cuadrante de guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
-        { txt: "⚙️ Administración", sub: "Entras como Elena Vega: alumnado, profesorado, tutorías y cargos", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
-      ].map(b => (
-        <button key={b.txt} onClick={() => { if (!ejemploListo) cargarEjemplo(); b.accion(); }}
-          style={{ display: "block", width: "100%", textAlign: "left", minHeight: 56, padding: "10px 14px", marginBottom: 8, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><ConIcono texto={b.txt} tam={26} /></div>
-          <div style={{ fontSize: 13, color: C.gray }}>{b.sub}</div>
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ fontSize: 15, color: R.noche }}><b>Elige un perfil</b> · sin clave y con datos de ejemplo</div>
+      <div className="gd-perfiles" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+      {perfilesDemo.map(b => (
+        <button key={b.txt} onClick={() => entrarDemo(b.accion)}
+          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", minHeight: 48, padding: "4px 12px", background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 16, fontWeight: 700, color: R.petroleo }}><ConIcono texto={b.txt} tam={24} /></span>
+            <span style={{ display: "block", fontSize: 13, color: R.noche, lineHeight: 1.3 }}>{b.sub}</span>
+          </span>
         </button>
       ))}
-      {/* Demo: entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
+      </div>
+      {/* Entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
       {(ejemploListo || profesores.length > 4) && (() => {
         const conAvisos = profesores.filter(p => sinLeerPor[p]).sort((a, b) => sinLeerPor[b].urgentes - sinLeerPor[a].urgentes || a.localeCompare(b));
         const resto = profesores.filter(p => !sinLeerPor[p]).sort((a, b) => a.localeCompare(b));
         const etiqueta = p => { const n = sinLeerPor[p]; return n ? `${p} · ${n.urgentes ? "🚨" : "🔔"} ${n.total} mensaje(s) nuevo(s)` : p; };
         return (
-          <div style={{ background: C.white, border: `3px dashed ${R.turquesa}`, borderRadius: 6, padding: "10px 14px", marginBottom: 8 }}>
-            <label htmlFor="gd-otro-profe" style={{ fontSize: 14, fontWeight: 700, color: C.dark, display: "block" }}>👥 Entrar como otro profe del claustro</label>
-            <div style={{ fontSize: 13, color: C.gray, marginBottom: 6 }}>Para ver un mensaje de Galvángram, entra como quien lo ha recibido.</div>
-            <select id="gd-otro-profe" value="" onChange={e => { if (e.target.value) onEntrar(e.target.value, PERFILES[0], { otro: true }); }}
-              style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
-              <option value="">— Elige un profe —</option>
-              {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
-              <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
-            </select>
-          </div>
+          <select id="gd-otro-profe" aria-label="Entrar como otro profe del claustro" value="" onChange={e => { const n = e.target.value; if (n) entrarDemo(() => onEntrar(n, PERFILES[0], { otro: true })); }}
+            style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 8, border: `3px dashed ${R.turquesa}`, fontSize: 15, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
+            <option value="">👥 Entrar como otro profe del claustro…</option>
+            {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
+            <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
+          </select>
         );
       })()}
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, margin: "8px 0 2px" }}>{pasoNum(3, false)} Dentro, usa los botones de arriba</div>
-      <div style={{ fontSize: 14, color: C.gray, marginLeft: 32 }}>Los botones de colores cambian de pantalla. Para cambiar de perfil, pulsa «Salir» y vuelves aquí.</div>
-      <button onClick={() => setGlobo(true)} style={{ ...enlace, marginTop: 10, marginLeft: 32 }}>❓ Ver otra vez las instrucciones</button>
-      <button onClick={() => abrirPreguntas("instalar")} style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block" }}>📲 Cómo instalarla en el móvil o el ordenador · Preguntas frecuentes</button>
-      <a href="/manual/" target="_blank" rel="noopener" style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block", textDecoration: "none" }}>📘 Manual de uso</a>
     </div>
   ) : null;
 
@@ -425,10 +418,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         <h2 id="gd-globo-titulo" style={{ color: R.petroleo, textAlign: "center", margin: "6px 0 4px", fontSize: 26, fontFamily: TITULO, fontWeight: 400 }}>Bienvenida/o a la demostración</h2>
         <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
-          ["Carga los datos de ejemplo", "El botón verde de abajo lo hace por ti."],
-          ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura o Administración. Solo tienes que pulsar. No escribas nombre ni clave."],
+          ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura o Administración, en la tarjeta «Acceso». Solo tienes que pulsar: se cargan datos de ejemplo. No escribas nombre ni clave."],
           ["Muévete con los botones de arriba", "Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
           ["Para cambiar de perfil, pulsa «Salir»", "Vuelves a esta pantalla y eliges otro."],
+          ["Todo es ficticio", "Puedes poner partes, guardias y mensajes sin miedo: nada sale de este navegador."],
         ].map(([t, d], i) => (
           <div key={t} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
             {pasoNum(i + 1, true)}
@@ -441,78 +434,152 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     </div>
   ) : null;
 
+  // Portada: cabecera con el logotipo y la ayuda, ilustración del camino y tarjeta de acceso.
+  // Los pasos de acceso (nombre, clave, perfil) y el acceso de la demostración son los de siempre.
+  const [verOlvido, setVerOlvido] = useState(false);
+  const [verClave, setVerClave] = useState(false);
+  // En la demostración la tarjeta muestra los perfiles; «Entrar con nombre y clave» enseña el acceso real
+  const [conClave, setConClave] = useState(!MODO_DEMO);
+  const campo = { width: "100%", minHeight: 50, padding: "10px 14px", borderRadius: 8, border: `3px solid ${R.turquesa}`, fontSize: 17, fontFamily: "inherit", color: R.noche, background: "#F4F9FC", boxSizing: "border-box" };
+  const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 6 };
+  const principal = { width: "100%", minHeight: 52, background: R.turquesa, color: R.noche, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 20, fontWeight: 700 };
+  const secundario = { width: "100%", minHeight: 48, background: "#fff", color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 700 };
+  const enlaceAcceso = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, minHeight: 40, padding: 0, fontFamily: "inherit" };
+  const fallo = error && <div role="alert" style={{ background: R.crema, color: R.noche, borderLeft: `6px solid ${R.mostaza}`, fontSize: 15, fontWeight: 600, padding: "8px 12px" }}>⚠️ {error}</div>;
+  const menu = [
+    { txt: "¿Qué es?", corto: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("oficial") },
+    { txt: "Manual de uso", corto: "Manual", icono: "deberes", href: "/manual/" },
+    { txt: "Preguntas frecuentes", corto: "Preguntas", icono: "mensajes", accion: () => abrirPreguntas() },
+    { txt: "Instalar la app", corto: "Instalar", icono: "importar", accion: () => abrirPreguntas("instalar") },
+  ];
+  const mostrarClave = (
+    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, color: R.noche, minHeight: 40, cursor: "pointer" }}>
+      <input type="checkbox" checked={verClave} onChange={e => setVerClave(e.target.checked)} style={{ width: 22, height: 22, accentColor: R.azul }} />Mostrar la clave
+    </label>
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: C.white, color: R.petroleo, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE, padding: 20 }}>
-      <style>{`* { box-sizing: border-box; } body { margin: 0; }`}</style>
-      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderRadius: 12, padding: "32px 28px", maxWidth: 440, width: "100%", textAlign: "center" }}>
-        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo alto={110} /></h1>
-        <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
-        <p style={{ color: R.petroleo, marginBottom: 20, fontSize: 16 }}>Todo lo que importa en tu aula</p>
-        <AvisoDemo />
-        {globoBienvenida}
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden",
+      // Fondo limpio, como el de Rayuela: gris muy claro arriba y «suelo» blanco abajo
+      background: "linear-gradient(#E4EAEE 0%, #F3F6F8 58%, #FFFFFF 58%)" }}>
+      <style>{`* { box-sizing: border-box; } body { margin: 0; }
+        .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
+        .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
+        .gd-corto { display: none; }
+        @media (max-width: 860px) {
+          .gd-portada-escena { padding: 0 !important; align-items: stretch !important; justify-content: flex-start !important; }
+          .gd-portada-reflejo { height: 110px !important; }
+          .gd-portada-banda { grid-template-columns: 1fr !important; padding: 14px 12px !important; gap: 10px !important; }
+          .gd-portada-titulo div:last-child { display: none; }
+          .gd-perfiles { grid-template-columns: 1fr !important; }
+          .gd-portada-cab { padding: 8px 16px !important; }
+          .gd-portada-cab h1 img { height: 52px !important; }
+          .gd-portada-menu { width: 100%; justify-content: space-between; gap: 0 !important; }
+          .gd-portada-menu a, .gd-portada-menu button { flex-direction: column; gap: 2px; font-size: 14px; padding: 0; }
+          .gd-portada-menu img { width: 30px !important; height: 30px !important; }
+          .gd-largo { display: none; } .gd-corto { display: inline; }
+        }`}</style>
+      {globoBienvenida}
+      <AvisoDemo compacto />
 
-        {paso === "nombre" && (
-          <div style={{ textAlign: "left" }}>
-            {accesoDemo}
-            {MODO_DEMO && <div style={{ fontSize: 14, color: C.gray, marginBottom: 8 }}>En el centro, cada docente entrará con su nombre y su clave:</div>}
-            <label style={lbl} htmlFor="gd-nombre">¿Quién eres?</label>
-            <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
-              onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={inp} />
-            <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
-            <small style={{ color: C.gray, display: "block", marginBottom: 8 }}>Escribe y elige tu nombre de la lista.</small>
-            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
-            <button onClick={continuar} style={btnPrincipal}>Continuar</button>
+      {/* Tarjeta centrada sobre la ilustración: cabecera, banda de acceso y enlaces */}
+      <div className="gd-portada-escena" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 24px 0" }}>
+      <div className="gd-portada-tarjeta" style={{ width: "100%", maxWidth: 1000, background: "#fff", boxShadow: "0 22px 40px rgba(22, 51, 63, .22)", position: "relative", zIndex: 1 }}>
+      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", flexWrap: "wrap", padding: "14px 32px" }}>
+        <h1 style={{ margin: 0 }}><Logo alto={64} /></h1>
+        <nav aria-label="Ayuda" className="gd-portada-menu" style={{ display: "flex", flexWrap: "wrap", gap: "0 22px", alignItems: "center" }}>
+          {menu.map(m => m.href
+            ? <a key={m.txt} href={m.href} target="_blank" rel="noopener" aria-label={m.txt}><Icono nombre={m.icono} tam={34} /><span className="gd-largo">{m.txt}</span><span className="gd-corto">{m.corto}</span></a>
+            : <button key={m.txt} type="button" onClick={m.accion} aria-label={m.txt}><Icono nombre={m.icono} tam={34} /><span className="gd-largo">{m.txt}</span><span className="gd-corto">{m.corto}</span></button>)}
+        </nav>
+      </header>
+
+        <div className="gd-portada-banda" style={{ background: `linear-gradient(100deg, ${R.azul} 0%, ${R.petroleo} 60%, #3F7F98 100%)`, padding: "22px 32px", display: "grid", gridTemplateColumns: "minmax(170px, 230px) minmax(0, 1fr)", gap: 28, alignItems: "center" }}>
+          <div className="gd-portada-titulo" style={{ color: "#fff" }}>
+            <div style={{ fontFamily: TITULO, fontSize: 34, lineHeight: 1.1 }}>Acceso</div>
+            <div style={{ fontSize: 15, marginTop: 6 }}>{CENTRO} · {CIUDAD}</div>
+            <div style={{ fontSize: 16, marginTop: 16, borderTop: "1px solid rgba(255,255,255,.4)", paddingTop: 12 }}>Todo lo que importa en tu aula</div>
           </div>
-        )}
+          <div style={{ background: "#fff", borderRadius: 8, padding: "12px 16px 4px", display: "grid", gap: 8 }}>
+            {paso === "nombre" && !conClave && accesoDemo}
+            {paso === "nombre" && MODO_DEMO && conClave && (
+              <button type="button" onClick={() => { setConClave(false); setError(""); }} style={{ ...enlaceAcceso, justifySelf: "center", fontWeight: 700 }}>
+                ← Volver a los perfiles de la demostración
+              </button>
+            )}
 
-        {paso === "clave" && (
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.dark }}>Hola, {nombre}</div>
-            <div style={{ fontSize: 14, color: C.gray, marginBottom: 16 }}>Cargo: {cargo.label}</div>
-            {tieneClave ? (
-              <>
-                <label style={lbl} htmlFor="gd-clave">Tu clave</label>
-                <input id="gd-clave" type="password" autoComplete="current-password" autoFocus value={clave}
-                  onChange={e => { setClave(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={inp} />
-              </>
-            ) : (
-              <>
-                <div style={{ background: "#DDF0F4", borderRadius: 10, padding: "10px 12px", fontSize: 14, color: C.blue, marginBottom: 12 }}>
-                  Es la primera vez que entras. Crea tu clave personal (mínimo {MIN_CLAVE} caracteres).
+            {paso === "nombre" && conClave && <>
+              <div>
+                <label style={etiqueta} htmlFor="gd-nombre">¿Quién eres?</label>
+                <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
+                  onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={campo} />
+                <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
+                <div style={{ fontSize: 14, marginTop: 6 }}>Escribe y elige tu nombre de la lista.</div>
+              </div>
+              {fallo}
+              <button onClick={continuar} style={principal}>Continuar</button>
+            </>}
+
+            {paso === "clave" && <>
+              <div style={{ fontSize: 17, color: R.noche }}><b>Hola, {nombre}</b><div style={{ fontSize: 15, color: R.petroleo }}>{cargo.label}</div></div>
+              {tieneClave ? (
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave">Tu clave</label>
+                  <input id="gd-clave" type={verClave ? "text" : "password"} autoComplete="current-password" autoFocus value={clave}
+                    onChange={e => { setClave(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={campo} />
                 </div>
-                <label style={lbl} htmlFor="gd-clave">Nueva clave</label>
-                <input id="gd-clave" type="password" autoComplete="new-password" autoFocus value={clave} onChange={e => { setClave(e.target.value); setError(""); }} style={inp} />
-                <label style={lbl} htmlFor="gd-clave2">Repite la clave</label>
-                <input id="gd-clave2" type="password" autoComplete="new-password" value={clave2}
-                  onChange={e => { setClave2(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={inp} />
-              </>
-            )}
-            {error && <div role="alert" style={{ color: "#275D8C", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{error}</div>}
-            <button onClick={entrar} style={btnPrincipal}>Entrar</button>
-            {MODO_DEMO && (
-              <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }}
-                style={{ display: "block", width: "100%", minHeight: 48, padding: "0 20px", marginTop: 10, background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
-                🧪 Entrar sin clave (solo en la demostración)
-              </button>
-            )}
-            {tieneClave && <div style={{ fontSize: 14, color: C.gray, marginTop: 10 }}>¿Has olvidado tu clave? Pide a Administración que la restablezca.</div>}
-            <button onClick={() => { setPaso("nombre"); setClave(""); setClave2(""); setError(""); }} style={enlace}>← No soy {nombre}</button>
-          </div>
-        )}
+              ) : <>
+                <div style={{ fontSize: 15, background: R.azulClaro, padding: "8px 12px" }}>Es la primera vez que entras. Crea tu clave personal (mínimo {MIN_CLAVE} caracteres).</div>
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave">Nueva clave</label>
+                  <input id="gd-clave" type={verClave ? "text" : "password"} autoComplete="new-password" autoFocus value={clave} onChange={e => { setClave(e.target.value); setError(""); }} style={campo} />
+                </div>
+                <div>
+                  <label style={etiqueta} htmlFor="gd-clave2">Repite la clave</label>
+                  <input id="gd-clave2" type={verClave ? "text" : "password"} autoComplete="new-password" value={clave2}
+                    onChange={e => { setClave2(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") entrar(); }} style={campo} />
+                </div>
+              </>}
+              {mostrarClave}
+              {fallo}
+              <button onClick={entrar} style={principal}>Entrar</button>
+              {MODO_DEMO && (
+                <button onClick={() => { setError(""); if (permitidos.length === 1) onEntrar(nombre, permitidos[0]); else setPaso("perfil"); }} style={secundario}>
+                  🧪 Entrar sin clave (solo en la demostración)
+                </button>
+              )}
+              <button onClick={() => { setPaso("nombre"); setClave(""); setClave2(""); setError(""); }} style={{ ...enlaceAcceso, justifySelf: "start" }}>← No soy {nombre}</button>
+            </>}
 
-        {paso === "perfil" && (
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 4 }}>¿Con qué perfil entras?</div>
-            <div style={{ fontSize: 14, color: C.gray, marginBottom: 14 }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div>
-            {permitidos.map(p => (
-              <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
-                style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "8px 16px", marginBottom: 12, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer", fontSize: 16, fontWeight: 700, color: C.dark }}>
-                <Icono nombre={iconoPerfil(p)} tam={44} />{sinEmoji1(p.label)}
-              </button>
-            ))}
-            <button onClick={() => setPaso("nombre")} style={enlace}>← Cambiar de persona</button>
+            {paso === "perfil" && <>
+              <div style={{ fontSize: 16, color: R.noche }}><b>¿Con qué perfil entras?</b><div style={{ fontSize: 15, color: R.petroleo }}>Según tu cargo ({cargo.label}) puedes usar estos perfiles.</div></div>
+              {permitidos.map(p => (
+                <button key={p.key || p.id} onClick={() => onEntrar(nombre, p)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, padding: "6px 14px", background: "#fff", border: `3px solid ${R.turquesa}`, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 700, color: R.petroleo, textAlign: "left" }}>
+                  <Icono nombre={iconoPerfil(p)} tam={40} />{sinEmoji1(p.label)}
+                </button>
+              ))}
+              <button onClick={() => setPaso("nombre")} style={{ ...enlaceAcceso, justifySelf: "start" }}>← Cambiar de persona</button>
+            </>}
+
+            <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, paddingTop: 4, display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "0 18px" }}>
+              {MODO_DEMO && !conClave && paso === "nombre" && <>
+                <button type="button" onClick={() => { setConClave(true); setError(""); }} style={{ ...enlaceAcceso, fontWeight: 700 }}>Entrar con nombre y clave</button>
+              </>}
+              {MODO_DEMO && !conClave
+                ? <button type="button" onClick={() => setGlobo(true)} style={enlaceAcceso}>Cómo probarla</button>
+                : <button type="button" onClick={() => setVerOlvido(v => !v)} style={enlaceAcceso}>¿Has olvidado tu clave?</button>}
+              <button type="button" onClick={() => abrirPreguntas("datos")} style={enlaceAcceso}>Protección de datos</button>
+            </div>
+            {verOlvido && <div style={{ fontSize: 15, color: R.noche, background: R.crema, padding: "8px 12px" }}>Pide a Administración del centro que restablezca tu clave. La próxima vez que entres crearás una nueva.</div>}
           </div>
-        )}
+        </div>
+      </div>
+      {/* La ilustración del camino, suave y reflejada en el «suelo» bajo la tarjeta */}
+      <div aria-hidden="true" className="gd-portada-reflejo" style={{ width: "100%", maxWidth: 1100, height: "clamp(120px, 24vh, 240px)", overflow: "hidden", marginTop: -2,
+        maskImage: REFLEJO, WebkitMaskImage: REFLEJO, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
+        <img src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 78%", display: "block", opacity: .4, transform: "scaleY(-1)" }} />
+      </div>
       </div>
     </div>
   );
@@ -1154,10 +1221,10 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{fmt(p.ts)}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{p.hora || "-"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", fontWeight: 600 }}>{p.alumno}{p.esGrupal ? <span style={{ marginLeft: 4, fontSize: 13, color: C.teal }}>◆grupal</span> : null}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.curso}</td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{p.curso}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{tutorDeParte(p, tutores) || "—"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.tipo}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 13 }}>{g.label}</span></td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "4px 10px", borderRadius: 4, fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, lineHeight: 1.2 }}>{g.label}</span></td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.profesor}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.descripcion.slice(0, 60)}{p.descripcion.length > 60 ? "…" : ""}</td>
                   </tr>
@@ -2525,14 +2592,14 @@ function guardiasDeProfesor({ fecha, profesor, profesores, cuadrante, apoyos = {
 // o del profesor al que sustituye el sustituto. En el recreo no hay clase.
 function tareasDeGuardia(g, fecha, ausencias) {
   if (g.hora === "Recreo") return [];
-  return ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(g.hora) &&
-    (a.profesor === g.sit?.sustituyeA || !a.edificio || !g.edificio || g.edificio === "-" || a.edificio === g.edificio));
+  return ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(g.hora)).map(a => enHora(a, g.hora)).filter(a =>
+    a.profesor === g.sit?.sustituyeA || !a.edificio || !g.edificio || g.edificio === "-" || a.edificio === g.edificio);
 }
 // Tarjeta con lo que ha dejado el profesor ausente
 const TareaAusente = ({ a, C }) => (
   <div style={{ background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: 10, fontSize: 14, color: "#78350F", lineHeight: 1.5 }}>
     <div style={{ fontWeight: 700, marginBottom: 4 }}><Ic n="profe-ausente" tam={22} />Deja {a.profesor}{a.asignatura ? ` · ${a.asignatura}` : ""}</div>
-    {(a.aula || a.edificio) && <div><Ic n="aula" tam={20} />Aula {a.aula || "?"}{a.edificio ? ` · Edificio ${a.edificio}` : ""}</div>}
+    {(a.aula || a.edificio) && <div><Ic n="aula" tam={20} />{a.aula || "?"}{a.sala ? ` · ${a.sala}` : ""}{a.edificio ? ` · Edificio ${a.edificio}` : ""}</div>}
     <div><Ic n="ejercicios" tam={20} />{a.tarea ? a.tarea : <em>No ha dejado tarea</em>}</div>
     {a.ubicacion && <div><Ic n="material" tam={20} />Material: {a.ubicacion}</div>}
     {a.enlace && <div><a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, fontWeight: 600 }}>🔗 Ver recursos</a></div>}
@@ -2553,10 +2620,22 @@ const PRIORIDADES_COB = {
 // Clases cubiertas por un profesor en un día
 const clasesCubiertasDia = (fecha, profesor, coberturas) =>
   Object.entries(coberturas).filter(([k, p]) => p === profesor && k.startsWith(`${fecha}|`)).length;
+// Clases cubiertas por un profesor en lo que va de curso (desde el 1 de septiembre)
+const inicioCurso = (fecha = isoLocal(new Date())) => {
+  const [a, m] = fecha.split("-").map(Number);
+  return `${m >= 9 ? a : a - 1}-09-01`;
+};
+const clasesCubiertasCurso = (fecha, profesor, coberturas) => {
+  const desde = inicioCurso(fecha);
+  return Object.entries(coberturas).filter(([k, p]) => p === profesor && k.slice(0, 10) >= desde && k.slice(0, 10) <= fecha).length;
+};
+// ¿Se la asignó él mismo? (si luego la asigna jefatura a otra persona, deja de serlo)
+const esPropia = (clave, coberturas, propias = {}) => !!coberturas[clave] && propias[clave] === coberturas[clave];
 // Clase que cubre un profesor a una hora (la ausencia) o null
 function claseQueCubre(fecha, hora, profesor, coberturas, ausencias) {
   const k = Object.keys(coberturas).find(k => coberturas[k] === profesor && k.startsWith(`${fecha}|${hora}|`));
-  return k ? ausencias.find(a => String(a.id) === k.split("|")[2]) || null : null;
+  const a = k ? ausencias.find(x => String(x.id) === k.split("|")[2]) : null;
+  return a ? enHora(a, hora) : null;
 }
 // Lista ordenada de quién puede cubrir la clase de una ausencia a una hora.
 // Solo profesorado de guardia a esa hora; nunca deja una zona vacía.
@@ -2591,49 +2670,85 @@ function candidatosClase({ fecha, hora, ausencia, profesores, cuadrante, apoyos 
   return Object.values(mejor).map(c => ({
     ...c,
     cubiertas: clasesCubiertasDia(fecha, c.profesor, otras),
+    enCurso: clasesCubiertasCurso(fecha, c.profesor, otras),
     guardias: guardiasDelDia(fecha, c.profesor, cuadrante, apoyos, sustitutos),
-  })).sort((a, b) => a.peso - b.peso || a.cubiertas - b.cubiertas || a.guardias - b.guardias || a.profesor.localeCompare(b.profesor));
+  })).sort((a, b) => a.peso - b.peso || a.cubiertas - b.cubiertas || a.enCurso - b.enCurso || a.guardias - b.guardias || a.profesor.localeCompare(b.profesor));
 }
 
-// Quién cubre una clase a una hora: sugerencias y botón de asignar (solo jefatura)
-function CubrirClase({ fecha, hora, ausencia, equipo, coberturas = {}, setCoberturas, puedeAsignar = false, C }) {
+// Botones del profesorado de guardia: «Me la asigno» y «Soltarla».
+// Puede asignársela quien sale entre los candidatos, si nadie la cubre y la hora no ha terminado.
+// Solo puede soltarla quien se la asignó él mismo, antes de que empiece la hora.
+function MeLaAsigno({ fecha, hora, ausencia, equipo, coberturas = {}, setCoberturas, propias = {}, setPropias, usuario, C }) {
+  if (!usuario || !setCoberturas) return null;
+  const clave = claveCob(fecha, hora, ausencia.id);
+  const asignado = coberturas[clave];
+  const btn = { border: "none", borderRadius: 8, padding: "10px 14px", minHeight: 44, fontWeight: 700, fontSize: 14, cursor: "pointer" };
+  if (asignado === usuario) {
+    if (!esPropia(clave, coberturas, propias) || horaEmpezada(fecha, hora)) return null;
+    const soltar = () => {
+      setCoberturas(prev => { const n = { ...prev }; delete n[clave]; return n; });
+      setPropias?.(prev => { const n = { ...prev }; delete n[clave]; return n; });
+    };
+    return <button onClick={soltar} style={{ ...btn, background: "#fff", color: C.dark, border: `1px solid ${R.verdeCamino}` }}>Soltarla</button>;
+  }
+  if (asignado || horaTerminada(fecha, hora)) return null;
+  const puedo = candidatosClase({ fecha, hora, ausencia, ...equipo, coberturas }).some(c => c.profesor === usuario);
+  if (!puedo) return null;
+  const asignarme = () => {
+    setCoberturas(prev => ({ ...prev, [clave]: usuario }));
+    setPropias?.(prev => ({ ...prev, [clave]: usuario }));
+  };
+  return <button onClick={asignarme} style={{ ...btn, background: R.morado, color: "#fff" }}>✋ Me la asigno</button>;
+}
+
+// Quién cubre una clase a una hora: sugerencias, botón de asignar (jefatura) y «Me la asigno» (guardia)
+function CubrirClase({ fecha, hora, ausencia: ausenciaDia, equipo, coberturas = {}, setCoberturas, propias = {}, setPropias, puedeAsignar = false, usuario = "", C }) {
+  const ausencia = enHora(ausenciaDia, hora);
   const [verTodos, setVerTodos] = useState(false);
   const clave = claveCob(fecha, hora, ausencia.id);
   const asignado = coberturas[clave];
+  const propia = esPropia(clave, coberturas, propias);
   const candidatos = candidatosClase({ fecha, hora, ausencia, ...equipo, coberturas });
-  const asignar = p => setCoberturas?.(prev => ({ ...prev, [clave]: p }));
-  const quitar = () => setCoberturas?.(prev => { const n = { ...prev }; delete n[clave]; return n; });
+  const quitarMarca = () => setPropias?.(prev => { if (!(clave in prev)) return prev; const n = { ...prev }; delete n[clave]; return n; });
+  const asignar = p => { setCoberturas?.(prev => ({ ...prev, [clave]: p })); quitarMarca(); };
+  const quitar = () => { setCoberturas?.(prev => { const n = { ...prev }; delete n[clave]; return n; }); quitarMarca(); };
   const btn = { border: "none", borderRadius: 8, padding: "6px 12px", fontWeight: 700, fontSize: 14, cursor: "pointer" };
   const lista = verTodos ? candidatos : candidatos.slice(0, 3);
+  const mia = asignado && asignado === usuario;
+  const botonPropio = !puedeAsignar && <MeLaAsigno fecha={fecha} hora={hora} ausencia={ausencia} equipo={equipo} coberturas={coberturas} setCoberturas={setCoberturas} propias={propias} setPropias={setPropias} usuario={usuario} C={C} />;
   return (
-    <div style={{ background: asignado ? "#DDF0F4" : "#fff", border: `1px solid ${asignado ? C.teal : "#F6C862"}`, borderRadius: 8, padding: 10 }}>
+    <div data-cubrir={clave} style={{ background: mia ? R.verdeCaminoClaro : asignado ? "#DDF0F4" : "#fff", border: `1px solid ${mia ? R.verdeCamino : asignado ? C.teal : R.morado}`, borderLeft: `5px solid ${mia ? R.verdeCamino : asignado ? C.teal : R.morado}`, borderRadius: 8, padding: 10 }}>
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, justifyContent: "space-between" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>
           <Ic n="hora-reloj" tam={20} />{conTramo(hora)}
-          {asignado
-            ? <span style={{ color: C.teal }}> · ✅ Cubre {asignado}</span>
-            : <span style={{ color: "#16333F" }}> · Sin cubrir</span>}
+          {mia
+            ? <span style={{ color: R.verdeOscuro }}> · ✅ La cubres tú{propia ? " (te la has asignado)" : ""}</span>
+            : asignado
+            ? <span style={{ color: C.teal }}> · ✅ Cubre {asignado}{propia ? " · se la asignó"  : ""}</span>
+            : <span style={{ color: R.morado }}> · Sin cubrir</span>}
         </div>
         {asignado && puedeAsignar && <button onClick={quitar} style={{ ...btn, background: C.light, color: C.dark }}>Cambiar</button>}
+        {mia && botonPropio}
       </div>
       {!asignado && (
         candidatos.length === 0 ? (
           <div style={{ fontSize: 14, color: C.salmon, fontWeight: 600, marginTop: 6 }}>No hay nadie de guardia libre a esta hora sin dejar una zona vacía.</div>
         ) : (
           <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-            {!puedeAsignar && <div style={{ fontSize: 13, color: C.gray }}>Jefatura confirmará quién la cubre. Sugerencias:</div>}
+            {!puedeAsignar && <div style={{ fontSize: 13, color: C.gray }}>Si estás de guardia y puedes, asígnatela; si no, Jefatura confirmará quién la cubre. Sugerencias:</div>}
+            {botonPropio && <div>{botonPropio}</div>}
             {lista.map((c, i) => {
               const pr = PRIORIDADES_COB[c.prioridad];
               return (
-                <div key={c.profesor} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: i === 0 ? "#DDF0F4" : C.light, borderRadius: 8, padding: "6px 10px" }}>
+                <div key={c.profesor} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: i === 0 ? R.moradoClaro : C.light, borderRadius: 8, padding: "6px 10px" }}>
                   <div style={{ flex: "1 1 180px" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{i === 0 ? "⭐ " : ""}{c.profesor}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}>{i === 0 ? "⭐ " : ""}{c.profesor}{c.profesor === usuario ? " (tú)" : ""}</div>
                     <div style={{ fontSize: 13, color: C.gray }}>
                       <span style={{ color: pr.color, background: pr.bg, borderRadius: 6, padding: "1px 6px", fontWeight: 700 }}>{pr.txt}</span>
-                      {" "}{c.zona} · {c.cubiertas} clase(s) cubiertas hoy · {c.guardias} guardia(s)
+                      {" "}{c.zona} · {c.cubiertas} hoy · {c.enCurso} en el curso · {c.guardias} guardia(s)
                     </div>
                   </div>
-                  {puedeAsignar && <button onClick={() => asignar(c.profesor)} style={{ ...btn, background: i === 0 ? C.teal : C.dark, color: "#fff" }}>Asignar</button>}
+                  {puedeAsignar && <button onClick={() => asignar(c.profesor)} style={{ ...btn, background: i === 0 ? R.morado : C.dark, color: "#fff" }}>Asignar</button>}
                 </div>
               );
             })}
@@ -2645,6 +2760,62 @@ function CubrirClase({ fecha, hora, ausencia, equipo, coberturas = {}, setCobert
           </div>
         )
       )}
+    </div>
+  );
+}
+
+// Historial de las clases que ha cubierto un profesor: este mes, en el curso y las próximas
+function MisCoberturas({ usuario, coberturas = {}, propias = {}, ausencias = [], C }) {
+  const hoy = isoLocal(new Date());
+  const mes = hoy.slice(0, 7), desde = inicioCurso(hoy);
+  const filas = Object.entries(coberturas).filter(([, p]) => p === usuario).map(([clave]) => {
+    const [fecha, hora, id] = clave.split("|");
+    const a = ausencias.find(x => String(x.id) === id);
+    return a ? { clave, fecha, hora, a: enHora(a, hora), propia: esPropia(clave, coberturas, propias) } : null;
+  }).filter(Boolean).sort((x, y) => y.fecha.localeCompare(x.fecha) || HORAS.indexOf(y.hora) - HORAS.indexOf(x.hora));
+  const hechas = filas.filter(f => horaEmpezada(f.fecha, f.hora));
+  const proximas = filas.filter(f => !horaEmpezada(f.fecha, f.hora)).reverse();
+  const totales = [
+    { label: "Hoy", value: hechas.filter(f => f.fecha === hoy).length },
+    { label: "Este mes", value: hechas.filter(f => f.fecha.startsWith(mes)).length },
+    { label: "En el curso", value: hechas.filter(f => f.fecha >= desde).length },
+    { label: "Próximas", value: proximas.length },
+  ];
+  const fechaLarga = f => { const t = parseISO(f).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const tarjeta = { background: C.white, borderRadius: 12, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", marginBottom: 14 };
+  const Fila = ({ f, proxima }) => (
+    <div data-cobertura={f.clave} style={{ display: "grid", gap: 4, padding: "10px 12px", borderRadius: 10, background: proxima ? R.verdeCaminoClaro : C.light, borderLeft: `5px solid ${proxima ? R.verdeCamino : R.morado}`, fontSize: 14, color: C.dark }}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+        <strong>{fechaLarga(f.fecha)} · {conTramo(f.hora)}</strong>
+        <span style={{ fontSize: 13, fontWeight: 700, color: f.propia ? R.morado : C.gray }}>{f.propia ? "✋ Te la asignaste" : "📋 Asignada por Jefatura"}</span>
+      </div>
+      <div>Clase de <strong>{f.a.profesor}</strong>{f.a.aula ? ` · ${f.a.aula}` : ""}{f.a.asignatura ? ` · ${f.a.asignatura}` : ""}{f.a.sala ? ` · ${f.a.sala}` : ""}{f.a.edificio ? ` · Edificio ${f.a.edificio}` : ""}</div>
+      <div style={{ color: C.gray }}>{f.a.tarea ? `Consigna: ${f.a.tarea}` : "Sin consigna"}</div>
+    </div>
+  );
+  return (
+    <div>
+      <TituloBloque titulo="Mis coberturas" sub={usuario ? `Clases que has cubierto, ${usuario}` : "Elige tu nombre en «Mi guardia hoy»"} icono="historial" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, margin: "16px 0 14px" }}>
+        {totales.map(t => (
+          <div key={t.label} data-total={t.label} style={{ background: C.white, borderRadius: 10, padding: 12, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderTop: `4px solid ${t.label === "Próximas" ? R.verdeCamino : R.morado}` }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: C.dark }}>{t.value}</div>
+            <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{t.label}</div>
+          </div>
+        ))}
+      </div>
+      {proximas.length > 0 && (
+        <div style={tarjeta}>
+          <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 10 }}><Ic n="hora-reloj" tam={22} />Próximas clases que cubres</div>
+          <div style={{ display: "grid", gap: 8 }}>{proximas.map(f => <Fila key={f.clave} f={f} proxima />)}</div>
+        </div>
+      )}
+      <div style={tarjeta}>
+        <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 10 }}><Ic n="historial" tam={22} />Clases cubiertas</div>
+        {hechas.length === 0
+          ? <div style={{ padding: 18, textAlign: "center", color: C.gray, fontSize: 14 }}>Todavía no has cubierto ninguna clase.</div>
+          : <div style={{ display: "grid", gap: 8 }}>{hechas.map(f => <Fila key={f.clave} f={f} />)}</div>}
+      </div>
     </div>
   );
 }
@@ -2830,13 +3001,18 @@ const AYUDAS = {
     "Cada tarjeta es una guardia de hoy: la hora, la zona y tu papel (titular, apoyo o sustituto).",
     "Si te toca entrar por alguien, aparece en rojo, con la tarea que ha dejado y dónde está el material.",
     "Cuando empiece la guardia, pulsa «Firmar guardia».",
+    "Si hay una clase sin profesor y puedes cubrirla, pulsa «Me la asigno». Si cambias de idea, «Soltarla» antes de que empiece.",
     "Si cubres una clase, pulsa «Pasar lista» y marca solo a quien falta.",
     "Pulsa un día del calendario para ver tus guardias de ese día."] },
   notif_ausencia: { titulo: "Avisar de una ausencia", pasos: [
-    "Elige la fecha y marca las horas en que vas a faltar.",
-    "Indica el edificio, el aula y la asignatura, para que sepan qué clase cubrir.",
-    "Deja la tarea para los alumnos y dónde está el material.",
-    "Pulsa «Notificar». Esto completa, no sustituye, el correo de EducaMadrid y la llamada al instituto."] },
+    "Elige la fecha y marca las horas en que vas a faltar, o pulsa «Día completo». Las horas con clase en tu horario llevan un punto.",
+    "Cada clase sale con su grupo, materia y aula. Deja una consigna para cada una, o una tarea general para todas.",
+    "Pulsa «Notificar». En «Mis ausencias» verás quién cubre cada clase; puedes modificarla o borrarla hasta que empiece.",
+    "Esto completa, no sustituye, el aviso oficial al instituto."] },
+  mis_coberturas: { titulo: "Mis coberturas", pasos: [
+    "Aquí están las clases que has cubierto: las de hoy, las del mes y las del curso, desde el 1 de septiembre.",
+    "Arriba, las próximas clases que tienes que cubrir. Cada una dice si te la asignaste tú o Jefatura.",
+    "Para asignarte una clase sin profesor, ve a «Ahora» o a «Mi guardia hoy» y pulsa «Me la asigno». Puedes soltarla mientras no haya empezado."] },
   guardias_ver: { titulo: "Guardias del día", pasos: [
     "Todas las zonas de guardia de hoy, hora a hora, con quién está en cada una.",
     "En naranja, las zonas en las que entra el sustituto; en rojo, las que se han quedado sin nadie."] },
@@ -3171,13 +3347,35 @@ function datosEjemploGuardias(profesores) {
       });
     });
   });
-  return { cuadrante, apoyos, sustitutos, ausencias, firmas, sugerido, ausentes: [ausente1, ausente2] };
+  // Clases cubiertas en semanas pasadas, para el historial «Mis coberturas»
+  const coberturas = {}, propias = {};
+  const clasesPasadas = [["1º ESO A", "Lengua", "A"], ["2º ESO B", "Geografía", "A"], ["3º ESO A", "Física y Química", "B"], ["4º ESO C", "Biología", "B"], ["1º ESO B", "Inglés", "A"], ["2º ESO A", "Tecnología", "B"]];
+  const consignas = ["Ejercicios del tema en el cuaderno.", "Lectura en silencio del capítulo 4.", "Terminar la ficha de repaso.", "Ver el vídeo del aula virtual y resumirlo.", ""];
+  const horasClase = HORAS.filter(h => h !== "Recreo");
+  const desde = inicioCurso(diaISO);
+  let idx = 0;
+  for (let atras = 1; atras <= 45 && idx < 16; atras++) {
+    const d = sumarDias(dia, -atras), f = isoLocal(d);
+    if (f < desde) break;
+    if (!esLectivo(d) || atras % 2) continue;
+    const otros = profesores.filter(p => p !== sugerido);
+    const ausente = otros[(idx * 7 + 3) % otros.length];
+    const cubre = idx % 3 !== 2 ? sugerido : otros.filter(p => p !== ausente)[(idx * 5 + 1) % (otros.length - 1)];
+    const hora = horasClase[(idx * 3 + 1) % horasClase.length];
+    const [grupo, materia, edificio] = clasesPasadas[idx % clasesPasadas.length];
+    const id = 100 + idx;
+    ausencias.push({ id, profesor: ausente, motivo: "Enfermedad", fecha: f, horas: [hora], edificio, aula: grupo, asignatura: materia, tarea: consignas[idx % consignas.length], ts, leida: true });
+    coberturas[claveCob(f, hora, id)] = cubre;
+    if (idx % 2 === 0) propias[claveCob(f, hora, id)] = cubre;
+    idx++;
+  }
+  return { cuadrante, apoyos, sustitutos, ausencias, coberturas, propias, firmas, sugerido, ausentes: [ausente1, ausente2] };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MI GUARDIA HOY (Profesor)
 // ═══════════════════════════════════════════════════════════════════════════
-function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = [], setFirmas, listas = [], setListas, alumnos = [], profesores, cuadrante, apoyosGuardia, sustitutosGuardia = {}, ausencias, fProfesor, setFProfesor, C, selStyle, labelStyle, usuario, setShowCuadrante, diaSeleccionadoGuardias, setDiaSeleccionadoGuardias }) {
+function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, setCoberturas, propias = {}, setPropias, firmas = [], setFirmas, listas = [], setListas, alumnos = [], profesores, cuadrante, apoyosGuardia, sustitutosGuardia = {}, ausencias, fProfesor, setFProfesor, C, selStyle, labelStyle, usuario, setShowCuadrante, diaSeleccionadoGuardias, setDiaSeleccionadoGuardias }) {
   const hoy     = new Date();
   const diasES  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   const diaHoy  = diasES[hoy.getDay()];
@@ -3422,7 +3620,9 @@ function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = 
                   {esAhora && <span style={{ background:r.color, color:"#fff", borderRadius:20, padding:"4px 12px", fontSize:14, fontWeight:700 }}>⏱ AHORA</span>}
                 </div>
                 <div style={{ marginTop:12, padding:"6px 12px", background:r.bg, borderRadius:8, fontSize:14, fontWeight:700, color:r.color, display:"inline-block" }}><Ti tam={22}>{r.txt}</Ti></div>
-                {g.cubre && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:800, background:"#DDF0F4", border:`2px solid ${C.blue}`, color:C.blue }}>📋 Jefatura te ha asignado: cubres la clase de {g.cubre.profesor}{g.cubre.aula ? ` en ${g.cubre.aula}` : ""}</div>}
+                {g.cubre && (esPropia(claveCob(hoyISO, g.hora, g.cubre.id), coberturas, propias)
+                  ? <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:800, background:R.verdeCaminoClaro, border:`2px solid ${R.verdeCamino}`, color:R.verdeOscuro }}>✋ Te la has asignado: cubres la clase de {g.cubre.profesor}{g.cubre.aula ? ` en ${g.cubre.aula}` : ""}</div>
+                  : <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:800, background:"#DDF0F4", border:`2px solid ${C.blue}`, color:C.blue }}>📋 Jefatura te ha asignado: cubres la clase de {g.cubre.profesor}{g.cubre.aula ? ` en ${g.cubre.aula}` : ""}</div>)}
                 {aviso && <div style={{ marginTop:10, padding:"10px 12px", borderRadius:8, fontSize:14, fontWeight:700, ...aviso.estilo }}><Ti tam={22}>{aviso.txt}</Ti></div>}
                 <div style={{ marginTop:10, display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:6, fontSize:14, color:C.gray }}>
                   <div><Ic n="titular" tam={22} />Titular: {nombre(sit.titular, sit.tA)}</div>
@@ -3432,7 +3632,14 @@ function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = 
                 {g.ausencias.length > 0 && (
                   <div style={{ marginTop: 12 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#16333F", marginBottom: 6 }}><Ic n="deberes" tam={22} />Deberes y tareas de las clases sin profesor</div>
-                    <div style={{ display: "grid", gap: 8 }}>{g.ausencias.map(a => <TareaAusente key={a.id} a={a} C={C} />)}</div>
+                    <div style={{ display: "grid", gap: 8 }}>{g.ausencias.map(a => (
+                      <div key={a.id} style={{ display: "grid", gap: 6 }}>
+                        <TareaAusente a={a} C={C} />
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <MeLaAsigno fecha={hoyISO} hora={g.hora} ausencia={a} equipo={equipo} coberturas={coberturas} setCoberturas={setCoberturas} propias={propias} setPropias={setPropias} usuario={fProfesor} C={C} />
+                        </div>
+                      </div>
+                    ))}</div>
                   </div>
                 )}
                 <AlumnadoMedidas fecha={hoyISO} hora={g.hora} zonaId={g.zonaId} medidas={medidas} onMarcar={onMarcarMedida} />
@@ -3583,130 +3790,311 @@ function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = 
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICAR AUSENCIA (Profesor)
 // ═══════════════════════════════════════════════════════════════════════════
-function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle, fmt }) {
-  const [enviado, setEnviado] = useState(false);
+// Datos de una ausencia a una hora concreta: las clases que salen del horario (grupo, aula, materia)
+// y la consigna de esa hora. Las ausencias antiguas, sin «sesiones», se quedan como estaban.
+function enHora(a, hora) {
+  const s = a?.sesiones?.[hora];
+  if (!s) return a;
+  return { ...a, aula: s.grupo || a.aula, sala: s.aula || "", edificio: s.edificio || a.edificio, asignatura: s.materia || a.asignatura, tarea: s.consigna || a.tarea };
+}
+const horaTerminada = (fecha, hora, ahora = new Date()) => {
+  const hoy = isoLocal(ahora);
+  if (fecha !== hoy) return fecha < hoy;
+  const fin = (HORARIO[hora] || "0:00 – 0:00").split("–")[1].trim();
+  return ahora.getHours() * 60 + ahora.getMinutes() >= minutosDe(fin);
+};
+// Una ausencia está «comunicada» mientras no haya empezado ninguna de sus horas; luego queda «consolidada»
+const ausenciaConsolidada = a => (a.horas || []).some(h => horaEmpezada(isoLocal(a.fecha), h));
+// Clases del horario de un profe un día: { hora: { grupo, aula, edificio, materia } }
+function clasesDelDia(horarios, profesor, fecha) {
+  if (!profesor || !fecha) return {};
+  const dia = DIAS_ES[parseISO(fecha).getDay()];
+  const r = {};
+  HORAS_GUARDIA.forEach(h => { const c = horarios[`${dia}|${h}|${profesor}`]; if (c) r[h] = c; });
+  return r;
+}
+// Estado de cobertura y de consignas de una ausencia (solo cuentan las horas con clase)
+function resumenAusencia(a, coberturas) {
+  const conClase = (a.horas || []).filter(h => h !== "Recreo");
+  const cubiertas = conClase.filter(h => coberturas[claveCob(isoLocal(a.fecha), h, a.id)]);
+  const conConsigna = conClase.filter(h => (a.sesiones?.[h]?.consigna || a.tarea || "").trim());
+  const nivel = (n, total, si, parcial, no) => !total ? "—" : n === total ? si : n ? parcial : no;
+  return {
+    cobertura: nivel(cubiertas.length, conClase.length, "Sí", "Parcialmente", "No"),
+    consigna: nivel(conConsigna.length, conClase.length, "Registrada", "Parcialmente registrada", "Sin registro"),
+  };
+}
+
+function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, horarios = {}, coberturas = {}, setCoberturas, setMensajes, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle }) {
+  const [enviado, setEnviado] = useState("");
   const [ausEdificio, setAusEdificio] = useState("");
+  const [consignas, setConsignas] = useState({});      // consigna de cada hora
+  const [editando, setEditando] = useState(null);      // id de la ausencia que se está modificando
+  const [errores, setErrores] = useState([]);
+  const [borrando, setBorrando] = useState(null);
+  const hoy = isoLocal();
+  const clases = clasesDelDia(horarios, ausProfesor, ausFecha);
+  const horasClase = Object.keys(clases);
+  const tieneHorario = Object.keys(horarios).some(k => k.endsWith(`|${ausProfesor}`));
+  const sinHorario = ausHoras.filter(h => h !== "Recreo" && !clases[h]);
 
   function toggleHora(h) {
+    setErrores([]);
     setAusHoras(prev => prev.includes(h) ? prev.filter(x => x !== h) : [...prev, h]);
+  }
+  const ordenar = hs => [...hs].sort((x, y) => HORAS_GUARDIA.indexOf(x) - HORAS_GUARDIA.indexOf(y));
+  const diaCompleto = () => { setErrores([]); setAusHoras(horasClase.length ? horasClase : HORAS_GUARDIA.filter(h => h !== "Recreo")); };
+
+  function limpiar() {
+    setAusFecha(""); setAusHoras([]); setAusTarea(""); setAusEnlace(""); setAusUbicacion(""); setAusAula(""); setAusAsignatura(""); setAusEdificio("");
+    setConsignas({}); setEditando(null); setErrores([]);
+  }
+
+  // Comprobaciones antes de guardar, como en Rayuela
+  function comprobar() {
+    const e = [];
+    if (!ausProfesor) e.push("Elige el profesor o la profesora.");
+    if (!ausFecha) e.push("Elige la fecha de la ausencia.");
+    if (!ausHoras.length) e.push("Marca al menos una hora.");
+    if (ausFecha && ausFecha < hoy) e.push("No se puede avisar de una ausencia en un día que ya ha pasado.");
+    if (ausFecha === hoy) {
+      const pasadas = ausHoras.filter(h => modoJefatura ? horaTerminada(ausFecha, h) : horaEmpezada(ausFecha, h));
+      if (pasadas.length) e.push(`${modoJefatura ? "Ya han terminado" : "Ya han empezado"}: ${ordenar(pasadas).join(", ")}. Quita esas horas.`);
+    }
+    const solapes = ausencias.filter(a => a.id !== editando && a.profesor === ausProfesor && isoLocal(a.fecha) === ausFecha && a.horas.some(h => ausHoras.includes(h)));
+    if (solapes.length) {
+      const horas = ordenar([...new Set(solapes.flatMap(a => a.horas.filter(h => ausHoras.includes(h))))]);
+      e.push(`Ya hay una ausencia de ${ausProfesor === usuario ? "ti" : ausProfesor} ese día a ${horas.join(", ")}. Modifica la que ya existe.`);
+    }
+    if (tieneHorario && ausHoras.length && !ausHoras.some(h => clases[h])) e.push("Ninguna de esas horas tiene clase en el horario: la ausencia no afecta a ningún grupo.");
+    return e;
+  }
+
+  // Avisa por Galvángram a quien tenía asignada una clase que ya no hace falta cubrir
+  function avisarCoberturasQuitadas(a, horasQuitadas) {
+    const fecha = isoLocal(a.fecha);
+    const quitadas = horasQuitadas.map(h => [h, coberturas[claveCob(fecha, h, a.id)]]).filter(([, p]) => p);
+    if (!quitadas.length) return;
+    setCoberturas?.(prev => { const n = { ...prev }; horasQuitadas.forEach(h => delete n[claveCob(fecha, h, a.id)]); return n; });
+    const vivas = quitadas.filter(([h]) => !horaTerminada(fecha, h));
+    if (!vivas.length || !setMensajes) return;
+    const base = Date.now(), ts = new Date(base).toISOString();
+    setMensajes(prev => [...vivas.map(([h, p], i) => ({
+      id: base + i, aviso: base + i, remitente: "RumboAula", destinatario: p, conCopia: [], leido: false, urgente: false, ts, lugar: null,
+      texto: `Ya no tienes que cubrir la clase de ${a.profesor} (${fmtD(parseISO(fecha))}, ${conTramo(h)}): se ha anulado su ausencia a esa hora.`,
+    })), ...prev]);
   }
 
   function enviar() {
-    if (!ausProfesor || !ausFecha || ausHoras.length === 0) return;
-    const nueva = { id:Date.now(), profesor:ausProfesor, motivo:ausMotivo, fecha:ausFecha, horas:ausHoras, tarea:ausTarea, enlace:ausEnlace, ubicacion:ausUbicacion, aula:ausAula, asignatura:ausAsignatura, edificio:ausEdificio, ts:new Date().toISOString(), leida:false,
-      ...(modoJefatura && ausProfesor !== usuario ? { registradaPor: usuario } : {}) };
-    setAusencias(prev => [nueva, ...prev]);
-    setEnviado(true);
-    setAusFecha(""); setAusHoras([]); setAusTarea(""); setAusEnlace(""); setAusUbicacion(""); setAusAula(""); setAusAsignatura(""); setAusEdificio("");
-    setTimeout(() => setEnviado(false), 4000);
+    const e = comprobar();
+    setErrores(e);
+    if (e.length) return;
+    const sesiones = {};
+    ordenar(ausHoras).forEach(h => {
+      const c = clases[h];
+      sesiones[h] = { grupo: c?.grupo || ausAula || "", aula: c?.aula || "", edificio: c?.edificio || ausEdificio || "", materia: c?.materia || ausAsignatura || "", consigna: (consignas[h] || "").trim() };
+    });
+    const primera = sesiones[ordenar(ausHoras).find(h => h !== "Recreo")] || {};
+    const datos = { profesor: ausProfesor, motivo: ausMotivo, fecha: ausFecha, horas: ordenar(ausHoras), tarea: ausTarea, enlace: ausEnlace, ubicacion: ausUbicacion,
+      aula: primera.grupo || ausAula, asignatura: primera.materia || ausAsignatura, edificio: primera.edificio || ausEdificio, sesiones };
+    if (editando) {
+      const antes = ausencias.find(a => a.id === editando);
+      if (antes) avisarCoberturasQuitadas(antes, antes.horas.filter(h => !ausHoras.includes(h)));
+      setAusencias(prev => prev.map(a => a.id === editando ? { ...a, ...datos, modificada: new Date().toISOString() } : a));
+      setEnviado("Ausencia modificada. Jefatura verá los cambios.");
+    } else {
+      setAusencias(prev => [{ id: Date.now(), ...datos, ts: new Date().toISOString(), leida: false, ...(modoJefatura && ausProfesor !== usuario ? { registradaPor: usuario } : {}) }, ...prev]);
+      setEnviado("Ausencia notificada. Jefatura ha sido informada.");
+    }
+    limpiar();
+    setTimeout(() => setEnviado(""), 4000);
   }
 
-  const misAusencias = modoJefatura ? [] : ausencias.filter(a => a.profesor === fProfesor);
+  function modificar(a) {
+    setEditando(a.id); setErrores([]);
+    setAusProfesor(a.profesor); setAusFecha(isoLocal(a.fecha)); setAusMotivo(a.motivo || MOTIVOS[0]); setAusHoras(a.horas);
+    setAusTarea(a.tarea || ""); setAusEnlace(a.enlace || ""); setAusUbicacion(a.ubicacion || ""); setAusAula(a.aula || ""); setAusAsignatura(a.asignatura || ""); setAusEdificio(a.edificio || "");
+    setConsignas(Object.fromEntries(Object.entries(a.sesiones || {}).map(([h, s]) => [h, s.consigna || ""])));
+    window.scrollTo(0, 0);
+  }
+  function borrar(a) {
+    avisarCoberturasQuitadas(a, a.horas);
+    setAusencias(prev => prev.filter(x => x.id !== a.id));
+    if (editando === a.id) limpiar();
+    setBorrando(null);
+    setEnviado("Ausencia borrada. Si alguien tenía que cubrir tu clase, ya le ha llegado el aviso.");
+    setTimeout(() => setEnviado(""), 4000);
+  }
+
+  const misAusencias = modoJefatura ? [] : ausencias.filter(a => a.profesor === fProfesor).sort((x, y) => isoLocal(y.fecha).localeCompare(isoLocal(x.fecha)));
+  const boton = (fondo, letra) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: fondo === C.white ? `2px solid ${R.azul}` : "none", background: fondo, color: letra, fontSize: 15, fontWeight: 700, cursor: "pointer" });
+  const chip = (txt, fondo, letra = R.noche) => <span style={{ background: fondo, color: letra, borderRadius: 4, padding: "2px 10px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{txt}</span>;
+  const colorNivel = v => v === "Sí" || v === "Registrada" ? R.verde : v === "—" ? R.gris : R.mostaza;
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"} icono="profe-ausente" /></div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : editando ? "Modificar la ausencia" : "Notificar Ausencia"} icono="profe-ausente" /></div>
       {modoJefatura && <p style={{ marginTop: -6, color: C.gray, fontSize: 14 }}>Para cuando un profesor llama al instituto y no puede avisar desde la app. Su guardia y la tarea llegan igual a quien le cubre.</p>}
-      {enviado && (
-        <div style={{ background:"#DDF0F4", border:`2px solid ${C.teal}`, borderRadius:12, padding:16, marginBottom:16, fontWeight:700, color:C.teal, fontSize:15 }}>
-          ✅ Ausencia notificada. Jefatura ha sido informada.
-        </div>
-      )}
-      <div style={{ background:C.white, borderRadius:12, padding:20, boxShadow:"0 2px 10px rgba(0,0,0,0.06)", marginBottom:16 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:16 }}>
+      {enviado && <div role="status" style={{ ...caja(R.verde), padding: 14, marginBottom: 16, fontWeight: 700, color: R.petroleo, fontSize: 16 }}>✅ {enviado}</div>}
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 20, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
           <div>
-            <label style={labelStyle}>Soy el/la profesor/a *</label>
-            <select value={ausProfesor} onChange={e => setAusProfesor(e.target.value)} style={selStyle} disabled={!modoJefatura && profesores.includes(usuario)}>
+            <label style={labelStyle} htmlFor="gd-aus-profe">Soy el/la profesor/a *</label>
+            <select id="gd-aus-profe" value={ausProfesor} onChange={e => { setAusProfesor(e.target.value); setErrores([]); }} style={selStyle} disabled={!!editando || (!modoJefatura && profesores.includes(usuario))}>
               <option value="">— Seleccionar —</option>
               {profesores.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Fecha de ausencia *</label>
-            <input type="date" value={ausFecha} onChange={e => setAusFecha(e.target.value)} style={inpStyle} />
+            <label style={labelStyle} htmlFor="gd-aus-fecha">Fecha de ausencia *</label>
+            <input id="gd-aus-fecha" type="date" min={hoy} value={ausFecha} onChange={e => { setAusFecha(e.target.value); setAusHoras([]); setConsignas({}); setErrores([]); }} style={inpStyle} />
           </div>
-          <div style={{ gridColumn:"1/-1" }}>
-            <label style={labelStyle}>Motivo</label>
-            <select value={ausMotivo} onChange={e => setAusMotivo(e.target.value)} style={selStyle}>
+          <div style={{ gridColumn: "1/-1" }}>
+            <label style={labelStyle} htmlFor="gd-aus-motivo">Motivo</label>
+            <select id="gd-aus-motivo" value={ausMotivo} onChange={e => setAusMotivo(e.target.value)} style={selStyle}>
               {MOTIVOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
         </div>
-        <div style={{ marginBottom:16 }}>
-          <label style={labelStyle}>Horas afectadas * (selecciona todas las que correspondan)</label>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:6 }}>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Horas afectadas *</label>
+            {ausFecha && ausProfesor && <button type="button" onClick={diaCompleto} style={boton(C.white, R.petroleo)}>Día completo</button>}
+          </div>
+          {ausFecha && ausProfesor && (
+            <div style={{ fontSize: 15, color: R.petroleo, margin: "6px 0 2px" }}>
+              {horasClase.length ? <>Tus clases ese día: <b>{horasClase.join(", ")}</b>. Las horas con clase llevan un punto.</> : tieneHorario ? "Ese día no tienes clases en tu horario." : "No hay horario de clases cargado: indica abajo el aula y la asignatura."}
+            </div>
+          )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
             {HORAS_GUARDIA.map(h => {
               const sel = ausHoras.includes(h);
               return (
-                <button key={h} onClick={() => toggleHora(h)}
-                  style={{ padding:"8px 14px", borderRadius:8, border:`2px solid ${sel?C.teal:"#CDE9ED"}`, background:sel?C.teal:C.white, color:sel?"#fff":C.dark, cursor:"pointer", fontWeight:600, fontSize:14, transition:"all .15s", lineHeight:1.2 }}>
-                  {h}<br/><span style={{ fontSize:13, fontWeight:500, opacity:.8 }}>{HORARIO[h]}</span>
+                <button key={h} type="button" onClick={() => toggleHora(h)} aria-pressed={sel}
+                  style={{ minHeight: 48, padding: "6px 12px", borderRadius: 6, border: `2px solid ${sel ? R.azul : R.turquesaClaro}`, background: sel ? R.azul : C.white, color: sel ? "#fff" : R.petroleo, cursor: "pointer", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+                  {clases[h] ? "• " : ""}{h}<br /><span style={{ fontSize: 13, fontWeight: 400 }}>{HORARIO[h]}</span>
                 </button>
               );
             })}
           </div>
         </div>
-        <div style={{ marginBottom:20 }}>
-          <label style={labelStyle}>Tarea para el profesor sustituto (opcional)</label>
-          <textarea value={ausTarea} onChange={e => setAusTarea(e.target.value)} rows={3}
-            placeholder="Describe qué deben hacer los alumnos, qué material hay preparado..."
-            style={{ ...inpStyle, resize:"vertical" }} />
+
+        {/* Clases afectadas, sacadas del horario, con una consigna para cada una */}
+        {ausHoras.filter(h => h !== "Recreo").length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ background: R.turquesa, color: "#fff", fontWeight: 700, padding: "8px 12px" }}>Clases afectadas</div>
+            <div style={{ display: "grid", gap: 1, background: R.turquesaClaro }}>
+              {ordenar(ausHoras).filter(h => h !== "Recreo").map(h => {
+                const c = clases[h];
+                return (
+                  <div key={h} style={{ background: R.azulClaro, padding: 12, display: "grid", gap: 6 }}>
+                    <div style={{ fontWeight: 700, color: R.petroleo }}>{conTramo(h)} · {c ? `${c.grupo} · ${c.materia || "Clase"} · ${c.aula}${c.edificio ? ` · Edificio ${c.edificio}` : ""}` : "No está en tu horario"}</div>
+                    <label style={{ fontSize: 14, color: R.petroleo }} htmlFor={`gd-consigna-${h}`}>Consigna para quien cubra esta clase (opcional)</label>
+                    <textarea id={`gd-consigna-${h}`} rows={2} value={consignas[h] || ""} onChange={e => setConsignas(v => ({ ...v, [h]: e.target.value }))}
+                      placeholder={ausTarea ? `Si la dejas vacía, se usa la tarea general: «${ausTarea.slice(0, 50)}»` : "Qué tiene que hacer el grupo en esta clase"} style={{ ...inpStyle, resize: "vertical" }} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle} htmlFor="gd-aus-tarea">Tarea general para todas las clases (opcional)</label>
+          <textarea id="gd-aus-tarea" value={ausTarea} onChange={e => setAusTarea(e.target.value)} rows={2}
+            placeholder="Se usa en las clases que no tengan su propia consigna" style={{ ...inpStyle, resize: "vertical" }} />
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:14, marginBottom:20 }}>
+        {sinHorario.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <div style={{ gridColumn: "1/-1", fontSize: 15, color: R.petroleo }}>Datos de la clase para {sinHorario.join(", ")}, que no está en el horario:</div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-edificio">Edificio del aula</label>
+              <select id="gd-aus-edificio" value={ausEdificio} onChange={e => setAusEdificio(e.target.value)} style={selStyle}>
+                <option value="">— Seleccionar —</option>
+                {EDIFICIOS.map(e => <option key={e} value={e}>Edificio {e}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-aula">Grupo o aula</label>
+              <input id="gd-aus-aula" type="text" value={ausAula} onChange={e => setAusAula(e.target.value)} placeholder="3º ESO B, Sala 5, Taller 2..." style={inpStyle} />
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-asig">Asignatura o función</label>
+              <input id="gd-aus-asig" type="text" value={ausAsignatura} onChange={e => setAusAsignatura(e.target.value)} placeholder="Matemáticas, Inglés, Tutoría..." style={inpStyle} />
+            </div>
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
           <div>
-            <label style={labelStyle}>Edificio del aula</label>
-            <select value={ausEdificio} onChange={e => setAusEdificio(e.target.value)} style={selStyle}>
-              <option value="">— Seleccionar —</option>
-              {["A","B","C"].map(e => <option key={e} value={e}>Edificio {e}</option>)}
-            </select>
+            <label style={labelStyle} htmlFor="gd-aus-enlace">Enlace a recursos (opcional)</label>
+            <input id="gd-aus-enlace" type="url" value={ausEnlace} onChange={e => setAusEnlace(e.target.value)} placeholder="https://drive.google.com/..." style={inpStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Aula donde imparto clase (importante para el profesor de guardia)</label>
-            <input type="text" value={ausAula} onChange={e => setAusAula(e.target.value)}
-              placeholder="3ºB, Sala 5, Taller 2..."
-              style={inpStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Asignatura o función</label>
-            <input type="text" value={ausAsignatura} onChange={e => setAusAsignatura(e.target.value)}
-              placeholder="Matemáticas, Inglés, Tutoría..."
-              style={inpStyle} />
-          </div>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
-          <div>
-            <label style={labelStyle}>Enlace a recursos (opcional)</label>
-            <input type="url" value={ausEnlace} onChange={e => setAusEnlace(e.target.value)}
-              placeholder="https://drive.google.com/..."
-              style={inpStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Ubicación del material (opcional)</label>
-            <input type="text" value={ausUbicacion} onChange={e => setAusUbicacion(e.target.value)}
-              placeholder="Conserjería, Mi despacho, Fotocopias..."
-              style={inpStyle} />
+            <label style={labelStyle} htmlFor="gd-aus-ubic">Ubicación del material (opcional)</label>
+            <input id="gd-aus-ubic" type="text" value={ausUbicacion} onChange={e => setAusUbicacion(e.target.value)} placeholder="Conserjería, Mi despacho, Fotocopias..." style={inpStyle} />
           </div>
         </div>
-        <button onClick={enviar} disabled={!ausProfesor || !ausFecha || ausHoras.length === 0}
-          style={{ width:"100%", padding:14, borderRadius:10, border:"none", background:(!ausProfesor||!ausFecha||ausHoras.length===0)?"#EBF0F6":C.salmon, color:"#fff", fontWeight:700, fontSize:15, cursor:(!ausProfesor||!ausFecha||ausHoras.length===0)?"not-allowed":"pointer" }}>
-          <Ti tam={22}>{modoJefatura ? "📞 Registrar la ausencia" : "📢 Notificar Ausencia a Jefatura"}</Ti>
-        </button>
+        {errores.length > 0 && (
+          <div role="alert" style={{ ...caja(R.mostaza), padding: "10px 14px", marginBottom: 14, color: R.noche }}>
+            {errores.map(e => <div key={e} style={{ fontSize: 15, fontWeight: 600 }}>⚠️ {e}</div>)}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <Btn onClick={enviar} style={{ flex: "1 1 260px", minHeight: 52 }}>
+            <Ic n="profe-ausente" tam={22} />{editando ? "Guardar los cambios" : modoJefatura ? "Registrar ausencia" : "Notificar Ausencia a Jefatura"}
+          </Btn>
+          {editando && <button type="button" onClick={limpiar} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 16, cursor: "pointer" }}>Cancelar</button>}
+        </div>
+        <p style={{ fontSize: 14, color: R.petroleo, margin: "12px 0 0" }}>Avísalo con antelación siempre que puedas. Su tramitación depende de las normas del centro y de la aprobación del equipo directivo.</p>
       </div>
+
       {misAusencias.length > 0 && (
         <div>
-          <h3 style={{ color:C.dark }}>Mis ausencias notificadas</h3>
-          {misAusencias.map(a => (
-            <div key={a.id} style={{ background:C.white, borderRadius:10, padding:14, marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderLeft:`4px solid ${C.salmon}` }}>
-              <div style={{ fontWeight:700, color:C.dark }}><Ic n="fecha-hora" tam={20} />{new Date(a.fecha).toLocaleDateString("es-ES")} · {a.motivo}</div>
-              <div style={{ fontSize:14, color:C.gray, marginTop:4 }}>Horas: {a.horas.join(", ")}</div>
-              {a.aula && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="por-curso" tam={20} />Aula: {a.aula}</div>}
-              {a.asignatura && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="aula" tam={20} />Asignatura: {a.asignatura}</div>}
-              {a.tarea && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />Tarea: {a.tarea}</div>}
-              {a.enlace && <div style={{ fontSize:14, color:C.blue, marginTop:4, background:"#DDF0F4", borderRadius:6, padding:"6px 10px" }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color:C.blue, textDecoration:"underline" }}>Ver recursos</a></div>}
-              {a.ubicacion && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="edificio" tam={20} />Ubicación: {a.ubicacion}</div>}
-              <div style={{ fontSize:13, color:C.gray, marginTop:4 }}>Notificado el {fmt(a.ts)}</div>
-            </div>
-          ))}
+          <h3 style={{ color: R.petroleo, fontSize: 20 }}>Mis ausencias notificadas</h3>
+          {misAusencias.map(a => {
+            const fecha = isoLocal(a.fecha);
+            const consolidada = ausenciaConsolidada(a);
+            const res = resumenAusencia(a, coberturas);
+            return (
+              <div key={a.id} data-ausencia={a.id} style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${consolidada ? R.gris : R.turquesa}`, padding: 14, marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 17 }}><Ic n="fecha-hora" tam={22} />{parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })} · {a.motivo}</div>
+                  {chip(consolidada ? "Consolidada" : "Comunicada", consolidada ? R.gris : R.azulClaro, R.petroleo)}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "8px 0", fontSize: 15, color: R.petroleo, alignItems: "center" }}>
+                  Clases cubiertas: {chip(res.cobertura, colorNivel(res.cobertura))} · Consigna: {chip(res.consigna, colorNivel(res.consigna))}
+                </div>
+                <div style={{ display: "grid", gap: 1, background: R.turquesaClaro, border: `1px solid ${R.turquesaClaro}` }}>
+                  {a.horas.map(h => {
+                    const s = enHora(a, h), cubre = coberturas[claveCob(fecha, h, a.id)];
+                    return (
+                      <div key={h} style={{ background: C.white, padding: "8px 10px", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", fontSize: 15, color: R.petroleo }}>
+                        <span><b>{conTramo(h)}</b>{h !== "Recreo" && <> · {[s.aula, s.asignatura, s.sala].filter(Boolean).join(" · ")}</>}{h !== "Recreo" && !s.tarea && <span style={{ color: R.noche }}> · sin consigna</span>}</span>
+                        {h !== "Recreo" && (cubre ? <span style={{ fontWeight: 700 }}>Cubre: {cubre}</span> : chip("Pendiente", R.crema))}
+                      </div>
+                    );
+                  })}
+                </div>
+                {a.enlace && <div style={{ fontSize: 14, marginTop: 6 }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer">{a.enlace}</a></div>}
+                {a.ubicacion && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 4 }}><Ic n="edificio" tam={20} />Material: {a.ubicacion}</div>}
+                <div style={{ fontSize: 13, color: R.petroleo, marginTop: 6 }}>Notificada el {fmt(a.ts)}{a.modificada ? ` · modificada el ${fmt(a.modificada)}` : ""}</div>
+                {!consolidada && (
+                  borrando === a.id
+                    ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10, background: R.crema, padding: 10 }}>
+                        <span style={{ fontWeight: 700, color: R.noche }}>¿Borrar esta ausencia?</span>
+                        <button type="button" onClick={() => borrar(a)} style={boton(R.azul, "#fff")}>Sí, borrar</button>
+                        <button type="button" onClick={() => setBorrando(null)} style={boton(C.white, R.petroleo)}>No</button>
+                      </div>
+                    : <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                        <button type="button" onClick={() => modificar(a)} style={boton(C.white, R.petroleo)}>Modificar</button>
+                        <button type="button" onClick={() => setBorrando(a.id)} style={boton(C.white, R.petroleo)}>Borrar</button>
+                      </div>
+                )}
+                {consolidada && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>Ya ha empezado: no se puede modificar ni borrar. Si hace falta, avisa a Jefatura.</div>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -3901,7 +4289,7 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
 // ═══════════════════════════════════════════════════════════════════════════
 // COORDINACIÓN DIARIA DE AUSENCIAS
 // ═══════════════════════════════════════════════════════════════════════════
-function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia, sustitutosGuardia = {}, coberturas = {}, setCoberturas, HORAS_GUARDIA, ZONAS_CENTRO, C, inpStyle, labelStyle, fechaCoordinacion, setFechaCoordinacion }) {
+function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia, sustitutosGuardia = {}, coberturas = {}, setCoberturas, coberturasPropias = {}, setCoberturasPropias, HORAS_GUARDIA, ZONAS_CENTRO, C, inpStyle, labelStyle, fechaCoordinacion, setFechaCoordinacion }) {
   
   const diasES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   
@@ -4057,7 +4445,7 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
                       {/* QUIÉN CUBRE CADA HORA: sugerencias por prioridad y asignación con un clic */}
                       <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
                         {a.horas.filter(h => h !== "Recreo").sort((x, y) => HORAS.indexOf(x) - HORAS.indexOf(y)).map(h => (
-                          <CubrirClase key={h} fecha={isoLocal(fechaCoordinacion)} hora={h} ausencia={a} equipo={equipoCob} coberturas={coberturas} setCoberturas={setCoberturas} puedeAsignar C={C} />
+                          <CubrirClase key={h} fecha={isoLocal(fechaCoordinacion)} hora={h} ausencia={a} equipo={equipoCob} coberturas={coberturas} setCoberturas={setCoberturas} propias={coberturasPropias} setPropias={setCoberturasPropias} puedeAsignar C={C} />
                         ))}
                       </div>
                     </div>
@@ -4752,7 +5140,7 @@ function EquipoZona({ sit, C }) {
   );
 }
 
-function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, setCoberturas, puedeAsignar = false, usuario = "", C }) {
+function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, setCoberturas, propias = {}, setPropias, puedeAsignar = false, usuario = "", C }) {
   const [ahora, setAhora] = useState(() => new Date());
   const [horaElegida, setHoraElegida] = useState(""); // "" = la hora en curso
   useEffect(() => { const t = setInterval(() => setAhora(new Date()), 15000); return () => clearInterval(t); }, []);
@@ -4776,7 +5164,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
   const zonas = zonasDe(hora);
   const zonasSig = zonasDe(siguiente);
   const ausentesAhora = hora ? ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(hora)) : [];
-  const clasesSinProfe = hora === "Recreo" ? [] : ausentesAhora;
+  const clasesSinProfe = hora === "Recreo" ? [] : ausentesAhora.map(a => enHora(a, hora));
   const sinCubrir = clasesSinProfe.filter(a => !coberturas[claveCob(fecha, hora, a.id)]).length;
   const miClase = usuario && hora ? claseQueCubre(fecha, hora, usuario, coberturas, ausencias) : null;
   const miGuardia = usuario && hora
@@ -4841,7 +5229,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
             <div style={{ fontWeight: 800, color: C.dark, fontSize: 16, marginBottom: 8 }}><Ic n="guardias" tam={22} />{miGuardia.length || miClase ? "Te toca guardia" : "No tienes guardia a esta hora"}</div>
             {miClase && (
               <div style={{ background: "#DDF0F4", border: `2px solid ${C.blue}`, borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontWeight: 800, color: C.blue, fontSize: 15, marginBottom: 6 }}>📋 Jefatura te ha asignado: cubres la clase de {miClase.profesor}{miClase.aula ? ` en ${miClase.aula}` : ""}</div>
+                <div style={{ fontWeight: 800, color: C.blue, fontSize: 15, marginBottom: 6 }}>{esPropia(claveCob(fecha, hora, miClase.id), coberturas, propias) ? "✋ Te la has asignado" : "📋 Jefatura te ha asignado"}: cubres la clase de {miClase.profesor}{miClase.aula ? ` en ${miClase.aula}` : ""}</div>
                 <TareaAusente a={miClase} C={C} />
               </div>
             )}
@@ -4881,7 +5269,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
               {clasesSinProfe.map(a => (
                 <div key={a.id} style={{ display: "grid", gap: 6, alignContent: "start" }}>
                   <TareaAusente a={a} C={C} />
-                  <CubrirClase fecha={fecha} hora={hora} ausencia={a} equipo={equipo} coberturas={coberturas} setCoberturas={setCoberturas} puedeAsignar={puedeAsignar} C={C} />
+                  <CubrirClase fecha={fecha} hora={hora} ausencia={a} equipo={equipo} coberturas={coberturas} setCoberturas={setCoberturas} propias={propias} setPropias={setPropias} puedeAsignar={puedeAsignar} usuario={usuario} C={C} />
                 </div>
               ))}
             </div>
@@ -6306,6 +6694,8 @@ function AppInterna() {
   // Guardias — nuevo sistema
   const [cuadrante, setCuadrante]     = useState({});
   const [coberturas, setCoberturas]   = useState({});
+  // Clases que alguien de guardia se ha asignado él mismo: { "fecha|hora|idAusencia": profesor }
+  const [coberturasPropias, setCoberturasPropias] = useState({});
   const [vistaGalv, setVistaGalv]     = useState({ v: "enviar", k: 0 });
   const [ultimoProfe, setUltimoProfe] = useState(() => { try { return localStorage.getItem(PREFIJO + "ultimo_profe") || ""; } catch { return ""; } });
   useEffect(() => { try { if (ultimoProfe) localStorage.setItem(PREFIJO + "ultimo_profe", ultimoProfe); } catch { /* sin almacenamiento */ } }, [ultimoProfe]); // vista con la que se abre Galvángram
@@ -6356,6 +6746,7 @@ function AppInterna() {
       const ap = await sGet("apoyos_guardia");     if (ap) setApoyosGuardia(ap);
       const su = await sGet("sustitutos_guardia"); if (su) setSustitutosGuardia(su);
       const cob = await sGet("coberturas_clase"); if (cob) setCoberturas(cob);
+      const cobP = await sGet("coberturas_propias"); if (cobP) setCoberturasPropias(cobP);
       const hor = await sGet("horarios_clase"); if (hor) setHorarios(hor);
       const pg = await sGet("profesores_guardia"); if (pg) setProfesoresGuardia(pg);
       const cu = await sGet("cuentas"); if (cu) setCuentas(cu);
@@ -6392,6 +6783,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("guardias",   guardias);   }, [guardias,   loading]);
   useEffect(() => { if (!loading) sSet("cuadrante", cuadrante); }, [cuadrante, loading]);
   useEffect(() => { if (!loading) sSet("coberturas_clase", coberturas); }, [coberturas, loading]);
+  useEffect(() => { if (!loading) sSet("coberturas_propias", coberturasPropias); }, [coberturasPropias, loading]);
   useEffect(() => { if (!loading) sSet("horarios_clase", horarios); }, [horarios, loading]);
   // Pantalla y perfil actuales, para los informes de errores
   useEffect(() => { window.__rumboContexto = { pantalla: perfil ? tab : "entrada", perfil: perfil?.id || "sin entrar" }; }, [perfil, tab]);
@@ -6462,7 +6854,7 @@ function AppInterna() {
     const lista = [...new Set([...profesores, ...DEMO_PROFESORES])];
     setProfesores(lista);
     const ej = datosEjemploGuardias(DEMO_PROFESORES);
-    setCuadrante(ej.cuadrante); setApoyosGuardia(ej.apoyos); setSustitutosGuardia(ej.sustitutos); setAusencias(ej.ausencias); setCoberturas({});
+    setCuadrante(ej.cuadrante); setApoyosGuardia(ej.apoyos); setSustitutosGuardia(ej.sustitutos); setAusencias(ej.ausencias); setCoberturas(ej.coberturas); setCoberturasPropias(ej.propias);
     setHorarios(horarioEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort()));
     setFirmas(ej.firmas); setListas([]);
     if (ej.sugerido) { setUsuario(ej.sugerido); setUltimoProfe(ej.sugerido); }
@@ -6649,6 +7041,7 @@ function AppInterna() {
           { id: "mi_guardia",     label: "🔄 Mi Guardia Hoy", color: "#06b6d4" },
           { id: "notif_ausencia", label: "📢 Notificar Ausencia", color: "#ec4899" },
           { id: "guardias_ver",   label: "📄 Ver Guardias", color: "#63CBA1" },
+          { id: "mis_coberturas", label: "📋 Mis Coberturas", color: R.morado },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "jefatura"
@@ -7146,7 +7539,12 @@ function AppInterna() {
 
         {/* ── Ahora: la hora en curso (profesorado y jefatura) ── */}
         {tab === "ahora" && (
-          <AhoraGuardias profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} coberturas={coberturas} setCoberturas={setCoberturas} puedeAsignar={perfil.id === "jefatura"} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : ""} C={C} />
+          <AhoraGuardias profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} coberturas={coberturas} setCoberturas={setCoberturas} propias={coberturasPropias} setPropias={setCoberturasPropias} puedeAsignar={perfil.id === "jefatura"} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : ""} C={C} />
+        )}
+
+        {/* ── Mis coberturas (profesor) ── */}
+        {tab === "mis_coberturas" && (
+          <MisCoberturas usuario={fProfesor || usuario} coberturas={coberturas} propias={coberturasPropias} ausencias={ausencias} C={C} />
         )}
 
         {/* ── Ver Guardias (profesor) ── */}
@@ -7416,7 +7814,7 @@ function AppInterna() {
         {/* ── Baños live (Jefatura) ── */}
         {/* ── Mi Guardia Hoy (Profesor) ── */}
         {tab === "mi_guardia" && (
-          <MiGuardiaHoy medidas={medidas} onMarcarMedida={marcarMedida} coberturas={coberturas} firmas={firmas} setFirmas={setFirmas} listas={listas} setListas={setListas} alumnos={alumnos} profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} fProfesor={fProfesor} setFProfesor={setFProfesor} C={C} selStyle={selStyle} labelStyle={labelStyle} usuario={usuario} setShowCuadrante={setShowCuadrante} diaSeleccionadoGuardias={diaSeleccionadoGuardias} setDiaSeleccionadoGuardias={setDiaSeleccionadoGuardias} />
+          <MiGuardiaHoy medidas={medidas} onMarcarMedida={marcarMedida} coberturas={coberturas} setCoberturas={setCoberturas} propias={coberturasPropias} setPropias={setCoberturasPropias} firmas={firmas} setFirmas={setFirmas} listas={listas} setListas={setListas} alumnos={alumnos} profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} fProfesor={fProfesor} setFProfesor={setFProfesor} C={C} selStyle={selStyle} labelStyle={labelStyle} usuario={usuario} setShowCuadrante={setShowCuadrante} diaSeleccionadoGuardias={diaSeleccionadoGuardias} setDiaSeleccionadoGuardias={setDiaSeleccionadoGuardias} />
         )}
 
         {/* ── Notificar Ausencia (Profesor) ── */}
@@ -7424,6 +7822,7 @@ function AppInterna() {
           <NotificarAusencia
             usuario={usuario}
             profesores={profesores} ausencias={ausencias} setAusencias={setAusencias}
+            horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes}
             ausProfesor={ausProfesor} setAusProfesor={setAusProfesor}
             ausMotivo={ausMotivo} setAusMotivo={setAusMotivo}
             ausFecha={ausFecha} setAusFecha={setAusFecha}
@@ -7466,6 +7865,8 @@ function AppInterna() {
             sustitutosGuardia={sustitutosGuardia}
             coberturas={coberturas}
             setCoberturas={setCoberturas}
+            coberturasPropias={coberturasPropias}
+            setCoberturasPropias={setCoberturasPropias}
             HORAS_GUARDIA={HORAS_GUARDIA}
             ZONAS_CENTRO={ZONAS_CENTRO}
             C={C}
@@ -7493,6 +7894,7 @@ function AppInterna() {
             {registroTelefono && (
               <NotificarAusencia modoJefatura usuario={usuario}
                 profesores={profesores} ausencias={ausencias} setAusencias={setAusencias}
+                horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes}
                 ausProfesor={ausProfesor} setAusProfesor={setAusProfesor}
                 ausMotivo={ausMotivo} setAusMotivo={setAusMotivo}
                 ausFecha={ausFecha} setAusFecha={setAusFecha}
@@ -7943,6 +8345,8 @@ function AppInterna() {
                 sustitutosGuardia={sustitutosGuardia}
                 coberturas={coberturas}
                 setCoberturas={setCoberturas}
+                coberturasPropias={coberturasPropias}
+                setCoberturasPropias={setCoberturasPropias}
                 HORAS_GUARDIA={HORAS_GUARDIA}
                 ZONAS_CENTRO={ZONAS_CENTRO}
                 C={C} 

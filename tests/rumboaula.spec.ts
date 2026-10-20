@@ -23,7 +23,7 @@ async function entrar(page: Page, texto: string | RegExp) {
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
 }
 const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
-const comoJefatura = (page: Page) => entrar(page, 'Entras como Ana Jiménez')
+const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · convivencia')
 async function salir(page: Page) {
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await expect(page.locator('#gd-otro-profe')).toBeVisible()
@@ -53,9 +53,9 @@ async function recorrerPantallas(page: Page) {
 test.describe('Todas las pantallas se abren sin fallos', () => {
   for (const [perfil, quien] of [
     ['Profesor/a', 'poner partes, guardias'],
-    ['Tutor/a', 'tutor/a de'],
-    ['Jefatura', 'Entras como Ana Jiménez'],
-    ['Administración', 'Entras como Elena Vega'],
+    ['Tutor/a', 'tutoría de'],
+    ['Jefatura', 'Ana Jiménez · convivencia'],
+    ['Administración', 'Elena Vega · alumnado'],
   ] as const) {
     test(perfil, async ({ page }) => {
       const errores = vigilarErrores(page)
@@ -182,7 +182,7 @@ test('Informar de un problema: siempre disponible', async ({ page }) => {
 test('Preguntas frecuentes: desde la entrada (cómo instalar) y desde dentro de la app', async ({ page, isMobile }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
-  await page.getByRole('button', { name: /Cómo instalarla en el móvil o el ordenador/ }).click()
+  await page.getByRole('button', { name: /Instalar la app/ }).click()
   const faq = page.getByRole('dialog', { name: 'Preguntas frecuentes' })
   await expect(faq).toBeVisible()
   // La guía de instalación sale abierta y elige el dispositivo
@@ -204,7 +204,7 @@ test('Preguntas frecuentes: desde la entrada (cómo instalar) y desde dentro de 
 
 test('Manual de uso: enlazado desde la app y con sus imágenes', async ({ page }) => {
   await empezar(page)
-  await expect(page.getByRole('link', { name: '📘 Manual de uso' })).toHaveAttribute('href', '/manual/')
+  await expect(page.getByRole('link', { name: /Manual de uso/ })).toHaveAttribute('href', '/manual/')
   await page.goto('/manual/')
   await expect(page.getByRole('heading', { name: 'Manual de uso' })).toBeVisible()
   // Todas las imágenes del manual existen
