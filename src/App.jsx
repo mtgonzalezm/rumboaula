@@ -324,6 +324,8 @@ async function hashClave(nombre, clave) {
 }
 
 // ─── Pantalla de entrada: nombre → clave → perfil ───────────────────────────
+// Difumina los cuatro bordes de una imagen para que se funda con el fondo
+const MASCARA_BORDES = "linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%)";
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
   const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("galvandesk:globo"); } catch { return MODO_DEMO; } });
@@ -486,7 +488,9 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
       {/* Ilustración y tarjeta de acceso */}
       <div style={{ flex: 1, display: "flex" }}>
         <div className="gd-portada-hero" style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(340px, 440px)", gap: 28, alignItems: "center", maxWidth: 1280, margin: "0 auto", padding: "16px 40px" }}>
-          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "auto", maxHeight: "calc(100vh - 175px)", objectFit: "contain", display: "block" }} />
+          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "auto", height: "auto", maxWidth: "100%", maxHeight: "calc(100vh - 175px)", justifySelf: "center", display: "block",
+            // Bordes difuminados para que la ilustración se funda con el fondo
+            maskImage: MASCARA_BORDES, WebkitMaskImage: MASCARA_BORDES, maskComposite: "intersect", WebkitMaskComposite: "source-in" }} />
           <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 12px 32px rgba(22, 51, 63, .14)", padding: "14px 22px 8px", display: "grid", gap: 8 }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontFamily: TITULO, fontSize: 28, color: R.petroleo, lineHeight: 1.1 }}>Acceso</div>
