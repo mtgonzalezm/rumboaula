@@ -324,8 +324,6 @@ async function hashClave(nombre, clave) {
 }
 
 // ─── Pantalla de entrada: nombre → clave → perfil ───────────────────────────
-// Difumina los cuatro bordes de una imagen para que se funda con el fondo
-const MASCARA_BORDES = "linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%), linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%)";
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
   const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("galvandesk:globo"); } catch { return MODO_DEMO; } });
@@ -380,6 +378,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const accesoDemo = MODO_DEMO ? (
     <div style={{ display: "grid", gap: 8 }}>
       <div style={{ fontSize: 15, color: R.noche }}><b>Elige un perfil</b> · sin clave y con datos de ejemplo</div>
+      <div className="gd-perfiles" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
       {perfilesDemo.map(b => (
         <button key={b.txt} onClick={() => entrarDemo(b.accion)}
           style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", minHeight: 48, padding: "4px 12px", background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
@@ -389,6 +388,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
           </span>
         </button>
       ))}
+      </div>
       {/* Entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
       {(ejemploListo || profesores.length > 4) && (() => {
         const conAvisos = profesores.filter(p => sinLeerPor[p]).sort((a, b) => sinLeerPor[b].urgentes - sinLeerPor[a].urgentes || a.localeCompare(b));
@@ -455,14 +455,18 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   );
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#E3EAF0", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden",
+      // La ilustración ocupa todo el fondo; encima, la cabecera y la tarjeta de acceso
+      background: "#E3EAF0 url(/portada-ilustracion.jpg) left 30% center / cover no-repeat" }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }
         .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
         .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
         .gd-corto { display: none; }
         @media (max-width: 860px) {
-          .gd-portada-hero { grid-template-columns: 1fr !important; padding: 12px 16px 24px !important; }
-          .gd-portada-ilu { display: none !important; }
+          .gd-portada-escena { padding: 0 !important; align-items: stretch !important; }
+          .gd-portada-banda { grid-template-columns: 1fr !important; padding: 14px 12px !important; gap: 10px !important; }
+          .gd-portada-titulo div:last-child { display: none; }
+          .gd-perfiles { grid-template-columns: 1fr !important; }
           .gd-portada-cab { padding: 8px 16px !important; }
           .gd-portada-cab h1 img { height: 52px !important; }
           .gd-portada-menu { width: 100%; justify-content: space-between; gap: 0 !important; }
@@ -473,9 +477,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
       {globoBienvenida}
       <AvisoDemo compacto />
 
-      {/* Cabecera: logotipo y ayuda */}
-      <div style={{ background: "#fff" }}>
-      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", flexWrap: "wrap", padding: "8px 40px", maxWidth: 1280, margin: "0 auto" }}>
+      {/* Tarjeta centrada sobre la ilustración: cabecera, banda de acceso y enlaces */}
+      <div className="gd-portada-escena" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 24px 28px" }}>
+      <div className="gd-portada-tarjeta" style={{ width: "100%", maxWidth: 1000, background: "rgba(255, 255, 255, .97)", boxShadow: "0 24px 50px rgba(22, 51, 63, .28)" }}>
+      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", flexWrap: "wrap", padding: "14px 32px" }}>
         <h1 style={{ margin: 0 }}><Logo alto={64} /></h1>
         <nav aria-label="Ayuda" className="gd-portada-menu" style={{ display: "flex", flexWrap: "wrap", gap: "0 22px", alignItems: "center" }}>
           {menu.map(m => m.href
@@ -483,20 +488,14 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
             : <button key={m.txt} type="button" onClick={m.accion} aria-label={m.txt}><Icono nombre={m.icono} tam={34} /><span className="gd-largo">{m.txt}</span><span className="gd-corto">{m.corto}</span></button>)}
         </nav>
       </header>
-      </div>
 
-      {/* Ilustración y tarjeta de acceso */}
-      <div style={{ flex: 1, display: "flex" }}>
-        <div className="gd-portada-hero" style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(340px, 440px)", gap: 28, alignItems: "center", maxWidth: 1280, margin: "0 auto", padding: "16px 40px" }}>
-          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "auto", height: "auto", maxWidth: "100%", maxHeight: "calc(100vh - 175px)", justifySelf: "center", display: "block",
-            // Bordes difuminados para que la ilustración se funda con el fondo
-            maskImage: MASCARA_BORDES, WebkitMaskImage: MASCARA_BORDES, maskComposite: "intersect", WebkitMaskComposite: "source-in" }} />
-          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 12px 32px rgba(22, 51, 63, .14)", padding: "14px 22px 8px", display: "grid", gap: 8 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: TITULO, fontSize: 28, color: R.petroleo, lineHeight: 1.1 }}>Acceso</div>
-              <div style={{ fontSize: 15, marginTop: 2 }}>{CENTRO} · {CIUDAD}</div>
-            </div>
-
+        <div className="gd-portada-banda" style={{ background: `linear-gradient(100deg, ${R.azul} 0%, ${R.petroleo} 60%, #3F7F98 100%)`, padding: "22px 32px", display: "grid", gridTemplateColumns: "minmax(170px, 230px) minmax(0, 1fr)", gap: 28, alignItems: "center" }}>
+          <div className="gd-portada-titulo" style={{ color: "#fff" }}>
+            <div style={{ fontFamily: TITULO, fontSize: 34, lineHeight: 1.1 }}>Acceso</div>
+            <div style={{ fontSize: 15, marginTop: 6 }}>{CENTRO} · {CIUDAD}</div>
+            <div style={{ fontSize: 16, marginTop: 16, borderTop: "1px solid rgba(255,255,255,.4)", paddingTop: 12 }}>Todo lo que importa en tu aula</div>
+          </div>
+          <div style={{ background: "#fff", borderRadius: 8, padding: "12px 16px 4px", display: "grid", gap: 8 }}>
             {paso === "nombre" && !conClave && accesoDemo}
             {paso === "nombre" && MODO_DEMO && conClave && (
               <button type="button" onClick={() => { setConClave(false); setError(""); }} style={{ ...enlaceAcceso, justifySelf: "center", fontWeight: 700 }}>
@@ -570,6 +569,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
             {verOlvido && <div style={{ fontSize: 15, color: R.noche, background: R.crema, padding: "8px 12px" }}>Pide a Administración del centro que restablezca tu clave. La próxima vez que entres crearás una nueva.</div>}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
@@ -1211,10 +1211,10 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{fmt(p.ts)}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{p.hora || "-"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", fontWeight: 600 }}>{p.alumno}{p.esGrupal ? <span style={{ marginLeft: 4, fontSize: 13, color: C.teal }}>◆grupal</span> : null}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.curso}</td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{p.curso}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{tutorDeParte(p, tutores) || "—"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.tipo}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 13 }}>{g.label}</span></td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "4px 10px", borderRadius: 4, fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, lineHeight: 1.2 }}>{g.label}</span></td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.profesor}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.descripcion.slice(0, 60)}{p.descripcion.length > 60 ? "…" : ""}</td>
                   </tr>
