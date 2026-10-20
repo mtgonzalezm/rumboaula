@@ -392,3 +392,22 @@ test('Datos del centro: Administración cambia el nombre y la localidad y salen 
   await sinFalloEnPantalla(page)
   expect(errores).toEqual([])
 })
+
+test('Horario del centro: Administración cambia las horas de una franja y se usan en la app', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoAdmin(page)
+  await page.getByLabel('Inicio de 1ª hora').fill('08:00')
+  await page.getByLabel('Fin de 1ª hora').fill('08:55')
+  expect((await leer(page, 'horario_centro'))['1ª hora']).toBe('8:00 – 8:55')
+  // Una franja que acaba antes de empezar avisa y no se usa
+  await page.getByLabel('Fin de 2ª hora').fill('09:00')
+  await expect(page.getByText(/2ª hora termina antes de empezar/)).toBeVisible()
+  // El profesorado ve la hora nueva al poner un parte; la 2ª hora sigue con la inicial
+  await salir(page)
+  await comoProfe(page)
+  await expect(page.locator('option', { hasText: '1ª hora · 8:00 – 8:55' }).first()).toBeAttached()
+  await expect(page.locator('option', { hasText: '2ª hora · 9:25 – 10:20' }).first()).toBeAttached()
+  await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
