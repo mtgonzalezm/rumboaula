@@ -1,15 +1,9 @@
-/* Letra de la app: Atkinson Hyperlegible (licencia SIL OFL en public/fonts/OFL.txt), servida desde la propia app */
+/* Letra de los títulos, servida desde la propia app (licencia SIL OFL en public/fonts).
+   El texto usa Helvetica o Arial, como Raíces */
 @font-face {
-  font-family: "Atkinson Hyperlegible";
-  src: url("/fonts/atkinson-hyperlegible-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  src: url("/fonts/atkinson-hyperlegible-700.woff2") format("woff2");
-  font-weight: 600 800;
+  font-family: "Montserrat";
+  src: url("/fonts/montserrat-variable.woff2") format("woff2");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }

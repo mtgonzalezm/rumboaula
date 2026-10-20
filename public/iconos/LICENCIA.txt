@@ -1,0 +1,5 @@
+Iconos de RumboAula
+
+Dibujos de Font Awesome Free 6.5.2 (https://fontawesome.com), licencia CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/). Rellenos en blanco o turquesa, con contorno
+azul petróleo y dentro de un círculo mostaza, al estilo de Raíces.

@@ -13,16 +13,41 @@ const C = {
   amber: "#d97706", amberBg: "#fef3c7",
 };
 
-// Letra de la app (guardada en public/fonts, ver index.css)
-const FUENTE = `"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif`;
+// Letra del texto como la de Raíces; los títulos van en Montserrat (guardada en public/fonts, ver index.css)
+const FUENTE = `"Helvetica Neue", Helvetica, Arial, sans-serif`;
 
-// Color de texto (azul oscuro o blanco) que mejor se lee sobre un fondo de la paleta
-const luminancia = hex => {
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+// Paleta de Raíces (medida en sus pantallas).
+// Sobre turquesa, mostaza y verde el texto va en «noche»: en blanco no se leería.
+const R = {
+  petroleo: "#2B647E", noche: "#16333F", azul: "#275D8C", turquesa: "#65B9C9", turquesaClaro: "#CDE9ED",
+  mostaza: "#F6C862", verde: "#63CBA1", azulClaro: "#DDF0F4", crema: "#FDF1D9", gris: "#EBF0F6",
 };
-const contraste = (a, b) => { const [x, y] = [luminancia(a), luminancia(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
-const textoSobre = fondo => contraste(C.dark, fondo) >= contraste("#ffffff", fondo) ? C.dark : "#ffffff";
+// Gravedad de menos a más intensa, con colores de Raíces
+const COLOR_GRAVEDAD = { leve: R.verde, grave: R.mostaza, muy_grave: R.azul };
+const TITULO = `"Montserrat", "Segoe UI", system-ui, sans-serif`;
+
+// Título de bloque como los de Raíces: título grande, subtítulo, dibujo a la derecha y línea azul debajo
+const TituloBloque = ({ titulo, sub, icono, nivel = "h2" }) => {
+  const Tag = nivel;
+  return (
+    <div style={{ marginBottom: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <Tag className="gd-titulo-bloque" style={{ margin: 0, fontFamily: TITULO, fontWeight: 400, fontSize: 34, lineHeight: 1.1, color: R.petroleo, textWrap: "balance" }}>{titulo}</Tag>
+          {sub && <div style={{ fontSize: 17, color: R.petroleo, marginTop: 6 }}>{sub}</div>}
+        </div>
+        {icono && <Icono nombre={icono} tam={56} />}
+      </div>
+      <div aria-hidden="true" style={{ height: 5, background: R.azul, width: "70%", marginTop: 10 }} />
+    </div>
+  );
+};
+
+// Enlace «Ver todos ▷» de Raíces: texto azul con triángulo mostaza
+const triangulo = { display: "inline-block", width: 0, height: 0, borderLeft: `11px solid ${R.mostaza}`, borderTop: "8px solid transparent", borderBottom: "8px solid transparent" };
+
+// Caja de aviso: fondo blanco, contorno del color del aviso y franja más gruesa a la izquierda
+const caja = color => ({ background: C.white, border: `3px solid ${color}`, borderLeftWidth: 12 });
 
 // ─── Datos demo ──────────────────────────────────────────────────────────────
 const DEMO_ALUMNOS = [
@@ -463,7 +488,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 }
 const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
   <div role="note" style={compacto
-    ? { background: "#fef3c7", color: "#92400e", fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px", borderBottom: "1px solid #fbbf24" }
+    ? { background: R.mostaza, color: R.noche, fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px" }
     : { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 600, borderRadius: 10, padding: "10px 12px", marginBottom: 20, border: "1px solid #fbbf24", lineHeight: 1.4 }}>
     ⚠️ Versión de demostración: no introducir datos reales de alumnos ni familias.
     {!compacto && <div style={{ marginTop: 6, fontWeight: 500 }}>Sigue los pasos <b>1</b> y <b>2</b> del recuadro verde de abajo. No necesitas nombre ni clave.</div>}
@@ -524,7 +549,7 @@ function iconoDe(texto) {
   return icono ? { icono, resto } : { icono: null, resto: texto };
 }
 const Icono = ({ nombre, tam = 24, style = {} }) => (
-  <img src={`/iconos/${nombre}.png`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: Math.round(tam * 0.22), flexShrink: 0, display: "block", ...style }} />
+  <img src={`/iconos/${nombre}.svg`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: "50%", flexShrink: 0, display: "block", ...style }} />
 );
 function ConIcono({ texto, tam = 24, gap = 8 }) {
   const { icono, resto } = iconoDe(texto);
@@ -535,7 +560,7 @@ function ConIcono({ texto, tam = 24, gap = 8 }) {
 
 // Icono pequeño dentro de un texto, y texto que cambia sus emojis por iconos
 const EMOJI_EN_TEXTO = { "⚠️": "aviso", "⚠": "aviso", "🛡️": "titular", "🛡": "titular", "👥": "apoyo", "🔁": "sustituto", "📚": "deberes", "🏫": "aula", "👤": "titular", "📍": "edificio", "📌": "material", "✍️": "firmar", "✍": "firmar", "📋": "pasar-lista", "🕐": "hora-reloj", "⏰": "hora-reloj", "📅": "fecha-hora", "📝": "ejercicios", "📞": "profe-ausente", "📢": "profe-ausente", "🚻": "banos", "🔄": "guardias", "🔔": "alertas" };
-const Ic = ({ n, tam = 20 }) => <img src={`/iconos/${n}.png`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: Math.round(tam * 0.22), display: "inline-block", verticalAlign: "middle", margin: "0 4px 2px 0" }} />;
+const Ic = ({ n, tam = 20 }) => <img src={`/iconos/${n}.svg`} alt="" width={tam} height={tam} style={{ width: tam, height: tam, borderRadius: "50%", display: "inline-block", verticalAlign: "middle", margin: "0 4px 2px 0" }} />;
 const RE_EMOJI_TEXTO = new RegExp("(" + Object.keys(EMOJI_EN_TEXTO).sort((a, b) => b.length - a.length).map(e => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\s?", "u");
 function partirEmojis(texto, tam) {
   const trozos = String(texto).split(RE_EMOJI_TEXTO);
@@ -565,7 +590,7 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setAbierto(v => !v)} aria-haspopup="listbox" aria-expanded={abierto} title="Cambiar de perfil"
-        style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minHeight: 44, padding: "4px 12px 4px 6px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
+        style={{ display: "flex", alignItems: "center", gap: 8, background: R.azulClaro, border: "none", color: R.petroleo, borderRadius: 22, minHeight: 44, padding: "4px 14px 4px 6px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
         <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 10 }}>▼</span>
       </button>
       {abierto && (
@@ -2404,18 +2429,18 @@ function AyudaPantalla({ id, C }) {
   const cerrar = () => { setAbierta(false); try { localStorage.setItem(clave, "1"); } catch { /* sin almacenamiento */ } };
   if (!abierta) return (
     <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-      <button onClick={() => setAbierta(true)} style={{ background: C.white, border: `2px solid ${C.blue}`, color: C.dark, borderRadius: 22, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="como-se-usa" tam={24} />Cómo se usa</button>
+      <button onClick={() => setAbierta(true)} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 6px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={24} />Cómo se usa <span aria-hidden="true" style={{ width: 0, height: 0, borderLeft: `10px solid ${R.mostaza}`, borderTop: "7px solid transparent", borderBottom: "7px solid transparent" }} /></button>
     </div>
   );
   return (
-    <div className="no-print" role="note" style={{ background: "#EEF5F8", border: `2px solid ${C.blue}`, borderLeftWidth: 8, borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+    <div className="no-print" role="note" style={{ background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, padding: "12px 16px", marginBottom: 16, color: R.petroleo }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ fontWeight: 700, color: C.dark, fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={28} />Cómo se usa: {ayuda.titulo}</div>
-        <button onClick={cerrar} style={{ background: C.white, color: C.dark, border: `2px solid ${C.blue}`, borderRadius: 10, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
+        <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="como-se-usa" tam={28} />Cómo se usa: {ayuda.titulo}</div>
+        <button onClick={cerrar} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>Entendido</button>
       </div>
       {ayuda.pasos.length === 1
-        ? <p style={{ margin: "8px 0 0", fontSize: 16, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
-        : <ol style={{ margin: "8px 0 0", paddingLeft: 22, fontSize: 16, color: C.dark, lineHeight: 1.5 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
+        ? <p style={{ margin: "8px 0 0", fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>{ayuda.pasos[0]}</p>
+        : <ol style={{ margin: "8px 0 0", paddingLeft: 22, fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>{ayuda.pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>}
     </div>
   );
 }
@@ -2483,15 +2508,15 @@ function FrasesRapidas({ tipo, tipificacion, texto, setTexto }) {
   const anadir = f => setTexto(prev => { const t = prev.trim(); return t ? `${t} ${f}` : f; });
   return (
     <div style={{ background: C.white, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: C.dark, marginBottom: 10, lineHeight: 1.4 }}>
-        💬 Frases rápidas <span style={{ fontWeight: 400, color: C.dark }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
+      <div style={{ fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 10, lineHeight: 1.4 }}>
+        💬 Frases rápidas <span style={{ fontWeight: 400, color: R.petroleo }}>— pulsa para añadirla; luego puedes cambiar el texto{tipificacion ? "" : ". Elige una tipificación para ver frases más concretas"}</span>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {frases.map(f => {
           const usada = texto.includes(f);
           return (
             <button key={f} type="button" onClick={() => !usada && anadir(f)} disabled={usada}
-              style={{ fontSize: 15, lineHeight: 1.3, minHeight: 44, padding: "8px 14px", borderRadius: 22, border: `2px solid ${usada ? "#e2e8f0" : C.teal}`, background: usada ? "#f3f4f6" : C.white, color: C.dark, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
+              style={{ fontSize: 15, lineHeight: 1.3, minHeight: 44, padding: "8px 14px", borderRadius: 22, border: `2px solid ${usada ? "#e2e8f0" : R.turquesa}`, background: usada ? R.gris : C.white, color: R.noche, cursor: usada ? "default" : "pointer", textAlign: "left" }}>
               {usada ? "✓ " : "+ "}{f}
             </button>
           );
@@ -2951,7 +2976,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                       })}
                       {g.hora !== "Recreo" && (
                         <span style={{ position: "relative", display: "inline-block" }}>
-                        <img src="/iconos/lista-otro-grupo.png" alt="" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: 5, pointerEvents: "none" }} />
+                        <img src="/iconos/lista-otro-grupo.svg" alt="" style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", pointerEvents: "none" }} />
                         <select aria-label="Pasar lista de otro grupo" value="" onChange={e => e.target.value && setListaAbierta({ hora: g.hora, curso: e.target.value })}
                           style={{ padding: "9px 10px 9px 38px", borderRadius: 10, border: "1px solid #d1d5db", fontSize: 12, color: C.gray, background: "#fff" }}>
                           <option value="">Pasar lista de otro grupo…</option>
@@ -5886,8 +5911,8 @@ function AppInterna() {
   const selStyle = { ...inpStyle };
   const labelStyle = { display: "block", fontWeight: 600, marginBottom: 6, color: C.dark, fontSize: 13 };
   // Campos de la pantalla principal (rediseño): 48 px de alto, letra de 16 px y borde que se ve
-  const campoStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${C.gray}`, fontSize: 16, lineHeight: 1.4, boxSizing: "border-box", background: C.white, color: C.dark };
-  const etiquetaStyle = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontWeight: 700, marginBottom: 8, color: C.dark, fontSize: 15 };
+  const campoStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, lineHeight: 1.4, fontFamily: "inherit", boxSizing: "border-box", background: C.white, color: R.noche };
+  const etiquetaStyle = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontWeight: 700, marginBottom: 8, color: R.petroleo, fontSize: 15 };
 
   // ── Pantalla de carga ──
   if (loading) return (
@@ -5974,195 +5999,153 @@ function AppInterna() {
         // Admin no necesita tabs adicionales, solo usa los módulos
       ];
 
+  // Módulos de cada perfil (franja turquesa o menú lateral)
+  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : (id === "guardias" ? "mi_guardia" : "mensajeria")); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : (id === "guardias" ? "cuadrante" : "mensajeria")); };
+  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : "admin_profesores"); };
+  const modulos = perfil.id === "profesor"
+    ? [
+        { id: "alumnos",  label: "👨‍🎓 Partes" },
+        { id: "guardias", label: "🔄 Guardias" },
+        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+      ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
+    : perfil.id === "jefatura"
+    ? [
+        { id: "alumnos",  label: "📋 Partes & Alumnos" },
+        { id: "guardias", label: "🔄 Guardias & Ausencias" },
+        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+      ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
+    : perfil.id === "admin"
+    ? [
+        { id: "alumnos",  label: "👥 Alumnos" },
+        { id: "guardias", label: "👨‍🏫 Profesores" },
+      ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
+    : [];
+  const moduloActivo = perfil.id === "profesor" ? moduloProfesor : moduloJefatura;
+
   return (
     <CorreosCentroCtx.Provider value={{ correos: correosCentro, setCorreos: setCorreosCentro, profes: profesores.map(p => ({ nombre: p, email: cuentas[p]?.email || (MODO_DEMO ? correoDemo(p) : "") })) }}>
-    <div className="gd-app" style={{ minHeight: "100vh", background: C.white, color: C.dark, fontFamily: FUENTE, fontSize: 16, lineHeight: 1.5, width: "100%" }}>
+    <div className="gd-app" style={{ minHeight: "100vh", background: C.white, color: R.petroleo, fontFamily: FUENTE, fontSize: 16, lineHeight: 1.5, width: "100%" }}>
       {usuario && <AvisosMensajes mensajes={mensajes} usuario={usuario} C={C} onAbrir={abrirMensajes}
         onActualizar={(id, cambios) => setMensajes(prev => prev.map(m => m.id === id ? { ...m, ...cambios } : m))} />}
+      {/* Estilo inspirado en Raíces: cabecera blanca, menú turquesa (lateral en pantallas anchas) y pestañas grises */}
       <style>{`
         * { box-sizing: border-box; }
         body { margin: 0; padding: 0; }
-        .gd-app :focus-visible { outline: 3px solid ${C.dark}; outline-offset: 2px; }
-        .gd-header :focus-visible { outline-color: #fff; }
+        .gd-app :focus-visible { outline: 3px solid ${R.azul}; outline-offset: 2px; }
         .gd-pulsable:active:not(:disabled) { transform: scale(.98); }
+        .gd-redondo { width: 52px; height: 52px; padding: 0; border-radius: 50%; border: none; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .gd-redondo:hover { filter: brightness(.95); }
+        .gd-solo-movil { display: none; }
+        .gd-modulos { background: ${R.turquesa}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+        .gd-modulo { min-height: 52px; padding: 0 10px; border: none; border-right: 1px solid rgba(255,255,255,.7); background: transparent; color: #fff; font-family: inherit; font-size: 18px; font-weight: 400; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+        .gd-modulo:last-child { border-right: none; }
+        .gd-modulo::before { content: ""; flex: none; border-left: 9px solid ${R.mostaza}; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+        .gd-modulo:hover { background: rgba(255,255,255,.18); }
+        .gd-modulo.activo { box-shadow: inset 0 -5px 0 ${R.mostaza}; }
+        .gd-modulo.activo::before { border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid ${R.mostaza}; border-bottom: none; }
+        .gd-tabs { display: flex; overflow-x: auto; background: ${R.gris}; border-bottom: 1px solid #D5DEE2; -webkit-overflow-scrolling: touch; }
+        .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
+        .gd-tab:hover { background: rgba(255,255,255,.6); }
+        .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
         @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
+        @media (min-width: 900px) {
+          .gd-cuerpo { display: grid; grid-template-columns: 250px minmax(0, 1fr); align-items: stretch; min-height: calc(100vh - 110px); }
+          .gd-lateral { display: flex; flex-direction: column; background: ${R.turquesa}; }
+          .gd-modulos { display: contents; }
+          .gd-modulo { justify-content: flex-start; border-right: none; border-bottom: 1px solid rgba(255,255,255,.7); min-height: 50px; padding: 0 16px; font-size: 22px; }
+          .gd-modulo.activo { box-shadow: none; }
+          .gd-tabs { flex-direction: column; overflow: visible; background: ${R.turquesaClaro}; border-bottom: none; }
+          .gd-tab { border-right: none; border-bottom: 1px solid rgba(255,255,255,.8); padding: 6px 16px 6px 34px; white-space: normal; text-align: left; color: ${R.noche}; }
+          .gd-tab.activo { box-shadow: inset 5px 0 0 ${R.azul}; color: ${R.petroleo}; }
+        }
+        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } }
         @media (max-width: 600px) {
           .gd-header { padding: 8px 12px !important; }
+          .gd-redondo { width: 46px; height: 46px; }
+          .gd-redondo img { width: 46px !important; height: 46px !important; }
+          .gd-titulo-bloque { font-size: 28px !important; }
           .gd-header-izq { gap: 8px !important; }
           .gd-logo { display: none; }
           .gd-header select { max-width: 120px !important; }
-          .gd-modulos { padding: 8px !important; gap: 6px !important; }
-          .gd-modulos button { flex: 1 1 0; min-width: 0; padding: 0 6px !important; font-size: 15px !important; }
-          .gd-tabs { padding: 8px 12px !important; }
+          .gd-modulo { font-size: 16px; padding: 0 6px; gap: 6px; }
           .gd-contenido { padding: 16px 16px 32px !important; }
           .gd-rejilla-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .gd-bloque { padding: 16px !important; }
         }
       `}</style>
       <AvisoDemo compacto />
-      {/* Header — ancho completo CON BOTÓN HOME */}
-      <div className="gd-header" style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 8 }}>
-        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-          <button onClick={() => {
+      {/* Cabecera blanca, como Raíces: nombre, saludo y botones redondos con dibujo (inicio, preguntas, salir) */}
+      <div className="gd-header" style={{ background: C.white, color: R.petroleo, padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 12, borderBottom: "1px solid #E3E9EC" }}>
+        <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <img className="gd-logo" src="/icono-rumboaula.png" alt="" style={{ width: 40, height: 40, borderRadius: 10 }} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: TITULO, fontWeight: 500, fontSize: 30, lineHeight: 1.05, color: R.turquesa }}>{APP}</div>
+              <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
+            </div>
+          </div>
+          <div className="gd-saludo-cab" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: R.petroleo, minWidth: 0 }}>
+            <Icono nombre="perfil" tam={34} />
+            <span>Hola <span style={{ color: R.azul }}>{usuario}</span>, tu perfil es <span style={{ color: R.azul }}>{sinEmoji1(perfil.label)}</span> y tu centro es {CENTRO}.</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
+          <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
             setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
             if (perfil.id === "profesor") setModuloProfesor("alumnos");
             if (perfil.id === "jefatura") setModuloJefatura("alumnos");
-          }}
-            onMouseOver={e => { e.currentTarget.style.background = "rgba(255,255,255,0.35)"; }}
-            onMouseOut={e => { e.currentTarget.style.background = "rgba(255,255,255,0.2)"; }}
-            style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.45)", color: "#fff", borderRadius: 10, minWidth: 48, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 20, fontWeight: 700, transition: "background .2s", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            ↩️
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img className="gd-logo" src="/icono-rumboaula.png" alt="" style={{ width: 36, height: 36, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: 3 }} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: 19, lineHeight: 1.2 }}>{APP}</div>
-              <div style={{ fontSize: 14, lineHeight: 1.3, opacity: .95 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
-          <button onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes"
-            style={{ background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minWidth: 44, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
-            ❓ <span className="gd-faq-txt">Preguntas</span>
-          </button>
-          <button onClick={salir}
-            onMouseOver={e => { e.currentTarget.style.background = "rgba(44,74,82,0.85)"; }}
-            onMouseOut={e => { e.currentTarget.style.background = "rgba(44,74,82,0.6)"; }}
-            style={{ background: "rgba(44,74,82,0.6)", border: "1px solid rgba(255,255,255,0.5)", color: "#fff", borderRadius: 10, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700, transition: "background .2s" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icono nombre="fuera-ahora" tam={22} />Salir</span>
-          </button>
+          }}><Icono nombre="inicio" tam={52} /></button>
+          <button className="gd-redondo" onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes" title="Preguntas frecuentes"><Icono nombre="como-se-usa" tam={52} /></button>
+          <button className="gd-redondo" onClick={salir} aria-label="Salir" title="Salir"><Icono nombre="fuera-ahora" tam={52} /></button>
         </div>
       </div>
 
-      {/* Selector módulo Profesor */}
-      {perfil.id === "profesor" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "👨‍🎓 Partes",  icon: "📋" },
-            { id: "guardias", label: "🔄 Guardias",  icon: "⏰" },
-            { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}`, icon: "💬" },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloProfesor(m.id); setTab(m.id === "alumnos" ? "partes" : (m.id === "guardias" ? "mi_guardia" : "mensajeria")); }}
-              style={{ 
-                padding: "0 24px", 
-                minHeight: 48,
-                border: "1px solid #e2e8f0",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 16,
-                borderRadius: 10,
-                background: moduloProfesor === m.id ? "#FFE52A" : "#ffffff",
-                color: moduloProfesor === m.id ? "#2C4A52" : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloProfesor === m.id ? "0 4px 12px rgba(255, 229, 42, 0.3)" : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloProfesor === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
+      {/* Menú: franja turquesa en el móvil; en pantallas anchas, menú lateral con las pestañas debajo del módulo elegido.
+          Solo texto, como en Raíces */}
+      <div className="gd-cuerpo">
+      <nav className="gd-lateral no-print" aria-label="Secciones">
+      {modulos.length > 0 && (
+        <div className="gd-modulos">
+          {modulos.map((m, i) => (
+            <button key={m.id} className={"gd-modulo" + (moduloActivo === m.id ? " activo" : "")} style={{ order: 2 * i }}
+              onClick={m.ir}>
+              {sinEmoji1(m.label)}
             </button>
           ))}
         </div>
       )}
 
-      {/* Selector módulo Jefatura */}
-      {perfil.id === "jefatura" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "📋 Partes & Alumnos" },
-            { id: "guardias", label: "🔄 Guardias & Ausencias" },
-            { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "dashboard" : (m.id === "guardias" ? "cuadrante" : "mensajeria")); }}
-              style={{ 
-                padding: "0 24px", 
-                minHeight: 48,
-                border: "1px solid #e2e8f0",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 16,
-                borderRadius: 10,
-                background: moduloJefatura === m.id ? "#FFE52A" : "#ffffff",
-                color: moduloJefatura === m.id ? "#2C4A52" : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloJefatura === m.id ? "0 4px 12px rgba(255, 229, 42, 0.3)" : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloJefatura === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
+      {tabs.length > 0 && (
+        <div className="gd-tabs" style={{ order: 2 * Math.max(0, modulos.findIndex(m => m.id === moduloActivo)) + 1 }}>
+          {tabs.map(t => (
+            <button key={t.id} className={"gd-tab" + (tab === t.id ? " activo" : "")} onClick={() => setTab(t.id)}>
+              {sinEmoji1(t.label)}
             </button>
           ))}
         </div>
       )}
-
-      {/* Selector módulo Admin */}
-      {perfil.id === "admin" && (
-        <div className="gd-modulos" style={{ background: "#f0f4f7", display: "flex", justifyContent: "center", gap: 12, padding: "12px 24px", borderBottom: `1px solid #e2e8f0` }}>
-          {[
-            { id: "alumnos",  label: "👥 Alumnos", color: "#06b6d4" },
-            { id: "guardias", label: "👨‍🏫 Profesores", color: "#ec4899" },
-          ].map(m => (
-            <button key={m.id}
-              onClick={() => { setModuloJefatura(m.id); setTab(m.id === "alumnos" ? "admin_panel" : "admin_profesores"); }}
-              style={{ 
-                padding: "0 24px", 
-                minHeight: 48,
-                border: "1px solid #e2e8f0",
-                cursor: "pointer", 
-                fontWeight: 700, 
-                fontSize: 16,
-                borderRadius: 10,
-                background: moduloJefatura === m.id ? m.color : "#ffffff",
-                color: moduloJefatura === m.id ? textoSobre(m.color) : "#64748b",
-                transition: "all .3s ease",
-                boxShadow: moduloJefatura === m.id ? `0 4px 12px ${m.color}44` : "0 2px 6px rgba(0,0,0,0.05)",
-                transform: moduloJefatura === m.id ? "translateY(-2px)" : "translateY(0)"
-              }}>
-              <ConIcono texto={m.label} tam={28} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Tabs — ancho completo con mejor responsive y diseño mejorado */}
-      {/* Texto de 19 px en negrita: con el color de la paleta, el contraste vale para texto grande */}
-      <div className="gd-tabs" style={{ background: "#ffffff", borderBottom: `1px solid #e2e8f0`, display: "flex", overflowX: "auto", padding: "10px 24px", gap: 8, WebkitOverflowScrolling: "touch", alignItems: "center" }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{
-              padding: "0 18px",
-              border: `2px solid ${tab === t.id ? C.dark : "transparent"}`,
-              cursor: "pointer",
-              fontSize: 19,
-              fontWeight: 700,
-              minHeight: 48,
-              borderRadius: 10,
-              background: tab === t.id ? t.color : "#FF7F11",
-              color: textoSobre(tab === t.id ? t.color : "#FF7F11"),
-              whiteSpace: "nowrap", 
-              transition: "all .3s ease",
-              flexShrink: 0,
-              boxShadow: tab === t.id ? `0 4px 12px ${t.color}44` : "0 1px 3px rgba(0,0,0,0.05)",
-              transform: tab === t.id ? "translateY(-1px)" : "translateY(0)"
-            }}>
-            <ConIcono texto={t.label} tam={26} />
-          </button>
-        ))}
-      </div>
+      </nav>
 
       {/* Contenido — centrado con max-width */}
       <div className="gd-contenido" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px 40px" }}>
 
         {/* Aviso al profesorado: alumnado con 3 o más partes para avisar a su familia */}
         {perfil.id === "profesor" && avisosPendientes > 0 && tab !== "mis_estadisticas" && (
-          <div role="status" className="no-print" style={{ background: "#FDF0EF", border: `2px solid ${C.salmon}`, borderLeftWidth: 8, borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ color: C.dark, fontSize: 16, lineHeight: 1.4 }}>
-              <b><Ic n="alertas" tam={22} />{avisosPendientes} alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.</b>
-              <div style={{ fontSize: 15, color: C.dark, marginTop: 2 }}>Conviene avisar a su familia. Tienes el informe y el correo preparados.</div>
+          <div role="status" className="no-print" style={{ marginBottom: 28 }}>
+            <TituloBloque titulo="Avisos" sub="Familias por avisar" icono="alertas" />
+            <div style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontSize: 16, lineHeight: 1.4 }}>
+              Hay <b style={{ fontSize: 20 }}>{avisosPendientes}</b> alumno/a(s) con {UMBRAL_AVISO} o más partes este trimestre.
             </div>
-            <button className="gd-pulsable" onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
-              style={{ background: C.salmon, color: textoSobre(C.salmon), border: "none", borderRadius: 10, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 19 }}>Ver avisos →</button>
+            <div style={{ background: R.crema, color: R.petroleo, padding: "12px 14px", fontSize: 16, fontWeight: 700, lineHeight: 1.4 }}>
+              Conviene avisar a su familia. Tienes el informe y el correo preparados.
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => { setModuloProfesor("alumnos"); setTab("mis_estadisticas"); window.scrollTo(0, 0); }}
+                style={{ background: "none", color: R.azul, border: "none", minHeight: 44, padding: "0 4px", cursor: "pointer", fontSize: 18, display: "inline-flex", alignItems: "center", gap: 10 }}>Ver avisos <span aria-hidden="true" style={triangulo} /></button>
+            </div>
           </div>
         )}
 
@@ -6171,10 +6154,10 @@ function AppInterna() {
 
         {/* Alerta flotante */}
         {showAlerta && (
-          <div style={{ background: "#FFF8E8", border: `2px solid ${C.salmon}`, borderLeftWidth: 8, borderRadius: 12, padding: "14px 56px 14px 16px", marginBottom: 16, position: "relative" }}>
-            <strong style={{ color: C.dark, fontSize: 16 }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
-            <p style={{ margin: "4px 0 0", fontSize: 15, color: C.dark }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
-            <button onClick={() => setShowAlerta(null)} aria-label="Cerrar aviso" style={{ position: "absolute", top: 6, right: 6, width: 44, height: 44, background: "none", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 20, color: C.dark }}>✕</button>
+          <div style={{ ...caja(R.mostaza), padding: "14px 56px 14px 16px", marginBottom: 16, position: "relative" }}>
+            <strong style={{ color: R.petroleo, fontSize: 16 }}>⚠️ {showAlerta.alumno} — {showAlerta.curso}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: 15, color: R.petroleo }}>{showAlerta.msg || showAlerta.msgs?.join(" · ")}</p>
+            <button onClick={() => setShowAlerta(null)} aria-label="Cerrar aviso" style={{ position: "absolute", top: 6, right: 6, width: 44, height: 44, background: "none", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 20, color: R.petroleo }}>✕</button>
           </div>
         )}
 
@@ -6198,19 +6181,19 @@ function AppInterna() {
               const guardiasHoy = guardiasDeProfesor({ fecha: isoLocal(), profesor: usuario, profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias }).length;
               
               return (
-                <div style={{ background: "#E8F5F3", color: C.dark, border: `2px solid ${C.teal}`, borderLeftWidth: 8, borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
+                <div style={{ color: R.petroleo, marginBottom: 28 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
                     <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-                      <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, fontWeight: 700, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
+                      <h1 style={{ margin: 0, fontFamily: TITULO, fontSize: 26, lineHeight: 1.2, fontWeight: 400, marginBottom: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", textWrap: "balance" }}>{saludo}, {usuario}! <Icono nombre="saludo" tam={36} /></h1>
                       <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>
                         Hoy has registrado <strong>{partesHoy} parte{partesHoy !== 1 ? 's' : ''}</strong>
                         {banoHoy > 0 && <> y <strong>{banoHoy} salida{banoHoy !== 1 ? 's' : ''}</strong> al baño</>}
                         {partesHoy === 0 && banoHoy === 0 && <>. ¡Buen día!</>}
                       </p>
                       {guardiasHoy > 0 && (
-                        <div style={{ marginTop: 12, background: C.amberBg, borderRadius: 10, padding: "10px 12px", border: `2px solid ${C.amber}`, borderLeftWidth: 8 }}>
-                          <strong style={{ fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={28} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong>
-                          <div style={{ fontSize: 15, marginTop: 2 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ background: R.verde, color: R.noche, padding: "8px 12px" }}><strong style={{ fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="alerta" tam={26} />Alerta: Tienes {guardiasHoy} guardia{guardiasHoy !== 1 ? 's' : ''} hoy</strong></div>
+                          <div style={{ background: R.azulClaro, color: R.petroleo, padding: "8px 12px", fontSize: 15 }}>Ve a la sección "Mi Guardia Hoy" para verlas</div>
                         </div>
                       )}
                     </div>
@@ -6223,19 +6206,21 @@ function AppInterna() {
               );
             })()}
 
-            <h2 style={{ color: C.dark, margin: "0 0 16px", fontSize: 24, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 12, textWrap: "balance" }}><Icono nombre="nuevo-parte" tam={40} />Nuevo Parte de Incidencia</h2>
+            {/* Bloque como los de Raíces: título grande, línea azul y apartados sobre azul claro */}
+            <TituloBloque titulo="Nuevo Parte de Incidencia" sub="Registra lo ocurrido en clase" icono="nuevo-parte" />
+            <div className="gd-bloque" style={{ background: R.azulClaro, padding: 20 }}>
             {parteGenerado && (
-              <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, borderLeftWidth: 8, boxShadow: "none", marginBottom: 20 }}>
+              <Card style={{ ...caja(R.verde), borderRadius: 0, boxShadow: "none", marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <strong style={{ color: C.dark, fontSize: 16 }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
+                  <strong style={{ color: R.petroleo, fontSize: 16 }}>✅ Parte generado · {fmt(parteGenerado.ts)}</strong>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button className="gd-pulsable" onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.white, color: C.dark, border: `2px solid ${C.blue}`, borderRadius: 10, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}><Ic n="buscar" tam={20} />Ver</button>
+                    <button className="gd-pulsable" onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}><Ic n="buscar" tam={20} />Ver</button>
                   </div>
                 </div>
                 <ComoAvisar parte={completar(parteGenerado)} />
               </Card>
             )}
-            <Card style={{ border: "1px solid #e2e8f0", boxShadow: "none" }}>
+            <Card style={{ background: "transparent", boxShadow: "none", padding: 0 }}>
               <label style={etiquetaStyle}><ConIcono texto="🔍 Buscar alumno" tam={32} /></label>
               <div style={{ position: "relative" }}>
                 <Icono nombre="curso" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
@@ -6246,7 +6231,7 @@ function AppInterna() {
                   {alumnos.filter(a => a.nombre.toLowerCase().includes(fBusqueda.toLowerCase()) || a.curso.toLowerCase().includes(fBusqueda.toLowerCase())).map(a => (
                     <div key={a.id} onClick={() => { setFAlumno(a.id); setFBusqueda(a.nombre); }}
                       style={{ minHeight: 48, padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid #e2e8f0", fontSize: 16, color: C.dark }}
-                      onMouseOver={e => e.currentTarget.style.background = C.cream}
+                      onMouseOver={e => e.currentTarget.style.background = "#f3f4f6"}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <strong>{a.nombre}</strong> — {a.curso}
                     </div>
@@ -6254,7 +6239,7 @@ function AppInterna() {
                 </div>
               )}
               {alumnoSel && (
-                <div style={{ background: C.cream, color: C.dark, borderRadius: 10, padding: "12px 14px", margin: "10px 0 18px", fontSize: 15, lineHeight: 1.45, border: "1px solid #e2e8f0" }}>
+                <div style={{ background: C.white, color: R.petroleo, padding: "12px 14px", margin: "10px 0 18px", fontSize: 15, lineHeight: 1.45, border: `1px solid ${R.turquesaClaro}` }}>
                   {(() => {
                     // Datos del alumnado: solo los ve el profesorado implicado. El tutor/a del grupo ve
                     // el contacto y todos sus partes; el resto, solo los partes que le ha puesto él/ella.
@@ -6266,11 +6251,11 @@ function AppInterna() {
                       <div><strong>Curso:</strong> {alumnoSel.curso} | <strong>Tutor/a:</strong> {tutorAl || "—"}</div>
                       {esTutor ? (<>
                         <div style={{ marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{alumnoSel.email} · 📱 {alumnoSel.telefono}</div>
-                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: C.dark, fontWeight: 700, borderLeft: `6px solid ${C.salmon}`, paddingLeft: 8 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
-                        <div style={{ marginTop: 2, color: C.dark }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
+                        {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: R.petroleo, fontWeight: 700, borderLeft: `6px solid ${R.mostaza}`, paddingLeft: 8 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
+                        <div style={{ marginTop: 2, color: R.petroleo }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
                       </>) : (<>
-                        <div style={{ marginTop: 4, color: C.dark }}>Partes que le has puesto tú: <strong style={{ color: C.dark }}>{mios.length}</strong></div>
-                        <div style={{ marginTop: 2, fontSize: 14, color: C.dark }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
+                        <div style={{ marginTop: 4, color: R.petroleo }}>Partes que le has puesto tú: <strong style={{ color: R.petroleo }}>{mios.length}</strong></div>
+                        <div style={{ marginTop: 2, fontSize: 14, color: R.petroleo }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
                       </>)}
                     </>);
                   })()}
@@ -6279,19 +6264,19 @@ function AppInterna() {
               <div className="gd-rejilla-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 18, marginTop: 8 }}>
                 <div><label style={etiquetaStyle}><ConIcono texto="⏰ Hora de clase" tam={32} /></label><select value={fHora} onChange={e => setFHora(e.target.value)} style={campoStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
                 <div><label style={etiquetaStyle}><ConIcono texto="📂 Tipo de parte" tam={32} /></label><select value={fTipo} onChange={e => setFTipo(e.target.value)} style={campoStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
-                <div><label style={etiquetaStyle}><ConIcono texto="🎯 Gravedad" tam={32} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={{ ...campoStyle, border: `2px solid ${gObj(fGravedad)?.color || C.gray}`, borderLeftWidth: 8, background: gObj(fGravedad)?.bg || C.white, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
+                <div><label style={etiquetaStyle}><ConIcono texto="🎯 Gravedad" tam={32} /></label><select value={fGravedad} onChange={e => { setFGravedad(e.target.value); setFTipificacion(""); }} style={{ ...campoStyle, borderLeft: `14px solid ${COLOR_GRAVEDAD[fGravedad] || C.gray}`, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
               </div>
               <div style={{ marginBottom: 18 }}>
-                <label style={etiquetaStyle}><ConIcono texto="⚖️ Tipificación normativa" tam={32} /> <span style={{ fontWeight: 400, color: C.dark, fontSize: 14 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
+                <label style={etiquetaStyle}><ConIcono texto="⚖️ Tipificación normativa" tam={32} /> <span style={{ fontWeight: 400, color: R.petroleo, fontSize: 14 }}>({fGravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})</span></label>
                 <div style={{ position: "relative" }}>
                 <Icono nombre="seleccionar" tam={28} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...campoStyle, paddingLeft: 46, borderColor: fTipificacion ? C.teal : C.gray, borderWidth: fTipificacion ? 2 : 1.5 }}>
+                <select value={fTipificacion} onChange={e => setFTipificacion(e.target.value)} style={{ ...campoStyle, paddingLeft: 46, borderColor: fTipificacion ? R.azul : R.turquesa }}>
                   <option value="">— Seleccionar tipificación (opcional) —</option>
                   {(TIPIFICACION[fGravedad] || []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
                 </div>
                 {fTipificacion && (
-                  <div style={{ marginTop: 8, background: "#E8F5F3", borderLeft: `6px solid ${C.teal}`, borderRadius: 8, padding: "8px 12px", fontSize: 15, lineHeight: 1.4, color: C.dark, fontWeight: 700 }}>
+                  <div style={{ marginTop: 8, ...caja(R.verde), padding: "8px 12px", fontSize: 15, lineHeight: 1.4, color: R.petroleo, fontWeight: 700 }}>
                     ✓ {TIPIFICACION[fGravedad]?.find(t => t.id === fTipificacion)?.label}
                   </div>
                 )}
@@ -6303,15 +6288,16 @@ function AppInterna() {
               </div>
               <div style={{ marginBottom: 22 }}>
                 <label style={etiquetaStyle}><ConIcono texto="👤 Profesor responsable" tam={32} /></label>
-                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={{ ...campoStyle, ...(identidadFija ? { background: "#f3f4f6", borderColor: "#e2e8f0" } : {}) }} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
+                <select value={fProfesor} onChange={e => setFProfesor(e.target.value)} style={{ ...campoStyle, ...(identidadFija ? { background: R.gris, borderColor: R.turquesaClaro } : {}) }} disabled={identidadFija}>{profesores.map(p => <option key={p}>{p}</option>)}</select>
               </div>
-              {/* Acción principal: azul oscuro con franja teal (contraste 9,5:1) */}
+              {/* Acción principal: azul de Raíces con texto blanco (contraste 6,9:1) */}
               <button className="gd-pulsable" onClick={crearParte} disabled={!fAlumno || !fDesc.trim()}
-                style={{ width: "100%", minHeight: 52, padding: "0 20px", borderRadius: 10, border: "none", cursor: !fAlumno || !fDesc.trim() ? "not-allowed" : "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
-                  ...(!fAlumno || !fDesc.trim() ? { background: "#94a3b8", color: C.dark } : { background: C.dark, color: "#fff", boxShadow: `inset 0 -5px 0 ${C.teal}` }) }}>
+                style={{ width: "100%", minHeight: 52, padding: "0 20px", borderRadius: 6, border: "none", cursor: !fAlumno || !fDesc.trim() ? "not-allowed" : "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center",
+                  ...(!fAlumno || !fDesc.trim() ? { background: R.gris, color: R.petroleo, opacity: .7 } : { background: R.azul, color: "#fff" }) }}>
                 <ConIcono texto="📋 Generar Parte" tam={28} />
               </button>
             </Card>
+            </div>
           </div>
         )}
 
@@ -7089,6 +7075,7 @@ function AppInterna() {
           </div>
         )}
 
+      </div>
       </div>
 
       {/* ── Modal Ver Cuadrante Completo ── */}
