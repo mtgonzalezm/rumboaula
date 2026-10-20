@@ -1290,7 +1290,7 @@ const LUGARES_MEDIDA = [
 ];
 // Zona del cuadrante donde se cumple una sesión (en el recreo, la biblioteca es otra zona)
 const zonaDeSesion = s => s.lugarId === "A0-biblio" && s.hora === "Recreo" ? "rec-biblio" : (s.lugarId || "");
-const sesionEn = (lugarId, otro, extra) => ({ ...extra, lugarId: lugarId === "otro" ? "" : lugarId, lugar: lugarId === "otro" ? otro.trim() : LUGARES_MEDIDA.find(l => l.id === lugarId)?.label || "" });
+const sesionEn = (lugarId, otro, extra) => ({ ...extra, lugarId: lugarId === "otro" ? "" : lugarId, lugar: lugarId === "otro" ? otro.trim() : ZONAS_CENTRO.find(z => z.id === lugarId)?.label || LUGARES_MEDIDA.find(l => l.id === lugarId)?.label || "" });
 const ESTADO_MEDIDA = {
   sin_programar: { label: "Por programar", color: R.crema,  texto: R.noche },
   pendiente:  { label: "Pendiente",   color: R.gris,     texto: R.petroleo },
@@ -1394,7 +1394,7 @@ function CamposProgramar({ t, fechas, setFechas, hora, setHora, lugarId, setLuga
         <div>
           <label style={etiqueta} htmlFor={`${prefijo}-lugar`}>Aula o lugar</label>
           <select id={`${prefijo}-lugar`} value={lugarId} onChange={e => setLugarId(e.target.value)} style={campo}>
-            {LUGARES_MEDIDA.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+            {LUGARES_MEDIDA.filter(l => l.id === "otro" || !ZONAS_CENTRO.find(z => z.id === l.id)?.oculta).map(l => <option key={l.id} value={l.id}>{ZONAS_CENTRO.find(z => z.id === l.id)?.label || l.label}</option>)}
           </select>
           {lugarId === "otro" && <input aria-label="Otro lugar" value={lugarOtro} onChange={e => setLugarOtro(e.target.value)} placeholder="Por ejemplo, Jefatura de Estudios" style={{ ...campo, marginTop: 8 }} />}
           {lugarId !== "otro" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Lo verá el profesorado de guardia de esa zona en el cuadrante.</div>}
@@ -2381,7 +2381,9 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
 
 // ─── App principal ────────────────────────────────────────────────────────────
 // ─── Zonas del centro ────────────────────────────────────────────────────────
-const ZONAS_CENTRO = [
+// Zonas de guardia: Administración puede renombrarlas, cambiarlas de edificio, añadir y ocultar
+// (ver «Zonas de guardia»). Cada zona conserva su id, que es con lo que se guardan guardias, firmas y medidas.
+const ZONAS_POR_DEFECTO = [
   { id:"A0-pasillo",  label:"Edificio A · Planta 0 · Pasillo",    edificio:"A", tipo:"pasillo"  },
   { id:"A1-pasillo",  label:"Edificio A · Planta 1 · Pasillo",    edificio:"A", tipo:"pasillo"  },
   { id:"A2-pasillo",  label:"Edificio A · Planta 2 · Pasillo",    edificio:"A", tipo:"pasillo"  },
@@ -2406,6 +2408,22 @@ const ZONAS_CENTRO = [
   { id:"rec-biblio",  label:"Recreo · Biblioteca",                edificio:"-", tipo:"recreo"   },
   { id:"rec-maquina", label:"Recreo · Máquina de Bebidas",        edificio:"-", tipo:"recreo"   },
 ];
+// Zonas que la app necesita: se pueden renombrar, pero no ocultar ni cambiar de edificio
+const ZONAS_FIJAS = ["aula", "aula-conv"];
+const ZONAS_CENTRO = ZONAS_POR_DEFECTO.map(z => ({ ...z }));
+// Edificios con zonas (para agrupar y para las ausencias); se rehace al cambiar las zonas
+const EDIFICIOS = [];
+function fijarZonas(config) {
+  const lista = Array.isArray(config) && config.length ? config : ZONAS_POR_DEFECTO;
+  const ids = new Set(lista.map(z => z.id));
+  // Las zonas fijas siempre existen, aunque falten en la configuración guardada
+  const completas = [...lista, ...ZONAS_POR_DEFECTO.filter(z => ZONAS_FIJAS.includes(z.id) && !ids.has(z.id))];
+  ZONAS_CENTRO.splice(0, ZONAS_CENTRO.length, ...completas.map(z => ({ ...z,
+    label: z.label?.trim() || ZONAS_POR_DEFECTO.find(d => d.id === z.id)?.label || "Zona sin nombre",
+    oculta: ZONAS_FIJAS.includes(z.id) ? false : !!z.oculta })));
+  EDIFICIOS.splice(0, EDIFICIOS.length, ...[...new Set(ZONAS_CENTRO.filter(z => !z.oculta).map(z => z.edificio).filter(e => e && e !== "-"))].sort());
+}
+fijarZonas();
 const HORAS_GUARDIA = HORAS;
 const DIAS_SEMANA   = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const DIAS_ES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -3839,10 +3857,11 @@ function CuadranteGuardias({ profesores, cuadrante, setCuadrante, apoyosGuardia,
                             title={selBloqueado ? `Ya tiene ${MAX_GUARDIAS_DIA} guardias este día` : "Zona de la que es titular"}
                             style={{ width:"100%", padding:"4px 4px", borderRadius:4, border:`1px solid ${zona?"#00B7B5":"#CDE9ED"}`, fontSize:13, background: selBloqueado ? "#EBF0F6" : zona?"#DDF0F4":"#fff", color: selBloqueado ? "#9ca3af" : C.dark, cursor: selBloqueado ? "not-allowed" : "pointer", fontWeight: zona ? 600 : 400 }}>
                             <option value="">{selBloqueado ? `Máx. ${MAX_GUARDIAS_DIA} al día` : "📍 Zona"}</option>
-                            <optgroup label="── Edificio A">{ZONAS_CENTRO.filter(z=>z.edificio==="A").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
-                            <optgroup label="── Edificio B">{ZONAS_CENTRO.filter(z=>z.edificio==="B").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
-                            <optgroup label="── Edificio C">{ZONAS_CENTRO.filter(z=>z.edificio==="C").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
-                            <optgroup label="── Aula / Recreo">{ZONAS_CENTRO.filter(z=>z.edificio==="-").map(z=><option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>
+                            {[...EDIFICIOS, "-"].map(ed => {
+                              // Las zonas ocultas no se ofrecen, salvo la que ya tiene asignada
+                              const zs = ZONAS_CENTRO.filter(z => (z.edificio || "-") === ed && (!z.oculta || z.id === zona));
+                              return zs.length > 0 && <optgroup key={ed} label={ed === "-" ? "── Aula / Recreo / Otras" : `── Edificio ${ed}`}>{zs.map(z => <option key={z.id} value={z.id}>{z.label}</option>)}</optgroup>;
+                            })}
                           </select>
                           {zona && (
                             <select value={apoyo} onChange={e => setApoyo(d.key, hora, zona, e.target.value)} title={apoyo ? "Profesor de apoyo" : "Falta asignar el profesor de apoyo"}
@@ -4056,7 +4075,7 @@ function CoordinacionAusencias({ profesores, ausencias, cuadrante, apoyosGuardia
 
 // ─── Horario de clases y «dónde estoy» ───────────────────────────────────────
 // horarios: { "Lunes|3ª hora|Profesor": { grupo, aula, edificio, materia } } — se repite cada semana
-const EDIFICIOS = [...new Set(ZONAS_CENTRO.map(z => z.edificio).filter(e => e && e !== "-"))];
+
 const MATERIAS_DEMO = ["Matemáticas", "Lengua", "Inglés", "Música", "Geografía e Historia", "Biología", "Física y Química", "Tecnología", "Educación Física", "Plástica", "Francés", "Informática"];
 // Horario de ejemplo para la demo: cada profe da su materia en varios grupos (≈3 de cada 5 horas)
 function horarioEjemplo(profesores, cursos) {
@@ -5447,6 +5466,66 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
 }
 
 // Correos del centro, en Administración
+// Zonas de guardia (Administración): nombre, edificio, añadir y ocultar. Nunca se borran:
+// lo ya guardado (guardias, firmas, medidas) apunta a su id.
+function ZonasCentro({ zonas, setZonas }) {
+  const lista = zonas?.length ? zonas : ZONAS_POR_DEFECTO;
+  const [nueva, setNueva] = useState({ label: "", edificio: "" });
+  const cambiar = (id, cambios) => setZonas(lista.map(z => z.id === id ? { ...z, ...cambios } : z));
+  const edificios = [...new Set(lista.map(z => z.edificio).filter(e => e && e !== "-"))].sort();
+  const campo = { width: "100%", minHeight: 44, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
+  const boton = { minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
+  const anadir = () => {
+    const label = nueva.label.trim(); if (!label) return;
+    const edificio = nueva.edificio.trim() || "-";
+    setZonas([...lista, { id: `z-${Date.now()}`, label, edificio, tipo: edificio === "-" ? "otra" : "pasillo" }]);
+    setNueva({ label: "", edificio: "" });
+  };
+  const grupos = [...edificios, "-"].map(ed => ({ ed, zs: lista.filter(z => (z.edificio || "-") === ed) })).filter(g => g.zs.length);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <TituloBloque titulo="Zonas de guardia" sub="Edificios, plantas y zonas del recreo de tu centro, para el cuadrante de guardias" icono="edificio" />
+      <div style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 14 }}>
+        <datalist id="gd-edificios">{edificios.map(e => <option key={e} value={e} />)}</datalist>
+        {grupos.map(({ ed, zs }) => (
+          <div key={ed}>
+            <div style={{ background: R.turquesa, color: R.noche, fontWeight: 700, fontSize: 16, padding: "8px 12px" }}>{ed === "-" ? "Sin edificio (aula, recreo y otras)" : `Edificio ${ed}`}</div>
+            <div style={{ display: "grid", gap: 1, background: R.turquesaClaro }}>
+              {zs.map(z => {
+                const fija = ZONAS_FIJAS.includes(z.id);
+                return (
+                  <div key={z.id} data-zona={z.id} style={{ background: z.oculta ? R.gris : C.white, padding: "10px 12px", display: "grid", gridTemplateColumns: "auto minmax(60px, 120px) 1fr", gap: 8, alignItems: "center" }}>
+                    <input aria-label={`Nombre de la zona ${z.label}`} value={z.label} onChange={e => cambiar(z.id, { label: e.target.value })} style={{ ...campo, gridColumn: "1 / -1", opacity: z.oculta ? .7 : 1 }} />
+                    <span style={{ fontSize: 14, color: R.petroleo }}>Edificio</span>
+                    <input aria-label={`Edificio de ${z.label}`} list="gd-edificios" value={z.edificio === "-" ? "" : z.edificio} placeholder="—" disabled={fija}
+                      onChange={e => cambiar(z.id, { edificio: e.target.value.trim() || "-" })} style={{ ...campo, background: fija ? R.gris : C.white }} />
+                    <div style={{ justifySelf: "end", display: "flex", alignItems: "center", gap: 8 }}>
+                      {z.oculta && <span style={{ fontSize: 14, color: R.petroleo }}>Oculta</span>}
+                      {fija
+                        ? <span style={{ fontSize: 14, color: R.petroleo }}>Necesaria</span>
+                        : <button type="button" onClick={() => cambiar(z.id, { oculta: !z.oculta })} style={boton}>{z.oculta ? "Mostrar" : "Ocultar"}</button>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12, display: "grid", gap: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 16, color: R.petroleo }}>Añadir una zona</div>
+          <div style={{ display: "grid", gridTemplateColumns: "auto minmax(60px, 120px) 1fr", gap: 8, alignItems: "center" }}>
+            <input id="gd-zona-nueva" aria-label="Nombre de la zona nueva" value={nueva.label} onChange={e => setNueva(v => ({ ...v, label: e.target.value }))} placeholder="Por ejemplo, Edificio D · Planta 0 · Pasillo" style={{ ...campo, gridColumn: "1 / -1" }} />
+            <span style={{ fontSize: 14, color: R.petroleo }}>Edificio</span>
+            <input aria-label="Edificio de la zona nueva" list="gd-edificios" value={nueva.edificio} onChange={e => setNueva(v => ({ ...v, edificio: e.target.value }))} placeholder="—" style={campo} />
+            <button type="button" onClick={anadir} disabled={!nueva.label.trim()} style={{ ...boton, justifySelf: "end", background: nueva.label.trim() ? R.azul : R.gris, color: nueva.label.trim() ? "#fff" : R.petroleo, border: "none" }}>Añadir</button>
+          </div>
+          <div style={{ fontSize: 14, color: R.petroleo }}>Deja el edificio vacío para zonas del recreo u otras. Las zonas no se borran: «Ocultar» las quita del cuadrante sin perder las guardias ya hechas.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Horario del centro (Administración): horas de inicio y fin de cada franja
 function HorarioCentro({ horario, setHorario }) {
   const campo = { minHeight: 48, padding: "8px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box", width: "100%" };
@@ -6159,6 +6238,8 @@ function AppInterna() {
   fijarCentro(datosCentro);
   const [horarioCentro, setHorarioCentro] = useState({});
   fijarHorario(horarioCentro);
+  const [zonasCentro, setZonasCentro] = useState(null);
+  fijarZonas(zonasCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
   useEffect(() => {
@@ -6284,6 +6365,7 @@ function AppInterna() {
       const cc = await sGet("correos_centro"); if (cc) setCorreosCentro(cc);
       const dc = await sGet("datos_centro"); if (dc) setDatosCentro(dc);
       const hc = await sGet("horario_centro"); if (hc) setHorarioCentro(hc);
+      const zc = await sGet("zonas_centro"); if (zc) setZonasCentro(zc);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -6323,6 +6405,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("correos_centro", correosCentro); }, [correosCentro, loading]);
   useEffect(() => { if (!loading) sSet("datos_centro", datosCentro); }, [datosCentro, loading]);
   useEffect(() => { if (!loading) sSet("horario_centro", horarioCentro); }, [horarioCentro, loading]);
+  useEffect(() => { if (!loading && zonasCentro) sSet("zonas_centro", zonasCentro); }, [zonasCentro, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
   useEffect(() => { if (identidadFija) { setFProfesor(usuario); setAusProfesor(usuario); } }, [usuario, identidadFija]);
@@ -7601,6 +7684,7 @@ function AppInterna() {
         {/* ── Admin Alumnos ── */}
         {tab === "admin_panel" && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
         {tab === "admin_panel" && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
+        {tab === "admin_panel" && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
         {tab === "admin_panel" && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
