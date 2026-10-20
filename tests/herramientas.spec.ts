@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import fs from 'fs'
 import { vigilarErrores, empezar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
 
 // ───────────────────────── PROFESORADO: partes ─────────────────────────
@@ -194,7 +195,7 @@ test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', asyn
   const antes = (await leer(page, 'alumnos')).length
   const csv = 'Nombre;Curso;Email;Telefono\nAlumna Prueba Uno;1º ESO A;fam1@ejemplo.es;600000001\nAlumno Prueba Dos;1º ESO B;fam2@ejemplo.es;600000002\n'
   const subir = async () => {
-    await page.locator('input[type=file]').setInputFiles({ name: 'raices.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+    await page.locator('input[type=file]:not(#gd-centro-logo)').setInputFiles({ name: 'raices.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
     await page.getByRole('button', { name: /Confirmar|Importar/ }).last().click()
   }
   await subir()
@@ -390,5 +391,49 @@ test('Datos del centro: Administración cambia el nombre y la localidad y salen 
   await comoProfe(page)
   await expect(page.getByText(/IES Rumbo Norte/).filter({ visible: true }).first()).toBeVisible()
   await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
+
+test('Horario del centro: Administración cambia las horas de una franja y se usan en la app', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoAdmin(page)
+  await page.getByLabel('Inicio de 1ª hora').fill('08:00')
+  await page.getByLabel('Fin de 1ª hora').fill('08:55')
+  expect((await leer(page, 'horario_centro'))['1ª hora']).toBe('8:00 – 8:55')
+  // Una franja que acaba antes de empezar avisa y no se usa
+  await page.getByLabel('Fin de 2ª hora').fill('09:00')
+  await expect(page.getByText(/2ª hora termina antes de empezar/)).toBeVisible()
+  // El profesorado ve la hora nueva al poner un parte; la 2ª hora sigue con la inicial
+  await salir(page)
+  await comoProfe(page)
+  await expect(page.locator('option', { hasText: '1ª hora · 8:00 – 8:55' }).first()).toBeAttached()
+  await expect(page.locator('option', { hasText: '2ª hora · 9:25 – 10:20' }).first()).toBeAttached()
+  await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
+
+test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoAdmin(page)
+  await page.locator('#gd-centro-logo').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAFAAAAAYCAIAAADieO37AAAAQ0lEQVR4nOXOQQEAIBCAMKSMqWxkaFucD5Zga59LicRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjL8D0x41WQFAHGL7QQAAAABJRU5ErkJggg==', 'base64') })
+  await expect(page.getByAltText('Logotipo para los documentos')).toBeVisible()
+  expect((await leer(page, 'datos_centro')).logo.data).toMatch(/^data:image\/png;base64,/)
+  // Un PDF del profesorado lleva la imagen
+  await salir(page)
+  await comoProfe(page)
+  await pestaña(page, 'Mis Partes')
+  await page.getByRole('button', { name: 'PDF', exact: true }).first().click()
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Descargar PDF/ }).first().click()
+  const pdf = fs.readFileSync(await (await descarga).path())
+  expect(pdf.toString('latin1')).toContain('/Subtype /Image')
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  // Se puede quitar
+  await salir(page)
+  await comoAdmin(page)
+  await page.getByRole('button', { name: 'Quitar logotipo' }).click()
+  expect((await leer(page, 'datos_centro')).logo).toBeNull()
   expect(errores).toEqual([])
 })

@@ -9,9 +9,11 @@ const APP = "RumboAula";
 const CENTRO_POR_DEFECTO = { nombre: "Centro educativo", ciudad: "Madrid" };
 let CENTRO = CENTRO_POR_DEFECTO.nombre;
 let CIUDAD = CENTRO_POR_DEFECTO.ciudad;
+let LOGO_CENTRO = null; // { data, w, h }: imagen que el centro pone al pie de los PDF
 function fijarCentro(d) {
   CENTRO = d?.nombre?.trim() || CENTRO_POR_DEFECTO.nombre;
   CIUDAD = d?.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
+  LOGO_CENTRO = d?.logo?.data ? d.logo : null;
 }
 
 // Colores con los que se pinta toda la app. Los nombres son los de siempre, pero los valores
@@ -196,7 +198,8 @@ const FRASES_TIPIFICACION = {
 // ─── Horario del centro ──────────────────────────────────────────────────────
 // Los nombres ("1ª hora", "Recreo"...) son la clave con la que se guardan los datos;
 // el intervalo solo se muestra. La 7ª hora es solo para algunos grupos.
-const HORARIO = {
+// Las horas de cada franja se cambian en Administración › Alumnos › «Horario del centro».
+const HORARIO_POR_DEFECTO = {
   "1ª hora": "8:30 – 9:25",
   "2ª hora": "9:25 – 10:20",
   "3ª hora": "10:20 – 11:15",
@@ -206,7 +209,14 @@ const HORARIO = {
   "6ª hora": "13:35 – 14:30",
   "7ª hora": "14:30 – 15:25",
 };
+const HORARIO = { ...HORARIO_POR_DEFECTO };
 const HORAS = Object.keys(HORARIO);
+const enMinutos = t => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+// Una franja vale si tiene inicio y fin con formato de hora y empieza antes de acabar
+const tramoValido = t => { const p = String(t || "").split("–").map(x => x.trim()); return p.length === 2 && p.every(x => /^\d{1,2}:\d{2}$/.test(x)) && enMinutos(p[0]) < enMinutos(p[1]); };
+function fijarHorario(cambios = {}) {
+  HORAS.forEach(h => { HORARIO[h] = tramoValido(cambios[h]) ? cambios[h] : HORARIO_POR_DEFECTO[h]; });
+}
 const conTramo = h => HORARIO[h] ? `${h} · ${HORARIO[h]}` : h;
 // Hora del horario en curso ahora mismo (o null fuera del horario)
 function horaEnCurso(ahora = new Date()) {
@@ -684,6 +694,13 @@ function guardarPDF(doc, archivo) {
   const hoy = new Date().toLocaleDateString("es-ES");
   for (let i = 1; i <= n; i++) {
     doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GRIS);
+    // Logotipo del centro al pie (Administración › Datos del centro): 1 cm de alto como mucho
+    if (LOGO_CENTRO) {
+      const prop = LOGO_CENTRO.w / LOGO_CENTRO.h;
+      let alto = 10, ancho = alto * prop;
+      if (ancho > 120) { ancho = 120; alto = ancho / prop; }
+      try { doc.addImage(LOGO_CENTRO.data, "PNG", (w - ancho) / 2, h - 12 - alto, ancho, alto); } catch { /* imagen no válida: el PDF sale sin ella */ }
+    }
     doc.text(`${APP} · ${CENTRO} · ${hoy} · Página ${i} de ${n}`, w / 2, h - 8, { align: "center" });
   }
   // Si el visor está abierto en la página, el informe se ve primero en pantalla
@@ -784,7 +801,7 @@ export function VisorDocumentos() {
     </div>
   );
 }
-const estiloTabla = { styles: { fontSize: 13, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 16 } };
+const estiloTabla = { styles: { fontSize: 13, cellPadding: 2, overflow: "linebreak", valign: "top" }, headStyles: { fillColor: OSCURO, textColor: 255, fontStyle: "bold" }, alternateRowStyles: { fillColor: [248, 246, 240] }, margin: { left: 14, right: 14, bottom: 28 } };
 const textoTipificacion = p => {
   const t = TIPIFICACION[p.gravedad]?.find(t => t.id === p.tipificacion)?.label;
   return t ? `${t} (${p.gravedad === "leve" ? "Plan de Convivencia del Centro" : "Decreto 32/2019 CAM"})` : "-";
@@ -5430,6 +5447,40 @@ function ElegirDestinatarios({ alumno, tutorNombre, tutorEmail, asunto, cuerpo, 
 }
 
 // Correos del centro, en Administración
+// Horario del centro (Administración): horas de inicio y fin de cada franja
+function HorarioCentro({ horario, setHorario }) {
+  const campo = { minHeight: 48, padding: "8px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box", width: "100%" };
+  const conCero = t => t.split(":").map((x, i) => i === 0 ? x.padStart(2, "0") : x).join(":");
+  const sinCero = t => t.replace(/^0(\d)/, "$1");
+  const partes = h => (horario[h] && horario[h].includes("–") ? horario[h] : HORARIO_POR_DEFECTO[h]).split("–").map(x => conCero(x.trim()));
+  const cambiar = (h, i, valor) => setHorario(prev => { const p = partes(h); p[i] = valor; return { ...prev, [h]: `${sinCero(p[0])} – ${sinCero(p[1])}` }; });
+  const mal = h => horario[h] && !tramoValido(horario[h]);
+  const solapa = (h, i) => i > 0 && !mal(h) && !mal(HORAS[i - 1]) && enMinutos(partes(h)[0]) < enMinutos(partes(HORAS[i - 1])[1]);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <TituloBloque titulo="Horario del centro" sub="Las horas de cada franja: se usan en guardias, medidas, partes y en «Ahora»" icono="horario" />
+      <div style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 10 }}>
+        {HORAS.map((h, i) => (
+          <div key={h} style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: "10px 12px", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px", alignItems: "center" }}>
+            <div style={{ gridColumn: "1 / -1", fontWeight: 700, fontSize: 16, color: R.petroleo }}>{h}</div>
+            <label style={{ fontSize: 14, color: R.petroleo }}>Empieza
+              <input type="time" aria-label={`Inicio de ${h}`} value={partes(h)[0]} onChange={e => e.target.value && cambiar(h, 0, e.target.value)} style={{ ...campo, marginTop: 4 }} /></label>
+            <label style={{ fontSize: 14, color: R.petroleo }}>Acaba
+              <input type="time" aria-label={`Fin de ${h}`} value={partes(h)[1]} onChange={e => e.target.value && cambiar(h, 1, e.target.value)} style={{ ...campo, marginTop: 4 }} /></label>
+            {(mal(h) || solapa(h, i)) && <div style={{ gridColumn: "1 / -1", fontSize: 14, color: R.noche, background: R.crema, borderLeft: `6px solid ${R.mostaza}`, padding: "6px 10px" }}>
+              {mal(h) ? `⚠️ ${h} termina antes de empezar: mientras no se corrija, se usa ${HORARIO_POR_DEFECTO[h]}.` : `⚠️ ${h} empieza antes de que acabe ${HORAS[i - 1]}.`}
+            </div>}
+          </div>
+        ))}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 14, color: R.petroleo, flex: "1 1 220px" }}>Los cambios se guardan solos. Las franjas son siempre las mismas; solo cambian sus horas.</span>
+          <button type="button" onClick={() => setHorario({})} style={{ minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Volver al horario inicial</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Datos del centro (Administración): nombre y localidad que salen en la app, los PDF y los correos
 function DatosCentro({ datos, setDatos }) {
   const campo = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
@@ -5437,7 +5488,7 @@ function DatosCentro({ datos, setDatos }) {
   const nombre = datos.nombre?.trim() || CENTRO_POR_DEFECTO.nombre, ciudad = datos.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
   return (
     <div style={{ marginBottom: 24 }}>
-      <TituloBloque titulo="Datos del centro" sub="Aparecen en la entrada, en la cabecera, en los PDF y en los correos a las familias" icono="edificio" />
+      <TituloBloque titulo="Datos del centro" sub="Nombre, localidad y logotipo: salen en la entrada, la cabecera, los PDF y los correos a las familias" icono="edificio" />
       <div style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           <div>
@@ -5448,6 +5499,32 @@ function DatosCentro({ datos, setDatos }) {
             <label style={etiqueta} htmlFor="gd-centro-ciudad">Localidad</label>
             <input id="gd-centro-ciudad" value={datos.ciudad || ""} onChange={e => setDatos(d => ({ ...d, ciudad: e.target.value }))} placeholder="Por ejemplo, Madrid" style={campo} />
           </div>
+        </div>
+        <div>
+          <div style={etiqueta}>Logotipo para los documentos <span style={{ fontWeight: 400 }}>(opcional)</span></div>
+          <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>Sale al pie de cada página de los PDF. Usa solo imágenes que el centro tenga permiso para usar.</div>
+          {datos.logo?.data
+            ? <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 10 }}>
+                <img src={datos.logo.data} alt="Logotipo para los documentos" style={{ maxHeight: 60, maxWidth: "100%", display: "block" }} />
+                <button type="button" onClick={() => setDatos(d => ({ ...d, logo: null }))} style={{ minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Quitar logotipo</button>
+              </div>
+            : <input id="gd-centro-logo" type="file" accept="image/png,image/jpeg" aria-label="Logotipo para los documentos" onChange={e => {
+                const f = e.target.files?.[0]; if (!f) return;
+                const lector = new FileReader();
+                lector.onload = () => {
+                  const img = new Image();
+                  img.onload = () => {
+                    // Se reduce para que ocupe poco: como mucho 900 × 240 píxeles
+                    const k = Math.min(1, 900 / img.width, 240 / img.height);
+                    const lienzo = document.createElement("canvas");
+                    lienzo.width = Math.round(img.width * k); lienzo.height = Math.round(img.height * k);
+                    lienzo.getContext("2d").drawImage(img, 0, 0, lienzo.width, lienzo.height);
+                    setDatos(d => ({ ...d, logo: { data: lienzo.toDataURL("image/png"), w: lienzo.width, h: lienzo.height } }));
+                  };
+                  img.src = lector.result;
+                };
+                lector.readAsDataURL(f);
+              }} style={{ fontSize: 16, color: R.petroleo }} />}
         </div>
         <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: "10px 14px", fontSize: 15, color: R.petroleo }}>
           Así aparecerá: <b>{nombre.toUpperCase()} · {ciudad.toUpperCase()}</b>
@@ -6080,6 +6157,8 @@ function AppInterna() {
   const [avisosFamilia, setAvisosFamilia] = useState({});
   const [datosCentro, setDatosCentro] = useState(CENTRO_POR_DEFECTO);
   fijarCentro(datosCentro);
+  const [horarioCentro, setHorarioCentro] = useState({});
+  fijarHorario(horarioCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
   useEffect(() => {
@@ -6204,6 +6283,7 @@ function AppInterna() {
       const avf = await sGet("avisos_familia"); if (avf) setAvisosFamilia(avf);
       const cc = await sGet("correos_centro"); if (cc) setCorreosCentro(cc);
       const dc = await sGet("datos_centro"); if (dc) setDatosCentro(dc);
+      const hc = await sGet("horario_centro"); if (hc) setHorarioCentro(hc);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -6242,6 +6322,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("avisos_familia", avisosFamilia); }, [avisosFamilia, loading]);
   useEffect(() => { if (!loading) sSet("correos_centro", correosCentro); }, [correosCentro, loading]);
   useEffect(() => { if (!loading) sSet("datos_centro", datosCentro); }, [datosCentro, loading]);
+  useEffect(() => { if (!loading) sSet("horario_centro", horarioCentro); }, [horarioCentro, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
   useEffect(() => { if (identidadFija) { setFProfesor(usuario); setAusProfesor(usuario); } }, [usuario, identidadFija]);
@@ -7519,6 +7600,7 @@ function AppInterna() {
 
         {/* ── Admin Alumnos ── */}
         {tab === "admin_panel" && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
+        {tab === "admin_panel" && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
         {tab === "admin_panel" && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
