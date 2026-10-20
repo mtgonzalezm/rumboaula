@@ -290,3 +290,84 @@ test('Ficha del alumno: el contacto y el total de partes solo los ve su tutor/a'
   await expect(page.getByText(/Eres su tutor\/a · Partes en total/)).toBeVisible()
   expect(errores).toEqual([])
 })
+
+// ───────────────────────── Medidas correctoras ─────────────────────────
+test('Medidas correctoras: la profe indica la medida, Jefatura pone día y aula y controla si se cumple', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page) // Carmen López
+  // Parte leve: la profe indica la medida y cuántas veces, sin fechas
+  await page.getByPlaceholder('Nombre o curso…').first().fill('Lucía Martínez')
+  await page.getByText('Lucía Martínez García', { exact: true }).first().click()
+  await page.getByPlaceholder(/Describe detalladamente/).fill('Prueba automática: medida de recreo.')
+  await page.getByRole('button', { name: /Generar Parte/ }).click()
+  await page.getByRole('button', { name: /Poner medida correctora/ }).click()
+  await page.locator('#gd-medida-tipo').selectOption('recreo')
+  await page.locator('#gd-medida-veces').selectOption('2')
+  await expect(page.getByText(/Jefatura de Estudios pondrá el día y el aula/)).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar medida' }).click()
+  const parte = (await leer(page, 'partes'))[0]
+  const medida = (await leer(page, 'medidas')).find((m: { parteId: number }) => m.parteId === parte.id)
+  expect(medida).toMatchObject({ tipo: 'recreo', veces: 2, sesiones: [], alumno: 'Lucía Martínez García', puestaPor: 'Carmen López' })
+  // En un parte grave, la medida la pone Jefatura
+  await page.getByPlaceholder('Nombre o curso…').first().fill('Lucía Martínez')
+  await page.getByText('Lucía Martínez García', { exact: true }).first().click()
+  await page.locator('select').filter({ hasText: 'Muy Grave' }).first().selectOption({ label: '⚠️ Grave' })
+  await page.getByPlaceholder(/Describe detalladamente/).fill('Prueba automática: parte grave.')
+  await page.getByRole('button', { name: /Generar Parte/ }).click()
+  await expect(page.getByText('Las medidas de las faltas graves y muy graves las pone Jefatura de Estudios.')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Poner medida correctora/ })).toHaveCount(0)
+  // Jefatura pone el día y el aula
+  await salir(page)
+  await comoJefatura(page)
+  await pestaña(page, /Medidas/)
+  const tarjeta = page.locator(`[data-medida="${medida.id}"]`)
+  await tarjeta.getByRole('button', { name: 'Poner día y aula' }).click()
+  await tarjeta.getByRole('button', { name: 'Hoy', exact: true }).click()
+  await tarjeta.getByRole('button', { name: 'Programar' }).click()
+  let tras = (await leer(page, 'medidas')).find((m: { id: number }) => m.id === medida.id)
+  expect(tras.sesiones).toEqual([{ fecha: '2026-10-07', hora: 'Recreo', lugar: 'Aula de convivencia', lugarId: 'aula-conv', estado: 'pendiente' }])
+  // Lista del día en PDF
+  await page.getByRole('button', { name: /Descargar la lista de hoy/ }).click()
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Descargar PDF/ }).first().click()
+  expect((await descarga).suggestedFilename()).toBe('medidas-2026-10-07.pdf')
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  // No se presenta: alerta y parte 9L
+  await page.locator(`[data-medida="${medida.id}"]`).getByRole('button', { name: /No se ha presentado/ }).first().click()
+  tras = (await leer(page, 'medidas')).find((m: { id: number }) => m.id === medida.id)
+  expect(tras.sesiones[0].estado).toBe('ausente')
+  expect((await leer(page, 'alertas')).some((a: { tipo: string, alumno: string }) => a.tipo === 'medida_incumplida' && a.alumno === 'Lucía Martínez García')).toBe(true)
+  const antes = (await leer(page, 'partes')).length
+  await page.locator(`[data-medida="${medida.id}"]`).getByRole('button', { name: 'Poner parte por no cumplirla' }).last().click()
+  const partes = await leer(page, 'partes')
+  expect(partes.length).toBe(antes + 1)
+  expect(partes[0]).toMatchObject({ alumno: 'Lucía Martínez García', gravedad: 'leve', tipificacion: '9L', profesor: 'Ana Jiménez' })
+  await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
+
+test('Medidas correctoras: la guardia del aula de convivencia ve a su alumnado y marca si ha venido', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  // Quién está hoy de guardia en el aula de convivencia durante el recreo (datos de ejemplo)
+  const cuadrante = await leer(page, 'cuadrante')
+  const clave = Object.keys(cuadrante).find(k => k.startsWith('2026-10-07|Recreo|') && cuadrante[k] === 'aula-conv')
+  expect(clave).toBeTruthy()
+  const profe = clave!.split('|')[2]
+  const medida = (await leer(page, 'medidas')).find((m: { sesiones: { fecha: string, hora: string, lugarId: string }[] }) =>
+    m.sesiones.some(s => s.fecha === '2026-10-07' && s.hora === 'Recreo' && s.lugarId === 'aula-conv'))
+  expect(medida).toBeTruthy()
+  // Entra esa persona y lo ve en «Mi guardia hoy»
+  await page.locator('#gd-otro-profe').selectOption(profe)
+  await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await sinFalloEnPantalla(page)
+  const fila = page.locator(`[data-medida="${medida.id}"]`)
+  await expect(fila.getByText(medida.alumno)).toBeVisible()
+  await fila.getByRole('button', { name: /Ha venido/ }).click()
+  const tras = (await leer(page, 'medidas')).find((m: { id: number }) => m.id === medida.id)
+  const sesion = tras.sesiones.find((s: { fecha: string, hora: string }) => s.fecha === '2026-10-07' && s.hora === 'Recreo')
+  expect(sesion).toMatchObject({ estado: 'cumplida', marcadaPor: profe })
+  expect(errores).toEqual([])
+})
