@@ -195,7 +195,7 @@ test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', asyn
   const antes = (await leer(page, 'alumnos')).length
   const csv = 'Nombre;Curso;Email;Telefono\nAlumna Prueba Uno;1º ESO A;fam1@ejemplo.es;600000001\nAlumno Prueba Dos;1º ESO B;fam2@ejemplo.es;600000002\n'
   const subir = async () => {
-    await page.locator('input[type=file]').setInputFiles({ name: 'raices.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+    await page.locator('input[type=file]:not(#gd-centro-logo)').setInputFiles({ name: 'raices.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
     await page.getByRole('button', { name: /Confirmar|Importar/ }).last().click()
   }
   await subir()
