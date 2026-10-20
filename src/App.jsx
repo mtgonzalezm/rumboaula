@@ -1240,8 +1240,277 @@ function ComoAvisar({ parte }) {
   );
 }
 
+// ─── Medidas correctoras ─────────────────────────────────────────────────────
+// En las faltas leves, quien pone el parte elige una de las tres medidas habituales (aula de convivencia,
+// supresión del recreo o una hora más), con sus días. El resto de medidas las pone Jefatura.
+// Jefatura marca cada día si el alumno o alumna ha cumplido.
+const TIPOS_MEDIDA = [
+  { id: "aula_conv",  label: "Aula de convivencia",            leve: true, sesiones: true, horas: true },
+  { id: "recreo",     label: "Supresión del recreo",           leve: true, sesiones: true, hora: "Recreo" },
+  { id: "hora_mas",   label: "Una hora más al final del día",  leve: true, sesiones: true, hora: "7ª hora" },
+  { id: "tarea",      label: "Tarea correctora" },
+  { id: "amonestacion", label: "Amonestación por escrito" },
+  { id: "comparecencia", label: "Comparecencia ante Jefatura" },
+  { id: "extraescolar", label: "Sin actividades extraescolares" },
+  { id: "expulsion_clase", label: "Expulsión de determinadas clases", sesiones: true, horas: true },
+  { id: "expulsion_centro", label: "Expulsión temporal del centro", sesiones: true, hora: "Todo el día" },
+  { id: "cambio_grupo", label: "Cambio de grupo" },
+  { id: "otra",       label: "Otra medida" },
+];
+const tipoMedida = id => TIPOS_MEDIDA.find(t => t.id === id) || TIPOS_MEDIDA[TIPOS_MEDIDA.length - 1];
+const ESTADO_MEDIDA = {
+  pendiente:  { label: "Pendiente",   color: R.gris,     texto: R.petroleo },
+  en_curso:   { label: "En curso",    color: R.azulClaro, texto: R.petroleo },
+  cumplida:   { label: "Cumplida",    color: R.verde,    texto: R.noche },
+  incumplida: { label: "No cumplida", color: R.mostaza,  texto: R.noche },
+};
+// Una medida con días está cumplida cuando se han cumplido todos; si falta a alguno, queda sin cumplir
+function estadoMedida(m) {
+  const ses = (m.sesiones || []).filter(s => s.estado !== "movida");
+  if (!ses.length) return m.cumplida ? "cumplida" : "pendiente";
+  if ((m.sesiones || []).some(s => s.estado === "ausente")) return "incumplida";
+  if (ses.every(s => s.estado === "cumplida")) return "cumplida";
+  return ses.some(s => s.estado === "cumplida") ? "en_curso" : "pendiente";
+}
+const proximosLectivos = (n, desde = new Date()) => {
+  const r = []; let d = parseISO(desde);
+  while (r.length < n) { if (d.getDay() !== 0 && d.getDay() !== 6) r.push(isoLocal(d)); d = sumarDias(d, 1); }
+  return r;
+};
+const fechaCorta = f => parseISO(f).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+const ChipMedida = ({ m }) => {
+  const e = ESTADO_MEDIDA[estadoMedida(m)];
+  return <span style={{ background: e.color, color: e.texto, borderRadius: 4, padding: "3px 10px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{e.label}</span>;
+};
+// Resumen de una medida: tipo, días y quién la puso
+function ResumenMedida({ m }) {
+  const t = tipoMedida(m.tipo);
+  const ses = (m.sesiones || []).filter(s => s.estado !== "movida");
+  const hechas = ses.filter(s => s.estado === "cumplida").length;
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+        <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 16 }}>{t.label}{ses.length > 0 && <span style={{ fontWeight: 400 }}> · {hechas} de {ses.length} cumplido{ses.length !== 1 ? "s" : ""}</span>}</div>
+        {ses.length > 0 && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{ses.map(s => `${fechaCorta(s.fecha)}${s.hora && s.hora !== t.hora ? ` (${s.hora})` : ""}${s.estado === "cumplida" ? " ✓" : s.estado === "ausente" ? " ✗" : ""}`).join(" · ")}</div>}
+        {m.detalle && <div style={{ fontSize: 14, color: R.noche, marginTop: 2 }}>{m.detalle}</div>}
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>Puesta por {m.puestaPor} · {fmtD(m.ts)}</div>
+      </div>
+      <ChipMedida m={m} />
+    </div>
+  );
+}
+
+// Formulario para poner una medida a partir de un parte
+function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
+  const tipos = esJefatura ? TIPOS_MEDIDA : parte.gravedad === "leve" ? TIPOS_MEDIDA.filter(t => t.leve) : [];
+  const [tipo, setTipo] = useState(tipos[0]?.id || "");
+  const [fechas, setFechas] = useState([]);
+  const [hora, setHora] = useState("1ª hora");
+  const [otraFecha, setOtraFecha] = useState(isoLocal());
+  const [detalle, setDetalle] = useState("");
+  const t = tipoMedida(tipo);
+  const campo = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
+  const etiqueta = { display: "block", fontWeight: 700, fontSize: 15, color: R.petroleo, marginBottom: 8 };
+  const boton = { minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" };
+  const anadir = fs => setFechas(prev => [...new Set([...prev, ...fs])].sort());
+  if (!tipos.length) return (
+    <div style={{ background: R.crema, padding: 14, color: R.petroleo, fontSize: 15 }}>
+      Las medidas de las faltas graves y muy graves las pone Jefatura de Estudios.
+      <div><button type="button" onClick={onCancelar} style={{ ...boton, marginTop: 10 }}>Cerrar</button></div>
+    </div>
+  );
+  const listo = tipo && (!t.sesiones || fechas.length > 0) && (tipo !== "otra" || detalle.trim());
+  const guardar = () => onGuardar({
+    id: Date.now(), parteId: parte.id, alumnoId: parte.alumnoId, alumno: parte.alumno, curso: parte.curso, gravedad: parte.gravedad, tipo,
+    sesiones: t.sesiones ? fechas.map(f => ({ fecha: f, hora: t.hora || hora, estado: "pendiente" })) : [],
+    detalle: detalle.trim(), puestaPor: usuario, ts: new Date().toISOString(),
+  });
+  return (
+    <div style={{ background: R.azulClaro, padding: 14, display: "grid", gap: 14 }}>
+      <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo }}>Poner medida correctora</div>
+      <div>
+        <label style={etiqueta} htmlFor="gd-medida-tipo">Medida</label>
+        <select id="gd-medida-tipo" value={tipo} onChange={e => { setTipo(e.target.value); setFechas([]); }} style={campo}>
+          {tipos.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        {!esJefatura && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Las demás medidas las pone Jefatura de Estudios.</div>}
+      </div>
+      {t.horas && (
+        <div>
+          <label style={etiqueta} htmlFor="gd-medida-hora">Hora</label>
+          <select id="gd-medida-hora" value={hora} onChange={e => setHora(e.target.value)} style={campo}>
+            {HORAS.filter(h => h !== "Recreo").map(h => <option key={h} value={h}>{conTramo(h)}</option>)}
+          </select>
+        </div>
+      )}
+      {t.sesiones && (
+        <div>
+          <div style={etiqueta}>Días{t.hora ? ` · ${t.hora === "Todo el día" ? "todo el día" : conTramo(t.hora)}` : ""}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <button type="button" style={boton} onClick={() => anadir([isoLocal()])}>Hoy</button>
+            <button type="button" style={boton} onClick={() => anadir(proximosLectivos(1, sumarDias(new Date(), 1)))}>Próximo día lectivo</button>
+            <button type="button" style={boton} onClick={() => anadir(proximosLectivos(3, sumarDias(new Date(), 1)))}>Próximos 3 días</button>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input type="date" aria-label="Otro día" value={otraFecha} onChange={e => setOtraFecha(e.target.value)} style={{ ...campo, flex: "1 1 0", minWidth: 0 }} />
+            <button type="button" style={boton} onClick={() => otraFecha && anadir([otraFecha])}>Añadir</button>
+          </div>
+          {fechas.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              {fechas.map(f => (
+                <span key={f} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.white, border: `2px solid ${R.turquesa}`, borderRadius: 22, padding: "2px 4px 2px 12px", fontSize: 15, fontWeight: 700, color: R.petroleo }}>
+                  {fechaCorta(f)}
+                  <button type="button" aria-label={`Quitar ${fechaCorta(f)}`} onClick={() => setFechas(prev => prev.filter(x => x !== f))}
+                    style={{ width: 32, height: 32, border: "none", borderRadius: "50%", background: R.azulClaro, color: R.petroleo, fontSize: 18, cursor: "pointer" }}>×</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div>
+        <label style={etiqueta} htmlFor="gd-medida-detalle">{tipo === "otra" ? "Describe la medida" : "Observaciones (opcional)"}</label>
+        <textarea id="gd-medida-detalle" rows={2} value={detalle} onChange={e => setDetalle(e.target.value)} placeholder="Por ejemplo, la tarea que tiene que hacer" style={{ ...campo, resize: "vertical" }} />
+      </div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button type="button" onClick={guardar} disabled={!listo}
+          style={{ minHeight: 48, padding: "0 20px", borderRadius: 6, border: "none", background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, opacity: listo ? 1 : .7, fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }}>Guardar medida</button>
+        <button type="button" onClick={onCancelar} style={{ minHeight: 48, padding: "0 12px", border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 16, cursor: "pointer" }}>Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+// Medidas de un parte, con el botón para poner una nueva (en la ventana del parte y tras generarlo)
+function MedidasDeParte({ parte, medidas, setMedidas, esJefatura, usuario, abiertaInicial = false }) {
+  const [abierta, setAbierta] = useState(abiertaInicial);
+  const lista = medidas.filter(m => m.parteId === parte.id);
+  const puede = esJefatura || (parte.gravedad === "leve" && parte.profesor === usuario);
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: R.petroleo, fontSize: 17, marginBottom: 8 }}><Icono nombre="tipificacion" tam={32} />Medidas correctoras</div>
+      {lista.length === 0 && !abierta && <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 8 }}>Todavía no tiene ninguna medida.</div>}
+      {lista.map(m => <div key={m.id} style={{ border: `1px solid ${R.turquesaClaro}`, borderLeft: `8px solid ${ESTADO_MEDIDA[estadoMedida(m)].color}`, padding: 12, marginBottom: 8, background: C.white }}><ResumenMedida m={m} /></div>)}
+      {abierta
+        ? <FormMedida parte={parte} esJefatura={esJefatura} usuario={usuario} onCancelar={() => setAbierta(false)} onGuardar={m => { setMedidas(prev => [m, ...prev]); setAbierta(false); }} />
+        : !puede && parte.gravedad !== "leve"
+          ? <div style={{ fontSize: 15, color: R.petroleo, background: R.crema, padding: "10px 12px" }}>Las medidas de las faltas graves y muy graves las pone Jefatura de Estudios.</div>
+          : puede && <button type="button" onClick={() => setAbierta(true)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>➕ Poner medida correctora</button>}
+    </div>
+  );
+}
+
+// Pestaña de Jefatura: qué medidas hay hoy, quién ha cumplido y qué queda pendiente
+function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimiento, onVerParte }) {
+  const [verCumplidas, setVerCumplidas] = useState(false);
+  const [nuevaFecha, setNuevaFecha] = useState({});
+  const hoy = isoLocal();
+  const cambiar = (id, fn) => setMedidas(prev => prev.map(m => m.id === id ? fn(m) : m));
+  const marcar = (m, i, estado) => {
+    cambiar(m.id, x => ({ ...x, sesiones: x.sesiones.map((s, j) => j === i ? { ...s, estado } : s) }));
+    if (estado === "ausente") onAlerta({ id: Date.now(), tipo: "medida_incumplida", alumno: m.alumno, curso: m.curso, msg: `No se ha presentado a «${tipoMedida(m.tipo).label}» (${fechaCorta(m.sesiones[i].fecha)} · ${m.sesiones[i].hora})`, ts: new Date().toISOString(), leida: false });
+  };
+  const moverDia = (m, fecha) => cambiar(m.id, x => ({ ...x, sesiones: [...x.sesiones.map(s => s.estado === "ausente" ? { ...s, estado: "movida" } : s), { fecha, hora: x.sesiones.find(s => s.estado === "ausente")?.hora || tipoMedida(x.tipo).hora || "Recreo", estado: "pendiente" }] }));
+  const deHoy = medidas.flatMap(m => (m.sesiones || []).map((s, i) => ({ m, s, i })).filter(({ s }) => s.fecha === hoy && s.estado !== "movida"))
+    .sort((a, b) => HORAS.indexOf(a.s.hora) - HORAS.indexOf(b.s.hora));
+  const porEstado = e => medidas.filter(m => estadoMedida(m) === e);
+  const tarjeta = { background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12, marginBottom: 8 };
+  const boton = (fondo, letra) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: fondo === C.white ? `2px solid ${R.azul}` : "none", background: fondo, color: letra, fontSize: 15, fontWeight: 700, cursor: "pointer" });
+  const verParte = m => { const p = partes.find(x => x.id === m.parteId); if (p) onVerParte(p); };
+  const barra = (texto, fondo) => <div style={{ background: fondo, color: R.noche, padding: "10px 14px", fontSize: 17, fontWeight: 700, marginTop: 22 }}>{texto}</div>;
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Medidas correctoras" sub="Quién tiene que cumplir hoy y qué queda pendiente" icono="tipificacion" /></div>
+      {barra(`Hoy, ${fechaCorta(hoy)}`, R.mostaza)}
+      <div style={{ background: R.crema, padding: 12 }}>
+        {deHoy.length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>Hoy no hay medidas que cumplir.</div>}
+        {deHoy.map(({ m, s, i }) => (
+          <div key={`${m.id}-${i}`} data-medida={m.id} style={{ ...tarjeta, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+              <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+              <div style={{ fontSize: 15, color: R.petroleo }}>{tipoMedida(m.tipo).label} · {conTramo(s.hora) || s.hora} · puesta por {m.puestaPor}</div>
+            </div>
+            {s.estado === "pendiente" ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => marcar(m, i, "cumplida")} style={boton(R.verde, R.noche)}>✓ Ha venido</button>
+                <button type="button" onClick={() => marcar(m, i, "ausente")} style={boton(C.white, R.petroleo)}>✗ No se ha presentado</button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontWeight: 700, fontSize: 15, color: R.petroleo }}>{s.estado === "cumplida" ? "✓ Ha venido" : "✗ No se ha presentado"}</span>
+                <button type="button" onClick={() => marcar(m, i, "pendiente")} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Deshacer</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {barra(`Sin cumplir (${porEstado("incumplida").length})`, R.mostaza)}
+      <div style={{ background: R.crema, padding: 12 }}>
+        {porEstado("incumplida").length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas sin cumplir.</div>}
+        {porEstado("incumplida").map(m => (
+          <div key={m.id} data-medida={m.id} style={tarjeta}>
+            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            <ResumenMedida m={m} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+              <input type="date" aria-label={`Nuevo día para ${m.alumno}`} value={nuevaFecha[m.id] || proximosLectivos(1, sumarDias(new Date(), 1))[0]} onChange={e => setNuevaFecha(v => ({ ...v, [m.id]: e.target.value }))}
+                style={{ minHeight: 44, padding: "6px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche }} />
+              <button type="button" onClick={() => moverDia(m, nuevaFecha[m.id] || proximosLectivos(1, sumarDias(new Date(), 1))[0])} style={boton(C.white, R.petroleo)}>Pasar a otro día</button>
+              {m.parteIncumplimiento
+                ? <span style={{ fontSize: 15, color: R.petroleo, fontWeight: 700 }}>✓ Parte 9L puesto</span>
+                : <button type="button" onClick={() => { const id = onParteIncumplimiento(m); cambiar(m.id, x => ({ ...x, parteIncumplimiento: id })); }} style={boton(R.azul, "#fff")}>Poner parte por no cumplirla</button>}
+              <button type="button" onClick={() => verParte(m)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Ver el parte</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {barra(`Pendientes y en curso (${porEstado("pendiente").length + porEstado("en_curso").length})`, R.turquesa)}
+      <div style={{ background: R.azulClaro, padding: 12 }}>
+        {[...porEstado("en_curso"), ...porEstado("pendiente")].length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>No hay medidas pendientes.</div>}
+        {[...porEstado("en_curso"), ...porEstado("pendiente")].map(m => (
+          <div key={m.id} style={tarjeta}>
+            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            <ResumenMedida m={m} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              {!(m.sesiones || []).length && <button type="button" onClick={() => cambiar(m.id, x => ({ ...x, cumplida: true }))} style={boton(R.verde, R.noche)}>✓ Marcar como cumplida</button>}
+              <button type="button" onClick={() => verParte(m)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Ver el parte</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {barra(`Cumplidas (${porEstado("cumplida").length})`, R.verde)}
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12 }}>
+        <button type="button" onClick={() => setVerCumplidas(v => !v)} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, fontSize: 16, fontWeight: 700, cursor: "pointer", padding: 0 }}>{verCumplidas ? "▾ Ocultar" : "▸ Ver las medidas cumplidas"}</button>
+        {verCumplidas && porEstado("cumplida").map(m => (
+          <div key={m.id} style={{ ...tarjeta, marginTop: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+            <ResumenMedida m={m} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Medidas de ejemplo para la demostración, a partir de partes leves recientes (todo ficticio)
+function medidasEjemplo(partes) {
+  const leves = partes.filter(p => p.gravedad === "leve").slice(0, 5);
+  if (leves.length < 5) return [];
+  const hoy = isoLocal(), ayer = isoLocal(sumarDias(new Date(), -1)), manana = proximosLectivos(1, sumarDias(new Date(), 1))[0];
+  const base = (p, extra) => ({ id: p.id + 7, parteId: p.id, alumnoId: p.alumnoId, alumno: p.alumno, curso: p.curso, gravedad: p.gravedad, detalle: "", puestaPor: p.profesor, ts: p.ts, ...extra });
+  return [
+    base(leves[0], { tipo: "recreo", sesiones: [{ fecha: hoy, hora: "Recreo", estado: "pendiente" }, { fecha: manana, hora: "Recreo", estado: "pendiente" }] }),
+    base(leves[1], { tipo: "aula_conv", sesiones: [{ fecha: hoy, hora: "3ª hora", estado: "pendiente" }] }),
+    base(leves[2], { tipo: "hora_mas", sesiones: [{ fecha: ayer, hora: "7ª hora", estado: "cumplida" }, { fecha: hoy, hora: "7ª hora", estado: "pendiente" }] }),
+    base(leves[3], { tipo: "recreo", sesiones: [{ fecha: ayer, hora: "Recreo", estado: "ausente" }] }),
+    base(leves[4], { tipo: "aula_conv", sesiones: [{ fecha: ayer, hora: "2ª hora", estado: "cumplida" }] }),
+  ];
+}
+
 // ─── Tarjeta de parte ────────────────────────────────────────────────────────
-function ParteCard({ parte, onVer, onPrint }) {
+function ParteCard({ parte, onVer, onPrint, medidas = [] }) {
   const g = gObj(parte.gravedad);
   return (
     <div onClick={onVer} role="button" tabIndex={0} title="Pulsa para ver el parte en grande"
@@ -1261,6 +1530,11 @@ function ParteCard({ parte, onVer, onPrint }) {
           <div style={{ fontSize: 15, marginTop: 6, color: R.noche, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {parte.descripcion}
           </div>
+          {medidas.map(m => (
+            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8, fontSize: 15, color: R.petroleo }}>
+              <Ic n="tipificacion" tam={22} /><b>{tipoMedida(m.tipo).label}</b><ChipMedida m={m} />
+            </div>
+          ))}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
           <Badge g={parte.gravedad} />
@@ -2400,8 +2674,12 @@ const AYUDAS = {
     "Filtra por curso, alumno, gravedad o fechas.",
     "Pulsa «Ver» para consultar un parte o «PDF» para guardarlo."] },
   bano_live: { titulo: "Baños en tiempo real", pasos: ["Arriba, los alumnos que están fuera del aula ahora mismo; debajo, el historial del día."] },
+  medidas: { titulo: "Medidas correctoras", pasos: [
+    "Arriba, quién tiene que cumplir hoy una medida (recreo, aula de convivencia, una hora más…). Marca «Ha venido» o «No se ha presentado».",
+    "Si no se presenta, sale una alerta y la medida pasa a «Sin cumplir»: pásala a otro día o pon el parte por no cumplirla (9L).",
+    "Debajo, las medidas pendientes y las cumplidas. Las medidas se ponen desde cada parte, con «Poner medida correctora»."] },
   alertas: { titulo: "Alertas", pasos: [
-    "Avisos automáticos: tercer parte leve, tercer parte de un alumno, parte fuera de horario y salidas al baño repetidas.",
+    "Avisos automáticos: tercer parte leve, tercer parte de un alumno, parte fuera de horario, salidas al baño repetidas y medidas sin cumplir.",
     "Pulsa una alerta para marcarla como leída."] },
   informe: { titulo: "Informes", pasos: [
     "Elige si quieres un informe de partes o de salidas al baño.",
@@ -5605,6 +5883,7 @@ function AppInterna() {
   DATOS_CENTRO.alumnos = alumnos;
   const [profesores, setProfesores] = useState(DEMO_PROFESORES);
   const [partes, setPartes]       = useState([]);
+  const [medidas, setMedidas]     = useState([]);
   DATOS_CENTRO.partes = partes;
   const [banos, setBanos]         = useState([]);
   const [alertas, setAlertas]     = useState([]);
@@ -5718,10 +5997,12 @@ function AppInterna() {
       const tu = await sGet("tutores");   if (tu) setTutores(tu);
       const inf = await sGet("informes"); if (inf) setInformes(inf);
       // Primera visita a la demostración: se cargan partes, baños y alertas de ejemplo
+      const me = await sGet("medidas"); if (me) setMedidas(me);
       if (MODO_DEMO && !p) {
         const ej = datosEjemploConvivencia(DEMO_PROFESORES);
         setAlumnos(ej.alumnos); setPartes(ej.partes); setBanos(ej.banos); setAlertas(ej.alertas); setInformes(ej.informes); setTutores(ej.tutores);
-      }
+        if (!me) setMedidas(medidasEjemplo(ej.partes));
+      } else if (MODO_DEMO && !me) setMedidas(medidasEjemplo(p));
       const pr = await sGet("profesores");if (pr) setProfesores(pr);
       const g  = await sGet("guardias");    if (g)  setGuardias(g);
       const cq = await sGet("cuadrante");   if (cq) setCuadrante(cq);
@@ -5751,6 +6032,7 @@ function AppInterna() {
   }, []);
 
   useEffect(() => { if (!loading) sSet("partes", partes); },     [partes, loading]);
+  useEffect(() => { if (!loading) sSet("medidas", medidas); },   [medidas, loading]);
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
   useEffect(() => { if (!loading) sSet("alertas", alertas); },   [alertas, loading]);
   useEffect(() => { if (!loading) sSet("mensajes", mensajes); }, [mensajes, loading]);
@@ -5884,6 +6166,15 @@ function AppInterna() {
     setFAlumno(""); setFBusqueda(""); setFDesc(""); setFTipo("Comportamiento"); setFGravedad("leve"); setFTipificacion("");
   }
 
+  function ponerParteIncumplimiento(m) {
+    const al = alumnos.find(a => a.id === m.alumnoId) || {};
+    const dias = (m.sesiones || []).filter(s => s.estado === "ausente").map(s => fechaCorta(s.fecha)).join(", ");
+    const p = { id: Date.now(), alumnoId: m.alumnoId, alumno: m.alumno, curso: m.curso, tutor: tutorDeGrupo(tutores, alumnos, m.curso) || al.tutor || "", tutorEmail: tutores[m.curso]?.email || "", email: al.email || "", telefono: al.telefono || "", tipo: "Comportamiento", gravedad: "leve", tipificacion: "9L", descripcion: `No ha cumplido la medida «${tipoMedida(m.tipo).label}»${dias ? ` (${dias})` : ""} impuesta por un parte anterior.`, profesor: usuario, hora: "", ts: new Date().toISOString() };
+    generarAlertasParte(p, partes);
+    setPartes(prev => [p, ...prev]);
+    return p.id;
+  }
+
   function crearParteGrupo() {
     if (!gCurso || !gDesc.trim()) return;
     const grupo = alumnos.filter(a => a.curso === gCurso && !gExcluidos.includes(a.id));
@@ -5977,6 +6268,7 @@ function AppInterna() {
   );
 
   const avisosPendientes = perfil.id === "profesor" && usuario ? alumnosParaAvisar({ partes, usuario, tutores, avisos: avisosFamilia }).lista.filter(x => x.pendiente).length : 0;
+  const medidasHoy = medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
   const tabs = perfil.id === "profesor"
     ? moduloProfesor === "alumnos"
       ? [
@@ -6001,6 +6293,7 @@ function AppInterna() {
           { id: "por_curso",    label: "🏫 Por Curso", color: "#ec4899" },
           { id: "por_alumno",   label: "👤 Por Alumno", color: "#63CBA1" },
           { id: "partes_todos", label: "📋 Partes", color: "#2B647E" },
+          { id: "medidas",      label: `⚖️ Medidas${medidasHoy ? ` (${medidasHoy})` : ""}`, color: "#2B647E" },
           { id: "bano_live",    label: "🚻 Baños", color: "#06b6d4" },
           { id: "alertas",      label: `🔔${alertasNoLeidas > 0 ? ` (${alertasNoLeidas})` : ""} Alertas`, color: "#ec4899" },
           { id: "informe",      label: "📤 Informe", color: "#63CBA1" },
@@ -6076,7 +6369,7 @@ function AppInterna() {
           .gd-cuerpo { display: grid; grid-template-columns: 250px minmax(0, 1fr); align-items: stretch; min-height: calc(100vh - 110px); }
           .gd-lateral { display: flex; flex-direction: column; background: ${R.turquesa}; }
           .gd-modulos { display: contents; }
-          .gd-modulo { justify-content: flex-start; border-right: none; border-bottom: 1px solid rgba(255,255,255,.7); min-height: 50px; padding: 0 16px; font-size: 22px; }
+          .gd-modulo { justify-content: flex-start; text-align: left; border-right: none; border-bottom: 1px solid rgba(255,255,255,.7); min-height: 50px; padding: 6px 16px; font-size: 22px; line-height: 1.2; }
           .gd-modulo.activo { box-shadow: none; }
           .gd-tabs { flex-direction: column; overflow: visible; background: ${R.turquesaClaro}; border-bottom: none; }
           .gd-tab { border-right: none; border-bottom: 1px solid rgba(255,255,255,.8); padding: 6px 16px 6px 34px; white-space: normal; text-align: left; color: ${R.noche}; }
@@ -6107,7 +6400,7 @@ function AppInterna() {
               <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo, marginTop: 4 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
             </div>
           </div>
-          <div className="gd-saludo-cab" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: R.petroleo, minWidth: 0 }}>
+          <div className="gd-saludo-cab" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: R.petroleo, minWidth: 0, maxWidth: 560 }}>
             <Icono nombre="perfil" tam={34} />
             <span>Hola <span style={{ color: R.azul }}>{usuario}</span>, tu perfil es <span style={{ color: R.azul }}>{sinEmoji1(perfil.label)}</span> y tu centro es {CENTRO}.</span>
           </div>
@@ -6238,6 +6531,7 @@ function AppInterna() {
                     <button className="gd-pulsable" onClick={() => setShowParte(completar(parteGenerado))} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 16px", cursor: "pointer", fontSize: 16, fontWeight: 700, display: "inline-flex", alignItems: "center" }}><Ic n="buscar" tam={20} />Ver</button>
                   </div>
                 </div>
+                <MedidasDeParte key={parteGenerado.id} parte={parteGenerado} medidas={medidas} setMedidas={setMedidas} esJefatura={perfil.id === "jefatura"} usuario={usuario} />
                 <ComoAvisar parte={completar(parteGenerado)} />
               </Card>
             )}
@@ -6502,7 +6796,7 @@ function AppInterna() {
             <div style={{ height: 16 }} />
             {partes.filter(p => p.profesor === fProfesor).length === 0
               ? <Card style={{ textAlign: "center", color: R.petroleo, padding: 40, fontSize: 16 }}>No has generado ningún parte aún</Card>
-              : partes.filter(p => p.profesor === fProfesor).map(p => <ParteCard key={p.id} parte={p} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
+              : partes.filter(p => p.profesor === fProfesor).map(p => <ParteCard key={p.id} parte={p} medidas={medidas.filter(m => m.parteId === p.id)} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
           </div>
         )}
 
@@ -6675,7 +6969,7 @@ function AppInterna() {
                   </Card>
                   {pAl.length === 0
                     ? <Card style={{ textAlign: "center", color: C.gray }}>Sin partes registrados</Card>
-                    : pAl.map(p => <ParteCard key={p.id} parte={p} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
+                    : pAl.map(p => <ParteCard key={p.id} parte={p} medidas={medidas.filter(m => m.parteId === p.id)} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
                 </div>
               );
             })() : (
@@ -6724,7 +7018,7 @@ function AppInterna() {
             </Card>
             {partesFiltrados.length === 0
               ? <Card style={{ textAlign: "center", color: C.gray }}>Sin partes con los filtros actuales</Card>
-              : partesFiltrados.map(p => <ParteCard key={p.id} parte={p} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
+              : partesFiltrados.map(p => <ParteCard key={p.id} parte={p} medidas={medidas.filter(m => m.parteId === p.id)} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
           </div>
         )}
 
@@ -6893,6 +7187,11 @@ function AppInterna() {
         )}
 
         {/* ── Alertas ── */}
+        {tab === "medidas" && (
+          <PanelMedidas medidas={medidas} setMedidas={setMedidas} partes={partes}
+            onAlerta={a => setAlertas(prev => [a, ...prev])} onParteIncumplimiento={ponerParteIncumplimiento} onVerParte={p => setShowParte(completar(p))} />
+        )}
+
         {tab === "alertas" && (
           <div>
             <div style={{ marginBottom: 16 }}><TituloBloque titulo="Alertas" icono="alertas" /></div>
@@ -6901,6 +7200,7 @@ function AppInterna() {
               : alertas.map(a => {
                 const config = {
                   acumulacion_leves: { icon: "⚠️", color: "#16333F", bg: "#FDF1D9", border: "#F6C862", label: "Acumulación de leves" },
+                  medida_incumplida: { icon: "⚠️", color: "#16333F", bg: "#FDF1D9", border: "#F6C862", label: "Medida sin cumplir" },
                   total_partes:      { icon: "📋", color: C.blue,     bg: "#DDF0F4", border: C.blue,    label: "Límite de partes" },
                   fuera_horario:     { icon: "🕐", color: C.teal,     bg: "#DDF0F4", border: C.teal,    label: "Fuera de horario" },
                   bano:              { icon: "🚻", color: C.salmon,   bg: "#FDF1D9", border: C.salmon,  label: "Abuso de baño" },
@@ -7251,6 +7551,7 @@ function AppInterna() {
               <div style={{ marginTop: 12, background: "#DDF0F4", borderRadius: 8, padding: 12, fontSize: 14 }}>
                 <strong style={{ color: C.blue }}>📬 Familia:</strong> <Ic n="mensaje-enviar" tam={20} />{showParte.email} · 📱 {showParte.telefono}
               </div>
+              <MedidasDeParte key={showParte.id} parte={showParte} medidas={medidas} setMedidas={setMedidas} esJefatura={perfil.id === "jefatura"} usuario={usuario} />
               <ComoAvisar parte={showParte} />
             </div>
           </div>
