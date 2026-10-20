@@ -326,7 +326,7 @@ test('Medidas correctoras: la profe indica la medida, Jefatura pone día y aula 
   await tarjeta.getByRole('button', { name: 'Hoy', exact: true }).click()
   await tarjeta.getByRole('button', { name: 'Programar' }).click()
   let tras = (await leer(page, 'medidas')).find((m: { id: number }) => m.id === medida.id)
-  expect(tras.sesiones).toEqual([{ fecha: '2026-10-07', hora: 'Recreo', lugar: 'Aula de convivencia', estado: 'pendiente' }])
+  expect(tras.sesiones).toEqual([{ fecha: '2026-10-07', hora: 'Recreo', lugar: 'Aula de convivencia', lugarId: 'aula-conv', estado: 'pendiente' }])
   // Lista del día en PDF
   await page.getByRole('button', { name: /Descargar la lista de hoy/ }).click()
   const descarga = page.waitForEvent('download')
@@ -344,5 +344,30 @@ test('Medidas correctoras: la profe indica la medida, Jefatura pone día y aula 
   expect(partes.length).toBe(antes + 1)
   expect(partes[0]).toMatchObject({ alumno: 'Lucía Martínez García', gravedad: 'leve', tipificacion: '9L', profesor: 'Ana Jiménez' })
   await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
+
+test('Medidas correctoras: la guardia del aula de convivencia ve a su alumnado y marca si ha venido', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  // Quién está hoy de guardia en el aula de convivencia durante el recreo (datos de ejemplo)
+  const cuadrante = await leer(page, 'cuadrante')
+  const clave = Object.keys(cuadrante).find(k => k.startsWith('2026-10-07|Recreo|') && cuadrante[k] === 'aula-conv')
+  expect(clave).toBeTruthy()
+  const profe = clave!.split('|')[2]
+  const medida = (await leer(page, 'medidas')).find((m: { sesiones: { fecha: string, hora: string, lugarId: string }[] }) =>
+    m.sesiones.some(s => s.fecha === '2026-10-07' && s.hora === 'Recreo' && s.lugarId === 'aula-conv'))
+  expect(medida).toBeTruthy()
+  // Entra esa persona y lo ve en «Mi guardia hoy»
+  await page.locator('#gd-otro-profe').selectOption(profe)
+  await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await sinFalloEnPantalla(page)
+  const fila = page.locator(`[data-medida="${medida.id}"]`)
+  await expect(fila.getByText(medida.alumno)).toBeVisible()
+  await fila.getByRole('button', { name: /Ha venido/ }).click()
+  const tras = (await leer(page, 'medidas')).find((m: { id: number }) => m.id === medida.id)
+  const sesion = tras.sesiones.find((s: { fecha: string, hora: string }) => s.fecha === '2026-10-07' && s.hora === 'Recreo')
+  expect(sesion).toMatchObject({ estado: 'cumplida', marcadaPor: profe })
   expect(errores).toEqual([])
 })

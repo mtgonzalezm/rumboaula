@@ -1258,7 +1258,15 @@ const TIPOS_MEDIDA = [
   { id: "otra",       label: "Otra medida" },
 ];
 const tipoMedida = id => TIPOS_MEDIDA.find(t => t.id === id) || TIPOS_MEDIDA[TIPOS_MEDIDA.length - 1];
-const LUGARES_MEDIDA = ["Aula de convivencia", "Biblioteca", "Jefatura de Estudios"];
+// Lugares: zonas del cuadrante de guardias, para que el profesorado de guardia vea a quién tiene
+const LUGARES_MEDIDA = [
+  { id: "aula-conv", label: "Aula de convivencia" },
+  { id: "A0-biblio", label: "Biblioteca" },
+  { id: "otro",      label: "Otro lugar…" },
+];
+// Zona del cuadrante donde se cumple una sesión (en el recreo, la biblioteca es otra zona)
+const zonaDeSesion = s => s.lugarId === "A0-biblio" && s.hora === "Recreo" ? "rec-biblio" : (s.lugarId || "");
+const sesionEn = (lugarId, otro, extra) => ({ ...extra, lugarId: lugarId === "otro" ? "" : lugarId, lugar: lugarId === "otro" ? otro.trim() : LUGARES_MEDIDA.find(l => l.id === lugarId)?.label || "" });
 const ESTADO_MEDIDA = {
   sin_programar: { label: "Por programar", color: R.crema,  texto: R.noche },
   pendiente:  { label: "Pendiente",   color: R.gris,     texto: R.petroleo },
@@ -1346,7 +1354,7 @@ function ElegirDias({ fechas, setFechas, id }) {
 }
 
 // Día, hora y lugar de una medida: lo que pone Jefatura (al programar o al poner la medida)
-function CamposProgramar({ t, fechas, setFechas, hora, setHora, lugar, setLugar, prefijo }) {
+function CamposProgramar({ t, fechas, setFechas, hora, setHora, lugarId, setLugarId, lugarOtro, setLugarOtro, prefijo }) {
   const { campo, etiqueta } = estilosMedida;
   return (
     <>
@@ -1361,8 +1369,11 @@ function CamposProgramar({ t, fechas, setFechas, hora, setHora, lugar, setLugar,
       {!t.sinLugar && (
         <div>
           <label style={etiqueta} htmlFor={`${prefijo}-lugar`}>Aula o lugar</label>
-          <input id={`${prefijo}-lugar`} list="gd-lugares-medida" value={lugar} onChange={e => setLugar(e.target.value)} placeholder="Por ejemplo, Aula de convivencia" style={campo} />
-          <datalist id="gd-lugares-medida">{LUGARES_MEDIDA.map(l => <option key={l} value={l} />)}</datalist>
+          <select id={`${prefijo}-lugar`} value={lugarId} onChange={e => setLugarId(e.target.value)} style={campo}>
+            {LUGARES_MEDIDA.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+          </select>
+          {lugarId === "otro" && <input aria-label="Otro lugar" value={lugarOtro} onChange={e => setLugarOtro(e.target.value)} placeholder="Por ejemplo, Jefatura de Estudios" style={{ ...campo, marginTop: 8 }} />}
+          {lugarId !== "otro" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Lo verá el profesorado de guardia de esa zona en el cuadrante.</div>}
         </div>
       )}
       <div>
@@ -1380,7 +1391,8 @@ function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
   const [veces, setVeces] = useState(1);
   const [fechas, setFechas] = useState([]);
   const [hora, setHora] = useState("1ª hora");
-  const [lugar, setLugar] = useState(LUGARES_MEDIDA[0]);
+  const [lugarId, setLugarId] = useState(LUGARES_MEDIDA[0].id);
+  const [lugarOtro, setLugarOtro] = useState("");
   const [detalle, setDetalle] = useState("");
   const t = tipoMedida(tipo);
   const { campo, etiqueta, boton, principal } = estilosMedida;
@@ -1391,11 +1403,11 @@ function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
     </div>
   );
   // Jefatura puede programarla ya; si no pone días, queda «por programar» como la del profesorado
-  const listo = tipo && (tipo !== "otra" || detalle.trim()) && (!esJefatura || !fechas.length || t.sinLugar || lugar.trim());
+  const listo = tipo && (tipo !== "otra" || detalle.trim()) && (!esJefatura || !fechas.length || t.sinLugar || lugarId !== "otro" || lugarOtro.trim());
   const guardar = () => onGuardar({
     id: Date.now(), parteId: parte.id, alumnoId: parte.alumnoId, alumno: parte.alumno, curso: parte.curso, gravedad: parte.gravedad, tipo,
     veces: t.sesiones ? (esJefatura && fechas.length ? fechas.length : veces) : 0,
-    sesiones: esJefatura && t.sesiones ? fechas.map(f => ({ fecha: f, hora: t.hora || hora, lugar: t.sinLugar ? "" : lugar.trim(), estado: "pendiente" })) : [],
+    sesiones: esJefatura && t.sesiones ? fechas.map(f => t.sinLugar ? { fecha: f, hora: t.hora || hora, lugar: "", lugarId: "", estado: "pendiente" } : sesionEn(lugarId, lugarOtro, { fecha: f, hora: t.hora || hora, estado: "pendiente" })) : [],
     detalle: detalle.trim(), puestaPor: usuario, ts: new Date().toISOString(),
   });
   return (
@@ -1416,7 +1428,7 @@ function FormMedida({ parte, esJefatura, usuario, onGuardar, onCancelar }) {
           <div style={{ fontSize: 15, color: R.petroleo, marginTop: 8 }}>Jefatura de Estudios pondrá el día y el aula. Las demás medidas las pone Jefatura.</div>
         </div>
       )}
-      {esJefatura && t.sesiones && <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugar={lugar} setLugar={setLugar} prefijo="gd-medida" />}
+      {esJefatura && t.sesiones && <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugarId={lugarId} setLugarId={setLugarId} lugarOtro={lugarOtro} setLugarOtro={setLugarOtro} prefijo="gd-medida" />}
       <div>
         <label style={etiqueta} htmlFor="gd-medida-detalle">{tipo === "otra" ? "Describe la medida" : "Observaciones (opcional)"}</label>
         <textarea id="gd-medida-detalle" rows={2} value={detalle} onChange={e => setDetalle(e.target.value)} placeholder="Por ejemplo, la tarea que tiene que hacer" style={{ ...campo, resize: "vertical" }} />
@@ -1453,13 +1465,55 @@ function ProgramarMedida({ m, onProgramar }) {
   const t = tipoMedida(m.tipo);
   const [fechas, setFechas] = useState([]);
   const [hora, setHora] = useState("1ª hora");
-  const [lugar, setLugar] = useState(LUGARES_MEDIDA[0]);
-  const listo = fechas.length > 0 && (t.sinLugar || lugar.trim());
+  const [lugarId, setLugarId] = useState(LUGARES_MEDIDA[0].id);
+  const [lugarOtro, setLugarOtro] = useState("");
+  const listo = fechas.length > 0 && (t.sinLugar || lugarId !== "otro" || lugarOtro.trim());
   return (
     <div style={{ background: R.azulClaro, padding: 12, marginTop: 10, display: "grid", gap: 12 }}>
-      <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugar={lugar} setLugar={setLugar} prefijo={`gd-prog-${m.id}`} />
+      <CamposProgramar t={t} fechas={fechas} setFechas={setFechas} hora={hora} setHora={setHora} lugarId={lugarId} setLugarId={setLugarId} lugarOtro={lugarOtro} setLugarOtro={setLugarOtro} prefijo={`gd-prog-${m.id}`} />
       {m.veces > 0 && fechas.length > 0 && fechas.length !== m.veces && <div style={{ fontSize: 15, color: R.petroleo }}>El parte pedía {m.veces} {m.veces === 1 ? "vez" : "veces"} y has elegido {fechas.length} {fechas.length === 1 ? "día" : "días"}.</div>}
-      <div><button type="button" disabled={!listo} onClick={() => onProgramar(fechas.map(f => ({ fecha: f, hora: t.hora || hora, lugar: t.sinLugar ? "" : lugar.trim(), estado: "pendiente" })))} style={estilosMedida.principal(listo)}>Programar</button></div>
+      <div><button type="button" disabled={!listo} onClick={() => onProgramar(fechas.map(f => t.sinLugar ? { fecha: f, hora: t.hora || hora, lugar: "", lugarId: "", estado: "pendiente" } : sesionEn(lugarId, lugarOtro, { fecha: f, hora: t.hora || hora, estado: "pendiente" })))} style={estilosMedida.principal(listo)}>Programar</button></div>
+    </div>
+  );
+}
+
+// Una persona que tiene que cumplir hoy: la usan Jefatura y el profesorado de guardia de la zona
+function FilaMedidaHoy({ m, s, i, onMarcar, extra }) {
+  const boton = (fondo, letra) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: fondo === C.white ? `2px solid ${R.azul}` : "none", background: fondo, color: letra, fontSize: 15, fontWeight: 700, cursor: "pointer" });
+  return (
+    <div data-medida={m.id} style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+        <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo, marginBottom: 4 }}>{m.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {m.curso}</span></div>
+        <div style={{ fontSize: 15, color: R.petroleo }}><b>{conTramo(s.hora)}{s.lugar ? ` · ${s.lugar}` : ""}</b> · {tipoMedida(m.tipo).label} · puesta por {m.puestaPor}</div>
+        {m.detalle && <div style={{ fontSize: 14, color: R.noche, marginTop: 2 }}>{m.detalle}</div>}
+        {extra}
+      </div>
+      {s.estado === "pendiente" ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => onMarcar(m.id, i, "cumplida")} style={boton(R.verde, R.noche)}>✓ Ha venido</button>
+          <button type="button" onClick={() => onMarcar(m.id, i, "ausente")} style={boton(C.white, R.petroleo)}>✗ No se ha presentado</button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: R.petroleo }}>{s.estado === "cumplida" ? "✓ Ha venido" : "✗ No se ha presentado"}{s.marcadaPor ? ` · lo marcó ${s.marcadaPor}` : ""}</span>
+          <button type="button" onClick={() => onMarcar(m.id, i, "pendiente")} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 15, cursor: "pointer" }}>Deshacer</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// En cada guardia: el alumnado que tiene que estar en esa zona y a esa hora por una medida correctora
+function AlumnadoMedidas({ fecha, hora, zonaId, medidas, onMarcar }) {
+  const filas = medidas.flatMap(m => (m.sesiones || []).map((s, i) => ({ m, s, i })))
+    .filter(({ s }) => s.fecha === fecha && s.hora === hora && s.estado !== "movida" && zonaDeSesion(s) === zonaId);
+  if (!filas.length) return null;
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ background: R.mostaza, color: R.noche, padding: "8px 12px", fontWeight: 700, fontSize: 16 }}>Alumnado con medida correctora ({filas.length})</div>
+      <div style={{ background: R.crema, padding: 10, display: "grid", gap: 8 }}>
+        {filas.map(({ m, s, i }) => <FilaMedidaHoy key={`${m.id}-${i}`} m={m} s={s} i={i} onMarcar={onMarcar} />)}
+      </div>
     </div>
   );
 }
@@ -1469,27 +1523,23 @@ function pdfListaMedidas(fecha, filas) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const y = cabeceraPDF(doc, "Medidas correctoras del día", parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   autoTable(doc, { ...estiloTabla, startY: y,
-    head: [["Hora", "Aula o lugar", "Alumno/a", "Curso", "Medida", "Puesta por", "¿Ha venido?"]],
-    body: filas.map(({ m, s }) => [conTramo(s.hora), s.lugar || "-", m.alumno, m.curso, tipoMedida(m.tipo).label, m.puestaPor, s.estado === "cumplida" ? "Sí" : s.estado === "ausente" ? "No" : ""].map(sinEmoji)) });
+    head: [["Hora", "Aula o lugar", "De guardia", "Alumno/a", "Curso", "Medida", "Puesta por", "¿Ha venido?"]],
+    body: filas.map(({ m, s, guardia }) => [conTramo(s.hora), s.lugar || "-", guardia?.length ? guardia.join(", ") : "-", m.alumno, m.curso, tipoMedida(m.tipo).label, m.puestaPor, s.estado === "cumplida" ? "Sí" : s.estado === "ausente" ? "No" : ""].map(sinEmoji)) });
   guardarPDF(doc, `medidas-${fecha}.pdf`);
 }
 
 // Pestaña de Jefatura: qué hay que programar, quién tiene que cumplir hoy y qué queda pendiente
-function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimiento, onVerParte }) {
+function PanelMedidas({ medidas, setMedidas, partes, onMarcar, guardiaDe, onParteIncumplimiento, onVerParte }) {
   const [verCumplidas, setVerCumplidas] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState({});
   const [programando, setProgramando] = useState(null);
   const hoy = isoLocal();
   const cambiar = (id, fn) => setMedidas(prev => prev.map(m => m.id === id ? fn(m) : m));
-  const marcar = (m, i, estado) => {
-    cambiar(m.id, x => ({ ...x, sesiones: x.sesiones.map((s, j) => j === i ? { ...s, estado } : s) }));
-    if (estado === "ausente") onAlerta({ id: Date.now(), tipo: "medida_incumplida", alumno: m.alumno, curso: m.curso, msg: `No se ha presentado a «${tipoMedida(m.tipo).label}» (${fechaCorta(m.sesiones[i].fecha)} · ${m.sesiones[i].hora}${m.sesiones[i].lugar ? ` · ${m.sesiones[i].lugar}` : ""})`, ts: new Date().toISOString(), leida: false });
-  };
   const moverDia = (m, fecha) => cambiar(m.id, x => {
     const falta = x.sesiones.find(s => s.estado === "ausente") || {};
-    return { ...x, sesiones: [...x.sesiones.map(s => s.estado === "ausente" ? { ...s, estado: "movida" } : s), { fecha, hora: falta.hora || tipoMedida(x.tipo).hora || "Recreo", lugar: falta.lugar || "", estado: "pendiente" }] };
+    return { ...x, sesiones: [...x.sesiones.map(s => s.estado === "ausente" ? { ...s, estado: "movida" } : s), { fecha, hora: falta.hora || tipoMedida(x.tipo).hora || "Recreo", lugar: falta.lugar || "", lugarId: falta.lugarId || "", estado: "pendiente" }] };
   });
-  const deHoy = medidas.flatMap(m => (m.sesiones || []).map((s, i) => ({ m, s, i })).filter(({ s }) => s.fecha === hoy && s.estado !== "movida"))
+  const deHoy = medidas.flatMap(m => (m.sesiones || []).map((s, i) => ({ m, s, i, guardia: zonaDeSesion(s) ? guardiaDe(s.fecha, s.hora, zonaDeSesion(s)) : null })).filter(({ s }) => s.fecha === hoy && s.estado !== "movida"))
     .sort((a, b) => HORAS.indexOf(a.s.hora) - HORAS.indexOf(b.s.hora) || (a.s.lugar || "").localeCompare(b.s.lugar || "") || a.m.alumno.localeCompare(b.m.alumno));
   const porEstado = e => medidas.filter(m => estadoMedida(m) === e);
   const tarjeta = { background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 12, marginBottom: 8 };
@@ -1523,25 +1573,12 @@ function PanelMedidas({ medidas, setMedidas, partes, onAlerta, onParteIncumplimi
       <div style={{ background: R.crema, padding: 12 }}>
         {deHoy.length === 0 && <div style={{ fontSize: 15, color: R.petroleo }}>Hoy no hay medidas que cumplir.</div>}
         {deHoy.length > 0 && <div style={{ marginBottom: 10 }}><button type="button" onClick={() => pdfListaMedidas(hoy, deHoy)} style={boton(C.white, R.petroleo)}>📄 Descargar la lista de hoy</button></div>}
-        {deHoy.map(({ m, s, i }) => (
-          <div key={`${m.id}-${i}`} data-medida={m.id} style={{ ...tarjeta, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ minWidth: 0, flex: "1 1 220px" }}>
-              {nombre(m)}
-              <div style={{ fontSize: 15, color: R.petroleo }}><b>{conTramo(s.hora)}{s.lugar ? ` · ${s.lugar}` : ""}</b> · {tipoMedida(m.tipo).label} · puesta por {m.puestaPor}</div>
-            </div>
-            {s.estado === "pendiente" ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => marcar(m, i, "cumplida")} style={boton(R.verde, R.noche)}>✓ Ha venido</button>
-                <button type="button" onClick={() => marcar(m, i, "ausente")} style={boton(C.white, R.petroleo)}>✗ No se ha presentado</button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontWeight: 700, fontSize: 15, color: R.petroleo }}>{s.estado === "cumplida" ? "✓ Ha venido" : "✗ No se ha presentado"}</span>
-                <button type="button" onClick={() => marcar(m, i, "pendiente")} style={enlace}>Deshacer</button>
-              </div>
-            )}
-          </div>
-        ))}
+        <div style={{ display: "grid", gap: 8 }}>
+          {deHoy.map(({ m, s, i, guardia }) => (
+            <FilaMedidaHoy key={`${m.id}-${i}`} m={m} s={s} i={i} onMarcar={onMarcar}
+              extra={guardia && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{guardia.length ? <>De guardia: <b>{guardia.join(", ")}</b></> : "⚠️ No hay profesorado de guardia en esta zona: asígnalo en el cuadrante"}</div>} />
+          ))}
+        </div>
       </div>
 
       {barra(`Sin cumplir (${porEstado("incumplida").length})`, R.mostaza)}
@@ -1599,7 +1636,7 @@ function medidasEjemplo(partes) {
   if (leves.length < 7) return [];
   const hoy = isoLocal(), ayer = isoLocal(sumarDias(new Date(), -1)), manana = proximosLectivos(1, sumarDias(new Date(), 1))[0];
   const base = (p, extra) => ({ id: p.id + 7, parteId: p.id, alumnoId: p.alumnoId, alumno: p.alumno, curso: p.curso, gravedad: p.gravedad, detalle: "", puestaPor: p.profesor, ts: p.ts, ...extra });
-  const ses = (fecha, hora, lugar, estado = "pendiente") => ({ fecha, hora, lugar, estado });
+  const ses = (fecha, hora, lugar, estado = "pendiente") => sesionEn(lugar === "Biblioteca" ? "A0-biblio" : "aula-conv", "", { fecha, hora, estado });
   return [
     base(leves[0], { tipo: "recreo", veces: 2, sesiones: [ses(hoy, "Recreo", "Aula de convivencia"), ses(manana, "Recreo", "Aula de convivencia")] }),
     base(leves[1], { tipo: "aula_conv", veces: 1, sesiones: [ses(hoy, "3ª hora", "Aula de convivencia")] }),
@@ -2335,6 +2372,7 @@ const ZONAS_CENTRO = [
   { id:"C1-pasillo",  label:"Edificio C · Planta 1 · Pasillo",    edificio:"C", tipo:"pasillo"  },
   { id:"C2-pasillo",  label:"Edificio C · Planta 2 · Pasillo",    edificio:"C", tipo:"pasillo"  },
   { id:"aula",        label:"Aula — Sustitución de clase",         edificio:"-", tipo:"aula"     },
+  { id:"aula-conv",   label:"Aula de convivencia",                edificio:"-", tipo:"convivencia" },
   { id:"rec-puerta",  label:"Recreo · Zona Puerta",               edificio:"-", tipo:"recreo"   },
   { id:"rec-central", label:"Recreo · Patio Central",             edificio:"-", tipo:"recreo"   },
   { id:"rec-coches",  label:"Recreo · Zona Coches",               edificio:"-", tipo:"recreo"   },
@@ -3049,6 +3087,13 @@ function datosEjemploGuardias(profesores) {
         sustitutos[`${f}|${hora}|${zona}`] = profesores[(k + 2) % n];
         k += 3;
       });
+      // Aula de convivencia: titular libre a esa hora, para las medidas correctoras
+      if (["3ª hora", "Recreo", "7ª hora"].includes(hora)) {
+        const ocupados = new Set(Object.keys(cuadrante).filter(c => c.startsWith(`${f}|${hora}|`)).map(c => c.split("|")[2]));
+        Object.entries({ ...apoyos, ...sustitutos }).forEach(([c, p]) => { if (c.startsWith(`${f}|${hora}|`)) ocupados.add(p); });
+        const libre = profesores.map((_, j) => profesores[(k + 11 + j) % n]).find(p => !ocupados.has(p));
+        if (libre) cuadrante[`${f}|${hora}|${libre}`] = "aula-conv";
+      }
     });
   });
   // Día de las ausencias: hoy si es lectivo; si no, el próximo lunes
@@ -3090,7 +3135,7 @@ function datosEjemploGuardias(profesores) {
 // ═══════════════════════════════════════════════════════════════════════════
 // MI GUARDIA HOY (Profesor)
 // ═══════════════════════════════════════════════════════════════════════════
-function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], setListas, alumnos = [], profesores, cuadrante, apoyosGuardia, sustitutosGuardia = {}, ausencias, fProfesor, setFProfesor, C, selStyle, labelStyle, usuario, setShowCuadrante, diaSeleccionadoGuardias, setDiaSeleccionadoGuardias }) {
+function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = [], setFirmas, listas = [], setListas, alumnos = [], profesores, cuadrante, apoyosGuardia, sustitutosGuardia = {}, ausencias, fProfesor, setFProfesor, C, selStyle, labelStyle, usuario, setShowCuadrante, diaSeleccionadoGuardias, setDiaSeleccionadoGuardias }) {
   const hoy     = new Date();
   const diasES  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   const diaHoy  = diasES[hoy.getDay()];
@@ -3348,6 +3393,7 @@ function MiGuardiaHoy({ coberturas = {}, firmas = [], setFirmas, listas = [], se
                     <div style={{ display: "grid", gap: 8 }}>{g.ausencias.map(a => <TareaAusente key={a.id} a={a} C={C} />)}</div>
                   </div>
                 )}
+                <AlumnadoMedidas fecha={hoyISO} hora={g.hora} zonaId={g.zonaId} medidas={medidas} onMarcar={onMarcarMedida} />
                 {/* Firmar la guardia y pasar lista */}
                 {(() => {
                   const firma = firmas.find(f => f.fecha === hoyISO && f.hora === g.hora && f.zonaId === g.zonaId && f.profesor === fProfesor);
@@ -6269,6 +6315,18 @@ function AppInterna() {
     setFAlumno(""); setFBusqueda(""); setFDesc(""); setFTipo("Comportamiento"); setFGravedad("leve"); setFTipificacion("");
   }
 
+  // Marcar si ha venido (lo hace la guardia de la zona o Jefatura); si no se presenta, alerta para Jefatura
+  function marcarMedida(id, i, estado) {
+    const m = medidas.find(x => x.id === id); if (!m) return;
+    setMedidas(prev => prev.map(x => x.id === id ? { ...x, sesiones: x.sesiones.map((s, j) => j === i ? { ...s, estado, marcadaPor: estado === "pendiente" ? "" : usuario } : s) } : x));
+    if (estado === "ausente") {
+      const s = m.sesiones[i];
+      setAlertas(prev => [{ id: Date.now(), tipo: "medida_incumplida", alumno: m.alumno, curso: m.curso, msg: `No se ha presentado a «${tipoMedida(m.tipo).label}» (${fechaCorta(s.fecha)} · ${s.hora}${s.lugar ? ` · ${s.lugar}` : ""}) · lo marcó ${usuario}`, ts: new Date().toISOString(), leida: false }, ...prev]);
+    }
+  }
+  // Quién está de guardia en una zona del cuadrante a esa hora (con ausencias y sustituciones)
+  const guardiaDe = (fecha, hora, zonaId) => situacionZona({ fecha, hora, zonaId, profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias, coberturas }).enZona;
+
   function ponerParteIncumplimiento(m) {
     const al = alumnos.find(a => a.id === m.alumnoId) || {};
     const dias = (m.sesiones || []).filter(s => s.estado === "ausente").map(s => fechaCorta(s.fecha)).join(", ");
@@ -7155,7 +7213,7 @@ function AppInterna() {
         {/* ── Baños live (Jefatura) ── */}
         {/* ── Mi Guardia Hoy (Profesor) ── */}
         {tab === "mi_guardia" && (
-          <MiGuardiaHoy coberturas={coberturas} firmas={firmas} setFirmas={setFirmas} listas={listas} setListas={setListas} alumnos={alumnos} profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} fProfesor={fProfesor} setFProfesor={setFProfesor} C={C} selStyle={selStyle} labelStyle={labelStyle} usuario={usuario} setShowCuadrante={setShowCuadrante} diaSeleccionadoGuardias={diaSeleccionadoGuardias} setDiaSeleccionadoGuardias={setDiaSeleccionadoGuardias} />
+          <MiGuardiaHoy medidas={medidas} onMarcarMedida={marcarMedida} coberturas={coberturas} firmas={firmas} setFirmas={setFirmas} listas={listas} setListas={setListas} alumnos={alumnos} profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia} ausencias={ausencias} fProfesor={fProfesor} setFProfesor={setFProfesor} C={C} selStyle={selStyle} labelStyle={labelStyle} usuario={usuario} setShowCuadrante={setShowCuadrante} diaSeleccionadoGuardias={diaSeleccionadoGuardias} setDiaSeleccionadoGuardias={setDiaSeleccionadoGuardias} />
         )}
 
         {/* ── Notificar Ausencia (Profesor) ── */}
@@ -7292,8 +7350,8 @@ function AppInterna() {
 
         {/* ── Alertas ── */}
         {tab === "medidas" && (
-          <PanelMedidas medidas={medidas} setMedidas={setMedidas} partes={partes}
-            onAlerta={a => setAlertas(prev => [a, ...prev])} onParteIncumplimiento={ponerParteIncumplimiento} onVerParte={p => setShowParte(completar(p))} />
+          <PanelMedidas medidas={medidas} setMedidas={setMedidas} partes={partes} onMarcar={marcarMedida} guardiaDe={guardiaDe}
+            onParteIncumplimiento={ponerParteIncumplimiento} onVerParte={p => setShowParte(completar(p))} />
         )}
 
         {tab === "alertas" && (
