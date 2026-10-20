@@ -371,3 +371,24 @@ test('Medidas correctoras: la guardia del aula de convivencia ve a su alumnado y
   expect(sesion).toMatchObject({ estado: 'cumplida', marcadaPor: profe })
   expect(errores).toEqual([])
 })
+
+// ───────────────────────── Datos del centro ─────────────────────────
+test('Datos del centro: Administración cambia el nombre y la localidad y salen en toda la app', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoAdmin(page)
+  await page.locator('#gd-centro-nombre').fill('IES Rumbo Norte')
+  await page.locator('#gd-centro-ciudad').fill('Alcalá de Henares')
+  await expect(page.getByText('IES RUMBO NORTE · ALCALÁ DE HENARES')).toBeVisible()
+  expect(await leer(page, 'datos_centro')).toEqual({ nombre: 'IES Rumbo Norte', ciudad: 'Alcalá de Henares' })
+  // En la entrada y, tras recargar, sigue guardado
+  await salir(page)
+  await expect(page.getByText('IES RUMBO NORTE · ALCALÁ DE HENARES')).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('IES RUMBO NORTE · ALCALÁ DE HENARES')).toBeVisible()
+  // En la cabecera del profesorado
+  await comoProfe(page)
+  await expect(page.getByText(/IES Rumbo Norte/).filter({ visible: true }).first()).toBeVisible()
+  await sinFalloEnPantalla(page)
+  expect(errores).toEqual([])
+})
