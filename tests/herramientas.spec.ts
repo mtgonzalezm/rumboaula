@@ -472,6 +472,9 @@ test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cu
 test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
+  // En la demostración se ven los perfiles; el acceso real está en «Entrar con nombre y clave»
+  await expect(page.getByRole('button', { name: /Jefatura y Dirección/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   // Nombre que no está en la lista
   await page.locator('#gd-nombre').fill('Nadie Inventado')
   await page.getByRole('button', { name: 'Continuar', exact: true }).click()
@@ -487,6 +490,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
   // Vuelve a entrar: clave incorrecta y luego correcta
   await page.getByRole('button', { name: /Salir/ }).first().click()
+  await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   await page.locator('#gd-nombre').fill('Pablo Díaz')
   await page.getByRole('button', { name: 'Continuar', exact: true }).click()
   await page.locator('#gd-clave').fill('otra')
@@ -497,6 +501,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
   // Ayuda de la portada
   await page.getByRole('button', { name: /Salir/ }).first().click()
+  await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   await page.getByRole('button', { name: '¿Has olvidado tu clave?' }).click()
   await expect(page.getByText(/Pide a Administración del centro que restablezca tu clave/)).toBeVisible()
   await page.getByRole('button', { name: /Preguntas frecuentes/ }).first().click()

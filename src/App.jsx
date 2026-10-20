@@ -367,51 +367,40 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 
   const pasoNum = (n, activo) => <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", background: activo ? R.azul : R.gris, color: activo ? "#fff" : R.petroleo, fontSize: 14, fontWeight: 800, marginRight: 8, flexShrink: 0 }}>{n}</span>;
   const tutora = tutoraDemo || { nombre: "Carmen López", curso: "1º ESO A" };
+  // Demostración: elegir un perfil carga los datos de ejemplo (ficticios) y entra, sin nombre ni clave
+  const entrarDemo = accion => { if (!ejemploListo) cargarEjemplo(); accion(); };
+  const perfilesDemo = [
+    { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
+    { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
+    { txt: "📊 Jefatura y Dirección", sub: "Ana Jiménez · convivencia, guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
+    { txt: "⚙️ Administración", sub: "Elena Vega · alumnado, profesorado y centro", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
+  ];
   const accesoDemo = MODO_DEMO ? (
-    <div style={{ background: R.azulClaro, border: `3px solid ${R.verde}`, borderLeftWidth: 12, padding: 14, marginBottom: 22 }}>
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 8 }}>{pasoNum(1, !ejemploListo)} Carga los datos de ejemplo</div>
-      {ejemploListo
-        ? <div style={{ background: "#DDF0F4", color: "#16333F", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 700, marginBottom: 14 }}>✅ Datos de ejemplo cargados. Ahora, el paso 2.</div>
-        : <button onClick={cargarEjemplo} style={{ width: "100%", background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 12px", cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 14, boxShadow: "0 0 0 4px rgba(68,161,148,0.25)" }}>
-            🧪 Pulsa aquí para cargar los datos de ejemplo
-          </button>}
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, marginBottom: 2 }}>{pasoNum(2, ejemploListo)} Elige qué quieres probar</div>
-      <div style={{ fontSize: 14, color: C.gray, marginBottom: 10, marginLeft: 32 }}>Pulsa uno. No hace falta nombre ni clave.</div>
-      {[
-        { txt: "👨‍🏫 Profesor/a", sub: `Entras como ${nombreSugerido || "María Fernández"}: poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
-        { txt: "🏫 Tutor/a de un grupo", sub: `Entras como ${tutora.nombre}, tutor/a de ${tutora.curso}: estadísticas de su grupo e informes para las familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]), tutora: true },
-        { txt: "📊 Jefatura y Dirección", sub: "Entras como Ana Jiménez: convivencia, estadísticas, cuadrante de guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
-        { txt: "⚙️ Administración", sub: "Entras como Elena Vega: alumnado, profesorado, tutorías y cargos", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
-      ].map(b => (
-        <button key={b.txt} onClick={() => { if (!ejemploListo) cargarEjemplo(); b.accion(); }}
-          style={{ display: "block", width: "100%", textAlign: "left", minHeight: 56, padding: "10px 14px", marginBottom: 8, background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 6, cursor: "pointer" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.dark }}><ConIcono texto={b.txt} tam={26} /></div>
-          <div style={{ fontSize: 13, color: C.gray }}>{b.sub}</div>
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ fontSize: 15, color: R.noche }}><b>Elige un perfil</b> · sin clave y con datos de ejemplo</div>
+      {perfilesDemo.map(b => (
+        <button key={b.txt} onClick={() => entrarDemo(b.accion)}
+          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", minHeight: 48, padding: "4px 12px", background: C.white, border: `3px solid ${R.turquesa}`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 16, fontWeight: 700, color: R.petroleo }}><ConIcono texto={b.txt} tam={24} /></span>
+            <span style={{ display: "block", fontSize: 13, color: R.noche, lineHeight: 1.3 }}>{b.sub}</span>
+          </span>
         </button>
       ))}
-      {/* Demo: entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
+      {/* Entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
       {(ejemploListo || profesores.length > 4) && (() => {
         const conAvisos = profesores.filter(p => sinLeerPor[p]).sort((a, b) => sinLeerPor[b].urgentes - sinLeerPor[a].urgentes || a.localeCompare(b));
         const resto = profesores.filter(p => !sinLeerPor[p]).sort((a, b) => a.localeCompare(b));
         const etiqueta = p => { const n = sinLeerPor[p]; return n ? `${p} · ${n.urgentes ? "🚨" : "🔔"} ${n.total} mensaje(s) nuevo(s)` : p; };
         return (
-          <div style={{ background: C.white, border: `3px dashed ${R.turquesa}`, borderRadius: 6, padding: "10px 14px", marginBottom: 8 }}>
-            <label htmlFor="gd-otro-profe" style={{ fontSize: 14, fontWeight: 700, color: C.dark, display: "block" }}>👥 Entrar como otro profe del claustro</label>
-            <div style={{ fontSize: 13, color: C.gray, marginBottom: 6 }}>Para ver un mensaje de Galvángram, entra como quien lo ha recibido.</div>
-            <select id="gd-otro-profe" value="" onChange={e => { if (e.target.value) onEntrar(e.target.value, PERFILES[0], { otro: true }); }}
-              style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
-              <option value="">— Elige un profe —</option>
-              {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
-              <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
-            </select>
-          </div>
+          <select id="gd-otro-profe" aria-label="Entrar como otro profe del claustro" value="" onChange={e => { const n = e.target.value; if (n) entrarDemo(() => onEntrar(n, PERFILES[0], { otro: true })); }}
+            style={{ width: "100%", minHeight: 48, padding: "8px 12px", borderRadius: 8, border: `3px dashed ${R.turquesa}`, fontSize: 15, fontFamily: "inherit", color: R.noche, background: "#fff" }}>
+            <option value="">👥 Entrar como otro profe del claustro…</option>
+            {conAvisos.length > 0 && <optgroup label="Con mensajes sin leer">{conAvisos.map(p => <option key={p} value={p}>{etiqueta(p)}</option>)}</optgroup>}
+            <optgroup label="Todo el claustro">{resto.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
+          </select>
         );
       })()}
-      <div style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 800, color: C.dark, margin: "8px 0 2px" }}>{pasoNum(3, false)} Dentro, usa los botones de arriba</div>
-      <div style={{ fontSize: 14, color: C.gray, marginLeft: 32 }}>Los botones de colores cambian de pantalla. Para cambiar de perfil, pulsa «Salir» y vuelves aquí.</div>
-      <button onClick={() => setGlobo(true)} style={{ ...enlace, marginTop: 10, marginLeft: 32 }}>❓ Ver otra vez las instrucciones</button>
-      <button onClick={() => abrirPreguntas("instalar")} style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block" }}>📲 Cómo instalarla en el móvil o el ordenador · Preguntas frecuentes</button>
-      <a href="/manual/" target="_blank" rel="noopener" style={{ ...enlace, marginTop: 6, marginLeft: 32, display: "block", textDecoration: "none" }}>📘 Manual de uso</a>
     </div>
   ) : null;
 
@@ -423,10 +412,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         <h2 id="gd-globo-titulo" style={{ color: R.petroleo, textAlign: "center", margin: "6px 0 4px", fontSize: 26, fontFamily: TITULO, fontWeight: 400 }}>Bienvenida/o a la demostración</h2>
         <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
-          ["Carga los datos de ejemplo", "El botón verde de abajo lo hace por ti."],
-          ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura o Administración. Solo tienes que pulsar. No escribas nombre ni clave."],
+          ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura o Administración, en la tarjeta «Acceso». Solo tienes que pulsar: se cargan datos de ejemplo. No escribas nombre ni clave."],
           ["Muévete con los botones de arriba", "Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
           ["Para cambiar de perfil, pulsa «Salir»", "Vuelves a esta pantalla y eliges otro."],
+          ["Todo es ficticio", "Puedes poner partes, guardias y mensajes sin miedo: nada sale de este navegador."],
         ].map(([t, d], i) => (
           <div key={t} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
             {pasoNum(i + 1, true)}
@@ -443,6 +432,8 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   // Los pasos de acceso (nombre, clave, perfil) y el acceso de la demostración son los de siempre.
   const [verOlvido, setVerOlvido] = useState(false);
   const [verClave, setVerClave] = useState(false);
+  // En la demostración la tarjeta muestra los perfiles; «Entrar con nombre y clave» enseña el acceso real
+  const [conClave, setConClave] = useState(!MODO_DEMO);
   const campo = { width: "100%", minHeight: 50, padding: "10px 14px", borderRadius: 8, border: `3px solid ${R.turquesa}`, fontSize: 17, fontFamily: "inherit", color: R.noche, background: "#F4F9FC", boxSizing: "border-box" };
   const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 6 };
   const principal = { width: "100%", minHeight: 52, background: R.turquesa, color: R.noche, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 20, fontWeight: 700 };
@@ -450,10 +441,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const enlaceAcceso = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, minHeight: 40, padding: 0, fontFamily: "inherit" };
   const fallo = error && <div role="alert" style={{ background: R.crema, color: R.noche, borderLeft: `6px solid ${R.mostaza}`, fontSize: 15, fontWeight: 600, padding: "8px 12px" }}>⚠️ {error}</div>;
   const menu = [
-    { txt: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("oficial") },
-    { txt: "Manual de uso", icono: "deberes", href: "/manual/" },
-    { txt: "Preguntas frecuentes", icono: "mensajes", accion: () => abrirPreguntas() },
-    { txt: "Instalar la app", icono: "importar", accion: () => abrirPreguntas("instalar") },
+    { txt: "¿Qué es?", corto: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("oficial") },
+    { txt: "Manual de uso", corto: "Manual", icono: "deberes", href: "/manual/" },
+    { txt: "Preguntas frecuentes", corto: "Preguntas", icono: "mensajes", accion: () => abrirPreguntas() },
+    { txt: "Instalar la app", corto: "Instalar", icono: "importar", accion: () => abrirPreguntas("instalar") },
   ];
   const mostrarClave = (
     <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, color: R.noche, minHeight: 40, cursor: "pointer" }}>
@@ -462,41 +453,54 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fff", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#E3EAF0", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden" }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }
         .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
         .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
+        .gd-corto { display: none; }
         @media (max-width: 860px) {
           .gd-portada-hero { grid-template-columns: 1fr !important; padding: 12px 16px 24px !important; }
-          .gd-portada-ilu { max-height: 260px; object-fit: cover; object-position: center 40%; }
-          .gd-portada-cab { padding: 14px 16px !important; }
-          .gd-portada-menu { gap: 0 10px !important; }
-          .gd-portada-menu a, .gd-portada-menu button { font-size: 15px; }
-          .gd-portada-demo { padding: 20px 16px 32px !important; }
+          .gd-portada-ilu { display: none !important; }
+          .gd-portada-cab { padding: 8px 16px !important; }
+          .gd-portada-cab h1 img { height: 52px !important; }
+          .gd-portada-menu { width: 100%; justify-content: space-between; gap: 0 !important; }
+          .gd-portada-menu a, .gd-portada-menu button { flex-direction: column; gap: 2px; font-size: 14px; padding: 0; }
+          .gd-portada-menu img { width: 30px !important; height: 30px !important; }
+          .gd-largo { display: none; } .gd-corto { display: inline; }
         }`}</style>
       {globoBienvenida}
+      <AvisoDemo compacto />
 
       {/* Cabecera: logotipo y ayuda */}
-      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px 24px", flexWrap: "wrap", padding: "18px 40px", maxWidth: 1280, margin: "0 auto" }}>
-        <h1 style={{ margin: 0 }}><Logo alto={92} /></h1>
+      <div style={{ background: "#fff" }}>
+      <header className="gd-portada-cab" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px 24px", flexWrap: "wrap", padding: "8px 40px", maxWidth: 1280, margin: "0 auto" }}>
+        <h1 style={{ margin: 0 }}><Logo alto={64} /></h1>
         <nav aria-label="Ayuda" className="gd-portada-menu" style={{ display: "flex", flexWrap: "wrap", gap: "0 22px", alignItems: "center" }}>
           {menu.map(m => m.href
-            ? <a key={m.txt} href={m.href} target="_blank" rel="noopener"><Icono nombre={m.icono} tam={34} />{m.txt}</a>
-            : <button key={m.txt} type="button" onClick={m.accion}><Icono nombre={m.icono} tam={34} />{m.txt}</button>)}
+            ? <a key={m.txt} href={m.href} target="_blank" rel="noopener" aria-label={m.txt}><Icono nombre={m.icono} tam={34} /><span className="gd-largo">{m.txt}</span><span className="gd-corto">{m.corto}</span></a>
+            : <button key={m.txt} type="button" onClick={m.accion} aria-label={m.txt}><Icono nombre={m.icono} tam={34} /><span className="gd-largo">{m.txt}</span><span className="gd-corto">{m.corto}</span></button>)}
         </nav>
       </header>
+      </div>
 
       {/* Ilustración y tarjeta de acceso */}
-      <div style={{ background: "#E3EAF0" }}>
-        <div className="gd-portada-hero" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(320px, 420px)", gap: 28, alignItems: "center", maxWidth: 1280, margin: "0 auto", padding: "28px 40px" }}>
-          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 12px 32px rgba(22, 51, 63, .14)", padding: "28px 28px 20px", display: "grid", gap: 14 }}>
+      <div style={{ flex: 1, display: "flex" }}>
+        <div className="gd-portada-hero" style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(340px, 440px)", gap: 28, alignItems: "center", maxWidth: 1280, margin: "0 auto", padding: "16px 40px" }}>
+          <img className="gd-portada-ilu" src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "auto", maxHeight: "calc(100vh - 175px)", objectFit: "contain", display: "block" }} />
+          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 12px 32px rgba(22, 51, 63, .14)", padding: "14px 22px 8px", display: "grid", gap: 8 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: TITULO, fontSize: 32, color: R.petroleo, lineHeight: 1.1 }}>Acceso</div>
-              <div style={{ fontSize: 15, marginTop: 6 }}>{CENTRO} · {CIUDAD}</div>
+              <div style={{ fontFamily: TITULO, fontSize: 28, color: R.petroleo, lineHeight: 1.1 }}>Acceso</div>
+              <div style={{ fontSize: 15, marginTop: 2 }}>{CENTRO} · {CIUDAD}</div>
             </div>
 
-            {paso === "nombre" && <>
+            {paso === "nombre" && !conClave && accesoDemo}
+            {paso === "nombre" && MODO_DEMO && conClave && (
+              <button type="button" onClick={() => { setConClave(false); setError(""); }} style={{ ...enlaceAcceso, justifySelf: "center", fontWeight: 700 }}>
+                ← Volver a los perfiles de la demostración
+              </button>
+            )}
+
+            {paso === "nombre" && conClave && <>
               <div>
                 <label style={etiqueta} htmlFor="gd-nombre">¿Quién eres?</label>
                 <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
@@ -550,23 +554,19 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
               <button onClick={() => setPaso("nombre")} style={{ ...enlaceAcceso, justifySelf: "start" }}>← Cambiar de persona</button>
             </>}
 
-            <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, paddingTop: 8, display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "0 10px" }}>
-              <button type="button" onClick={() => setVerOlvido(v => !v)} style={enlaceAcceso}>¿Has olvidado tu clave?</button>
-              <span aria-hidden="true" style={{ color: R.turquesa }}>|</span>
+            <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, paddingTop: 4, display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "0 18px" }}>
+              {MODO_DEMO && !conClave && paso === "nombre" && <>
+                <button type="button" onClick={() => { setConClave(true); setError(""); }} style={{ ...enlaceAcceso, fontWeight: 700 }}>Entrar con nombre y clave</button>
+              </>}
+              {MODO_DEMO && !conClave
+                ? <button type="button" onClick={() => setGlobo(true)} style={enlaceAcceso}>Cómo probarla</button>
+                : <button type="button" onClick={() => setVerOlvido(v => !v)} style={enlaceAcceso}>¿Has olvidado tu clave?</button>}
               <button type="button" onClick={() => abrirPreguntas("datos")} style={enlaceAcceso}>Protección de datos</button>
             </div>
             {verOlvido && <div style={{ fontSize: 15, color: R.noche, background: R.crema, padding: "8px 12px" }}>Pide a Administración del centro que restablezca tu clave. La próxima vez que entres crearás una nueva.</div>}
           </div>
         </div>
       </div>
-
-      {/* Demostración: entrar sin nombre ni clave */}
-      {MODO_DEMO && (
-        <div className="gd-portada-demo" style={{ maxWidth: 980, margin: "0 auto", padding: "28px 40px 40px", display: "grid", gap: 16 }}>
-          <AvisoDemo />
-          {paso === "nombre" && accesoDemo}
-        </div>
-      )}
     </div>
   );
 }
