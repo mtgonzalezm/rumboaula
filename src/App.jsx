@@ -43,6 +43,19 @@ const TituloBloque = ({ titulo, sub, icono, nivel = "h2" }) => {
   );
 };
 
+// Logotipo de RumboAula, dibujado con letras: «Sistema para la Gestión de Centro», línea negra con acento y el nombre en turquesa.
+// Con completo={false} solo se ve la línea y el nombre (cabecera en pantallas estrechas).
+const LOGO_TURQUESA = "#12C4D5";
+const Logo = ({ tam = 34, completo = true }) => (
+  <div role="img" aria-label={`${APP} · Sistema para la Gestión de Centro`} style={{ display: "inline-flex", flexDirection: "column", fontFamily: TITULO, lineHeight: 1, flexShrink: 0 }}>
+    {completo && <div className="gd-logo-sub" aria-hidden="true" style={{ fontWeight: 700, fontSize: Math.round(tam * 0.4), color: "#000", lineHeight: 1.05, marginBottom: Math.round(tam * 0.16), letterSpacing: "-0.01em" }}>Sistema para la<br />Gestión de Centro</div>}
+    <div aria-hidden="true" style={{ position: "relative", height: Math.max(3, Math.round(tam * 0.09)), background: "#000", marginBottom: Math.round(tam * 0.2) }}>
+      <span style={{ position: "absolute", left: "38%", top: "100%", width: Math.round(tam * 0.32), height: Math.round(tam * 0.16), background: "#000", clipPath: "polygon(40% 0, 100% 0, 45% 100%, 0 100%)" }} />
+    </div>
+    <div aria-hidden="true" style={{ fontWeight: 800, fontSize: tam, color: LOGO_TURQUESA, letterSpacing: "-0.03em", lineHeight: .9 }}>{APP}</div>
+  </div>
+);
+
 // Enlace «Ver todos ▷» de Raíces: texto azul con triángulo mostaza
 const triangulo = { display: "inline-block", width: 0, height: 0, borderLeft: `11px solid ${R.mostaza}`, borderTop: "8px solid transparent", borderBottom: "8px solid transparent" };
 
@@ -70,10 +83,11 @@ const DEMO_PROFESORES = [
   "Inés Prieto", "Álvaro Cano", "Marta Rubio", "David Ibáñez",
 ];
 
+// color: relleno de la gravedad (verde, mostaza y azul de Raíces); texto: color de la letra sobre ese relleno
 const GRAVEDAD = [
-  { id: "leve",      label: "🟡 Leve",      color: C.teal,   bg: "#E8F5F3", desc: "Reglamento de Centro" },
-  { id: "grave",     label: "⚠️ Grave",     color: C.amber,  bg: C.amberBg, desc: "Normativa CAM" },
-  { id: "muy_grave", label: "🔴 Muy Grave", color: C.salmon, bg: "#FDF0EF", desc: "Normativa CAM (nivel superior)" },
+  { id: "leve",      label: "🟡 Leve",      color: R.verde,   texto: R.noche, desc: "Reglamento de Centro" },
+  { id: "grave",     label: "⚠️ Grave",     color: R.mostaza, texto: R.noche, desc: "Normativa CAM" },
+  { id: "muy_grave", label: "🔴 Muy Grave", color: R.azul,    texto: "#fff",  desc: "Normativa CAM (nivel superior)" },
 ];
 
 // ─── Tipificación normativa ───────────────────────────────────────────────────
@@ -519,15 +533,16 @@ function guardarSesion(sesion) {
 }
 
 // ─── Componentes base ─────────────────────────────────────────────────────────
-const Btn = ({ onClick, disabled, children, color = C.dark, style = {} }) => (
+// Botón principal: azul de Raíces con texto blanco
+const Btn = ({ onClick, disabled, children, style = {} }) => (
   <button onClick={onClick} disabled={disabled}
-    style={{ background: disabled ? "#94a3b8" : color, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", cursor: disabled ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 14, transition: "opacity .15s", ...style }}>
+    style={{ background: disabled ? R.gris : R.azul, color: disabled ? R.petroleo : "#fff", opacity: disabled ? .7 : 1, border: "none", borderRadius: 6, minHeight: 48, padding: "0 20px", cursor: disabled ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 17, transition: "opacity .15s", ...style }}>
     {children}
   </button>
 );
 
 const Card = ({ children, style = {} }) => (
-  <div style={{ background: C.white, borderRadius: 14, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", marginBottom: 14, ...style }}>{children}</div>
+  <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 20, marginBottom: 14, ...style }}>{children}</div>
 );
 
 // ─── Iconos de la app (public/iconos) ───────────────────────────────────────
@@ -610,13 +625,13 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
 
 const Badge = ({ g }) => {
   const gv = gObj(g);
-  return <span style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 10px 3px 4px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center" }}><ConIcono texto={gv.label} tam={20} gap={5} /></span>;
+  return <span style={{ background: gv.color, color: gv.texto, borderRadius: 4, padding: "4px 10px 4px 4px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center" }}><ConIcono texto={gv.label} tam={20} gap={5} /></span>;
 };
 
 const InfoRow = ({ label, value }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 14 }}>
-    <span style={{ color: C.gray, fontWeight: 600, minWidth: 140 }}>{label}</span>
-    <span style={{ color: C.dark, textAlign: "right" }}>{value}</span>
+  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 16 }}>
+    <span style={{ color: R.petroleo, fontWeight: 700, minWidth: 140 }}>{label}</span>
+    <span style={{ color: R.noche, textAlign: "right", minWidth: 0, overflowWrap: "anywhere" }}>{value}</span>
   </div>
 );
 
@@ -690,7 +705,7 @@ export function VisorDocumentos() {
     window.addEventListener("keydown", f, true); return () => window.removeEventListener("keydown", f, true);
   });
   if (!pdf && !excel) return null;
-  const barra = { position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
+  const barra = { position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
   const bb = { background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 13 };
   const fondo = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "2vh 2vw", fontFamily: "system-ui,sans-serif" };
   const caja = { background: C.white, borderRadius: 14, width: "100%", maxWidth: 1200, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" };
@@ -989,7 +1004,7 @@ function PrintParte({ parte, onClose }) {
           <div style={{ fontSize: 11, color: C.gray, marginBottom: 4, letterSpacing: 2 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: C.dark, fontFamily: "system-ui" }}>{APP} — Parte de Incidencia</div>
           <div style={{ marginTop: 10 }}>
-            <span style={{ display: "inline-block", padding: "6px 20px", borderRadius: 8, fontWeight: 700, fontSize: 15, background: g.bg, color: g.color, border: `2px solid ${g.color}` }}>{g.label} — {g.desc}</span>
+            <span style={{ display: "inline-block", padding: "6px 20px", borderRadius: 8, fontWeight: 700, fontSize: 15, background: g.color, color: g.texto, border: `2px solid ${g.color}` }}>{g.label} — {g.desc}</span>
           </div>
         </div>
         {[["Alumno/a", parte.alumno], ["Curso / Aula", parte.curso], ["Tutor/a del grupo", parte.tutor || "—"], ["Correo del tutor/a", parte.tutorEmail || "—"], ["Tipo de parte", parte.tipo], ["Hora de clase", parte.hora || "No especificada"], ["Fecha y hora", fmt(parte.ts)], ["Profesor responsable", parte.profesor]].map(([k, v]) => (
@@ -1118,7 +1133,7 @@ function PrintInforme({ type = "partes", partes, banos, filtros, tutores = {}, o
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.curso}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{tutorDeParte(p, tutores) || "—"}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.tipo}</td>
-                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.bg, color: g.color, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 11 }}>{g.label}</span></td>
+                    <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}><span style={{ background: g.color, color: g.texto, padding: "2px 8px", borderRadius: 6, fontWeight: 700, fontSize: 11 }}>{g.label}</span></td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.profesor}</td>
                     <td style={{ padding: "7px 8px", borderBottom: "1px solid #eee" }}>{p.descripcion.slice(0, 60)}{p.descripcion.length > 60 ? "…" : ""}</td>
                   </tr>
@@ -1231,27 +1246,27 @@ function ParteCard({ parte, onVer, onPrint }) {
   return (
     <div onClick={onVer} role="button" tabIndex={0} title="Pulsa para ver el parte en grande"
       onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) onVer(); }}
-      onMouseOver={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.14)"; }}
-      onMouseOut={e => { e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.06)"; }}
-      style={{ background: C.white, borderRadius: 12, padding: 16, marginBottom: 10, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", borderLeft: `4px solid ${g.color}`, cursor: "pointer", transition: "box-shadow .15s" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>
+      onMouseOver={e => { e.currentTarget.style.background = R.azulClaro; }}
+      onMouseOut={e => { e.currentTarget.style.background = C.white; }}
+      style={{ background: C.white, padding: 16, marginBottom: 10, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${g.color}`, cursor: "pointer", transition: "background .15s" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 17, color: R.petroleo }}>
             {parte.alumno}
-            {parte.esGrupal && <span style={{ fontSize: 11, background: "#e8f5f3", color: C.teal, borderRadius: 6, padding: "2px 8px", marginLeft: 6 }}><Ic n="grupos" tam={20} />grupal</span>}
+            {parte.esGrupal && <span style={{ fontSize: 14, background: R.azulClaro, color: R.petroleo, borderRadius: 4, padding: "2px 8px", marginLeft: 6 }}><Ic n="grupos" tam={20} />grupal</span>}
           </div>
-          <div style={{ fontSize: 12, color: C.gray, marginTop: 3 }}>
+          <div style={{ fontSize: 14, color: R.petroleo, marginTop: 4, lineHeight: 1.5 }}>
             <Ic n="aula" tam={20} />{parte.curso}{parte.tutor ? ` (tutor/a: ${parte.tutor})` : ""} · {parte.tipo} · <Ic n="hora-reloj" tam={18} />{parte.hora || "—"} · <Ic n="fecha-hora" tam={18} />{fmt(parte.ts)} · <Ic n="cargo-profesor" tam={18} />{parte.profesor}
           </div>
-          <div style={{ fontSize: 13, marginTop: 6, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 15, marginTop: 6, color: R.noche, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {parte.descripcion}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
           <Badge g={parte.gravedad} />
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={e => { e.stopPropagation(); onVer(); }} style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Ic n="buscar" tam={20} />Ver</button>
-            <button onClick={e => { e.stopPropagation(); onPrint(); }} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}><Ic n="informe" tam={20} />PDF</button>
+            <button onClick={e => { e.stopPropagation(); onVer(); }} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="buscar" tam={22} />Ver</button>
+            <button onClick={e => { e.stopPropagation(); onPrint(); }} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="informe" tam={22} />PDF</button>
           </div>
         </div>
       </div>
@@ -1627,7 +1642,7 @@ function PlanificadorGuardias({ profesores, cursos, inpStyle, selStyle, labelSty
         style={{ marginBottom: 16, background: C.cream, border: `1px solid #ddd`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13, color: C.dark }}>
         ← Volver al listado
       </button>
-      <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, borderRadius: "14px 14px 0 0", padding: "20px 24px", color: "#fff" }}>
+      <div style={{ background: R.azul, borderRadius: "14px 14px 0 0", padding: "20px 24px", color: "#fff" }}>
         <div style={{ fontSize: 11, opacity: .7, letterSpacing: 1, marginBottom: 4 }}>PLAN DE GUARDIA · {CENTRO.toUpperCase()}</div>
         <div style={{ fontSize: 20, fontWeight: 800 }}><Ic n="por-alumno" tam={20} />{verPlan.profesorAusente}</div>
         <div style={{ fontSize: 13, opacity: .85, marginTop: 4 }}>
@@ -2200,7 +2215,7 @@ function PasarLista({ curso, alumnos, existente, onGuardar, onCerrar, C }) {
     <div role="dialog" aria-modal="true" aria-label={`Pasar lista de ${curso}`} onClick={onCerrar}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 120, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: 16, width: "min(460px, 100%)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "14px 18px", borderRadius: "16px 16px 0 0", position: "sticky", top: 0 }}>
+        <div style={{ background: R.azul, color: "#fff", padding: "14px 18px", borderRadius: "16px 16px 0 0", position: "sticky", top: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="partes" tam={20} />Pasar lista · {curso}</div>
           <div style={{ fontSize: 12, opacity: .85 }}>Marca solo a quien falta. {grupo.length} alumnos.</div>
         </div>
@@ -4757,18 +4772,18 @@ async function excelPeriodo(est, periodo, tutores = {}, alumnos = [], soloAlumna
 }
 
 // Barras horizontales sencillas
-function Barras({ datos, color = "#44a194", vacio = "Sin datos en este periodo.", onClick }) {
+function Barras({ datos, color = R.turquesa, vacio = "Sin datos en este periodo.", onClick }) {
   const max = Math.max(1, ...datos.map(d => d[1]));
-  if (!datos.length) return <div style={{ fontSize: 13, color: "#64748b" }}>{vacio}</div>;
+  if (!datos.length) return <div style={{ fontSize: 15, color: R.petroleo }}>{vacio}</div>;
   return (
     <div>
       {datos.map(([k, n, clave]) => (
         <div key={k} onClick={onClick ? () => onClick(clave ?? k, k) : undefined} role={onClick ? "button" : undefined} title={onClick ? "Pulsa para ver estos partes" : undefined}
-          onMouseOver={onClick ? e => { e.currentTarget.style.background = "#f1f5f9"; } : undefined} onMouseOut={onClick ? e => { e.currentTarget.style.background = "transparent"; } : undefined}
-          style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(60px,1.2fr) 34px", gap: 8, alignItems: "center", marginBottom: 2, padding: "2px 4px", borderRadius: 6, fontSize: 12, cursor: onClick ? "pointer" : "default" }}>
-          <div title={k} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#2c4a52" }}>{k}</div>
-          <div style={{ background: "#eef2f4", borderRadius: 6, height: 12 }}><div style={{ width: `${(100 * n) / max}%`, background: color, height: "100%", borderRadius: 6 }} /></div>
-          <div style={{ textAlign: "right", fontWeight: 700, color: "#2c4a52" }}>{n}</div>
+          onMouseOver={onClick ? e => { e.currentTarget.style.background = R.azulClaro; } : undefined} onMouseOut={onClick ? e => { e.currentTarget.style.background = "transparent"; } : undefined}
+          style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(60px,1.2fr) 34px", gap: 8, alignItems: "center", marginBottom: 2, minHeight: 32, padding: "2px 4px", fontSize: 14, cursor: onClick ? "pointer" : "default" }}>
+          <div title={k} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: R.petroleo }}>{k}</div>
+          <div style={{ background: R.gris, height: 14 }}><div style={{ width: `${(100 * n) / max}%`, background: color, height: "100%" }} /></div>
+          <div style={{ textAlign: "right", fontWeight: 700, color: R.petroleo }}>{n}</div>
         </div>
       ))}
     </div>
@@ -4787,7 +4802,7 @@ function DetallePartes({ titulo, subtitulo, partes, tutores, onVerParte, onCerra
   return (
     <div onClick={onCerrar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 150, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "3vh 2vw" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: C.cream, borderRadius: 16, width: "100%", maxWidth: 1200, overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        <div style={{ position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{titulo}</div>
             {subtitulo && <div style={{ fontSize: 12, opacity: .85 }}>{subtitulo}</div>}
@@ -5007,17 +5022,19 @@ function ContactoFamilia({ alumno, partes, banos, periodo, tutores, remitente, C
     catch { window.prompt("Copia el texto:", texto); }
   };
   if (!alumno) return null;
-  const btn = { flex: "1 1 150px", padding: "10px 12px", borderRadius: 10, border: `2px solid ${C.teal}`, background: "#F0FAF7", color: C.dark, fontWeight: 700, fontSize: 12, cursor: "pointer" };
+  const btn = { flex: "1 1 150px", minHeight: 48, padding: "8px 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontWeight: 700, fontSize: 16, cursor: "pointer" };
   return (
-    <div style={{ background: "#FFFBEB", border: "1px solid #fcd34d", borderRadius: 10, padding: 12, marginTop: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.dark, marginBottom: 2 }}><Ic n="mensaje-enviar" tam={20} />Contactar con la familia</div>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 8 }}><Ic n="mensaje-enviar" tam={20} />{alumno.email || "sin correo"} · 📱 {alumno.telefono || "sin teléfono"}</div>
+    <div style={{ marginTop: 10, border: `1px solid ${R.turquesaClaro}` }}>
+      <div style={{ fontSize: 17, fontWeight: 700, color: R.noche, background: R.mostaza, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="mensaje-enviar" tam={30} />Contactar con la familia</div>
+      <div style={{ padding: 12, background: C.white }}>
+      <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 10 }}><Ic n="mensaje-enviar" tam={20} />{alumno.email || "sin correo"} · 📱 {alumno.telefono || "sin teléfono"}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button style={btn} onClick={() => pdfInformeFamilia(alumno, partes, banos, periodo, tutores, remitente)}><Ic n="informe" tam={20} />Ver informe para la familia</button>
         <button style={btn} onClick={() => copiar(textoInformeFamilia(alumno, partes, banos, periodo, remitente, tutores), "texto")}>{copiado === "texto" ? "✅ Copiado" : "📋 Copiar texto del correo"}</button>
       </div>
       <ElegirDestinatarios alumno={alumno} tutorNombre={tutores[alumno.curso]?.tutor || alumno.tutor} tutorEmail={tutores[alumno.curso]?.email}
         asunto={`Convivencia de ${alumno.nombre} (${alumno.curso}) · ${periodo.texto}`} cuerpo={textoInformeFamilia(alumno, partes, banos, periodo, remitente, tutores)} C={C} />
+      </div>
     </div>
   );
 }
@@ -5064,21 +5081,21 @@ function PanelAvisos({ partes, alumnos, banos, usuario, tutores, avisos, setAvis
     const al = alumnos.find(a => a.id === x.alumnoId) || { id: x.alumnoId, nombre: x.alumno, curso: x.curso };
     const banosAl = banos.filter(b => b.alumno === x.alumno && b.curso === x.curso && isoLocal(b.ts || b.salida) >= tri.desde && isoLocal(b.ts || b.salida) <= tri.hasta);
     return (
-      <div key={x.id} style={{ background: C.white, borderRadius: 10, padding: 12, marginBottom: 8, borderLeft: `4px solid ${x.pendiente ? C.salmon : C.teal}` }}>
+      <div key={x.id} style={{ background: C.white, padding: 12, marginBottom: 8, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${x.pendiente ? R.mostaza : R.verde}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 800, color: C.dark, fontSize: 15 }}>{x.alumno} <span style={{ fontWeight: 500, color: C.gray, fontSize: 13 }}>· {x.curso}</span></div>
-            <div style={{ fontSize: 12, color: C.gray }}>
-              <b style={{ color: C.salmon }}>{x.n} partes</b> este trimestre{x.graves ? ` (${x.graves} graves o muy graves)` : ""} · {x.ambito === "mios" ? "puestos por ti" : `en tu tutoría`}
+            <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 17 }}>{x.alumno} <span style={{ fontWeight: 400, fontSize: 15 }}>· {x.curso}</span></div>
+            <div style={{ fontSize: 14, color: R.petroleo, lineHeight: 1.45 }}>
+              <b style={{ color: R.noche }}>{x.n} partes</b> este trimestre{x.graves ? ` (${x.graves} graves o muy graves)` : ""} · {x.ambito === "mios" ? "puestos por ti" : `en tu tutoría`}
               {x.aviso && <> · {x.pendiente ? `avisada con ${x.aviso.n}, hay ${x.n - x.aviso.n} nuevo(s)` : `✅ familia avisada el ${fmtD(x.aviso.ts)}`}</>}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button onClick={() => onVerPartes(x)} style={{ background: "#EEF5F8", color: C.blue, border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}><Ic n="buscar" tam={20} />Ver partes</button>
-            <button onClick={() => setAbierto(abierto === x.id ? null : x.id)} style={{ background: "#FFFBEB", color: "#92400e", border: "1px solid #fcd34d", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}><Ic n="mensaje-enviar" tam={20} />Avisar a la familia</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => onVerPartes(x)} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="buscar" tam={22} />Ver partes</button>
+            <button onClick={() => setAbierto(abierto === x.id ? null : x.id)} style={{ background: R.mostaza, color: R.noche, border: "none", borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}><Ic n="mensaje-enviar" tam={22} />Avisar a la familia</button>
             {x.pendiente
-              ? <button onClick={() => marcar(x)} style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>✅ Ya he avisado</button>
-              : <button onClick={() => deshacer(x)} style={{ background: "none", color: C.gray, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 12 }}>Deshacer</button>}
+              ? <button onClick={() => marcar(x)} style={{ background: R.verde, color: R.noche, border: "none", borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>✅ Ya he avisado</button>
+              : <button onClick={() => deshacer(x)} style={{ background: "none", color: R.azul, border: "none", textDecoration: "underline", minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15 }}>Deshacer</button>}
           </div>
         </div>
         {abierto === x.id && <ContactoFamilia alumno={al} partes={x.partes} banos={banosAl} periodo={tri} tutores={tutores} remitente={usuario} C={C} />}
@@ -5086,23 +5103,25 @@ function PanelAvisos({ partes, alumnos, banos, usuario, tutores, avisos, setAvis
     );
   };
   return (
-    <div className="no-print" style={{ background: pendientes.length ? "#FDF0EF" : "#F0FAF7", border: `2px solid ${pendientes.length ? C.salmon : C.teal}`, borderRadius: 12, padding: 16, marginBottom: 14 }}>
-      <div style={{ fontWeight: 800, color: C.dark, fontSize: 16, marginBottom: 4 }}>
-        <Ic n="alertas" tam={20} />{pendientes.length ? `${pendientes.length} alumno/a(s) con ${UMBRAL_AVISO} o más partes: conviene avisar a su familia` : "Avisos a familias"}
+    <div className="no-print" style={{ marginBottom: 18 }}>
+      <div style={{ fontWeight: 700, color: R.noche, fontSize: 17, padding: "10px 14px", background: pendientes.length ? R.mostaza : R.verde }}>
+        <Ic n="alertas" tam={24} />{pendientes.length ? `${pendientes.length} alumno/a(s) con ${UMBRAL_AVISO} o más partes: conviene avisar a su familia` : "Avisos a familias"}
       </div>
-      <div style={{ fontSize: 12, color: C.gray, marginBottom: 10 }}>
+      <div style={{ background: R.crema, padding: 14 }}>
+      <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 12, lineHeight: 1.45 }}>
         Alumnado con {UMBRAL_AVISO} o más partes en {tri.texto}: los que has puesto tú{Object.values(tutores).some(t => t?.tutor === usuario) ? " y los de tu tutoría" : ""}. Cuando avises, pulsa «Ya he avisado». Si luego tiene más partes, volverá a aparecer.
       </div>
-      {pendientes.length === 0 && <div style={{ fontSize: 13, color: C.teal, fontWeight: 700, marginBottom: hechos.length ? 8 : 0 }}>✅ No tienes avisos pendientes.</div>}
+      {pendientes.length === 0 && <div style={{ fontSize: 16, color: R.petroleo, fontWeight: 700, marginBottom: hechos.length ? 8 : 0 }}>✅ No tienes avisos pendientes.</div>}
       {pendientes.map(tarjeta)}
       {hechos.length > 0 && (
         <>
-          <button onClick={() => setVerHechos(v => !v)} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0, marginTop: 4 }}>
+          <button onClick={() => setVerHechos(v => !v)} style={{ background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 16, fontWeight: 700, minHeight: 44, padding: 0, marginTop: 4 }}>
             {verHechos ? "▾" : "▸"} Familias ya avisadas ({hechos.length})
           </button>
           {verHechos && <div style={{ marginTop: 8 }}>{hechos.map(tarjeta)}</div>}
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -5135,10 +5154,10 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
   const abrirDia = f => setDetalle({ titulo: `Partes del ${parseISO(f).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`, partes: est.partes.filter(p => isoLocal(p.ts) === f) });
   const abrir = (titulo, filtro) => setDetalle({ titulo, subtitulo: periodoTxt, partes: est.partes.filter(filtro) });
 
-  const tarjeta = { background: C.white, borderRadius: 12, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 14 };
-  const h3 = { margin: "0 0 12px", color: C.dark, fontSize: 15 };
-  const btnDoc = (activo = true) => ({ display: "block", width: "100%", textAlign: "left", padding: "11px 14px", borderRadius: 10, border: `2px solid ${activo ? C.teal : "#e2e8f0"}`, background: activo ? "#F0FAF7" : "#f8fafc", color: activo ? C.dark : C.gray, cursor: activo ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13 });
-  const sub = { display: "block", fontWeight: 500, fontSize: 11, color: C.gray, marginTop: 2 };
+  const tarjeta = { background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 16, marginBottom: 14 };
+  const h3 = { margin: "0 0 12px", color: R.petroleo, fontSize: 18, display: "flex", alignItems: "center", gap: 8 };
+  const btnDoc = (activo = true) => ({ display: "block", width: "100%", textAlign: "left", minHeight: 48, padding: "12px 14px", borderRadius: 6, border: `2px solid ${activo ? R.turquesa : R.gris}`, background: activo ? C.white : R.gris, color: R.petroleo, opacity: activo ? 1 : .7, cursor: activo ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 16 });
+  const sub = { display: "block", fontWeight: 400, fontSize: 14, color: R.petroleo, marginTop: 4 };
 
   const partesAlumno = est.partes.filter(p => String(p.alumnoId) === alumnoDoc);
   const partesGrupo = est.partes.filter(p => p.curso === grupoDoc);
@@ -5149,9 +5168,10 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 
   return (
     <div>
-      <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="estadisticas" tam={44} />{esProfe ? "Mis estadísticas e informes" : "Estadísticas y documentos"}</h2>
+      <TituloBloque titulo={esProfe ? "Mis estadísticas e informes" : "Estadísticas y documentos"} sub="Cifras, gráficos y documentos del periodo que elijas" icono="estadisticas" />
+      <div style={{ height: 16 }} />
       {esProfe && (
-        <div className="no-print" style={{ ...tarjeta, borderLeft: `5px solid ${C.teal}` }}>
+        <div className="no-print" style={{ ...tarjeta, background: R.azulClaro, border: "none" }}>
           <label style={labelStyle}>¿Qué partes quieres analizar?</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
@@ -5161,13 +5181,13 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
               { id: "mios", txt: "👤 Como profesor/a: mis partes", sub: "Los partes que has puesto y el alumnado que sale al baño en tus clases" },
             ].map(o => (
               <button key={o.id} disabled={o.off} onClick={() => { setAmbito(o.id); setAlumnoDoc(""); setGrupoDoc(""); }}
-                style={{ flex: "1 1 220px", textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `2px solid ${ambitoOk === o.id ? C.teal : "#e2e8f0"}`, background: o.off ? "#f8fafc" : ambitoOk === o.id ? "#F0FAF7" : C.white, cursor: o.off ? "not-allowed" : "pointer", opacity: o.off ? .65 : 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, display: "flex", alignItems: "center", gap: 6 }}>{ambitoOk === o.id ? "✔ " : ""}<ConIcono texto={o.txt} tam={34} /></div>
-                <div style={{ fontSize: 11, color: C.gray }}>{o.sub}</div>
+                style={{ flex: "1 1 220px", textAlign: "left", minHeight: 56, padding: "10px 14px", borderRadius: 6, border: `2px solid ${ambitoOk === o.id ? R.azul : C.white}`, background: o.off ? R.gris : C.white, cursor: o.off ? "not-allowed" : "pointer", opacity: o.off ? .6 : 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: R.petroleo, display: "flex", alignItems: "center", gap: 6 }}>{ambitoOk === o.id ? "✔ " : ""}<ConIcono texto={o.txt} tam={34} /></div>
+                <div style={{ fontSize: 14, color: R.petroleo }}>{o.sub}</div>
               </button>
             ))}
           </div>
-          {!misTutorias.length && <div style={{ fontSize: 12, color: C.gray, marginTop: 8 }}>Estás viendo tus partes como profesor/a. Si eres tutor/a y no aparece tu grupo, pide a Administración que te asigne la tutoría.{MODO_DEMO ? " En la demostración, para verlo como tutor/a pulsa «Salir» y entra con el botón «Tutor/a de un grupo»." : ""}</div>}
+          {!misTutorias.length && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>Estás viendo tus partes como profesor/a. Si eres tutor/a y no aparece tu grupo, pide a Administración que te asigne la tutoría.{MODO_DEMO ? " En la demostración, para verlo como tutor/a pulsa «Salir» y entra con el botón «Tutor/a de un grupo»." : ""}</div>}
         </div>
       )}
       {detalle && <DetallePartes {...detalle} tutores={tutores} onVerParte={onVerParte} onCerrar={() => setDetalle(null)} C={C} />}
@@ -5180,45 +5200,45 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
           {PERIODOS.map(p => (
             <button key={p.id} onClick={() => setTipo(p.id)}
-              style={{ padding: "8px 14px", borderRadius: 20, border: `2px solid ${tipo === p.id ? C.teal : "#e2e8f0"}`, background: tipo === p.id ? C.teal : C.white, color: tipo === p.id ? "#fff" : C.dark, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: `2px solid ${tipo === p.id ? R.azul : R.turquesa}`, background: tipo === p.id ? R.azul : C.white, color: tipo === p.id ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {p.label}
             </button>
           ))}
         </div>
         {tipo === "rango" ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-            <div><label style={{ fontSize: 12, color: C.gray }}>Desde</label><input type="date" value={desdeLibre} onChange={e => setDesdeLibre(e.target.value)} style={inpStyle} /></div>
-            <div><label style={{ fontSize: 12, color: C.gray }}>Hasta</label><input type="date" value={hastaLibre} onChange={e => setHastaLibre(e.target.value)} style={inpStyle} /></div>
+            <div><label style={{ fontSize: 14, color: R.petroleo, fontWeight: 700 }}>Desde</label><input type="date" value={desdeLibre} onChange={e => setDesdeLibre(e.target.value)} style={inpStyle} /></div>
+            <div><label style={{ fontSize: 14, color: R.petroleo, fontWeight: 700 }}>Hasta</label><input type="date" value={hastaLibre} onChange={e => setHastaLibre(e.target.value)} style={inpStyle} /></div>
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <button onClick={() => setRef(moverPeriodo(tipo, ref, -1))} aria-label="Periodo anterior" style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid #e2e8f0`, background: C.white, cursor: "pointer", fontWeight: 700 }}>◀</button>
+            <button onClick={() => setRef(moverPeriodo(tipo, ref, -1))} aria-label="Periodo anterior" style={{ minWidth: 48, minHeight: 48, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.turquesa}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700 }}>◀</button>
             <input type="date" value={ref} onChange={e => setRef(e.target.value || isoLocal())} style={{ ...inpStyle, width: "auto", flex: "1 1 160px", marginBottom: 0 }} aria-label="Fecha" />
-            <button onClick={() => setRef(moverPeriodo(tipo, ref, 1))} aria-label="Periodo siguiente" style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid #e2e8f0`, background: C.white, cursor: "pointer", fontWeight: 700 }}>▶</button>
-            <button onClick={() => setRef(isoLocal())} style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: C.cream, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Hoy</button>
+            <button onClick={() => setRef(moverPeriodo(tipo, ref, 1))} aria-label="Periodo siguiente" style={{ minWidth: 48, minHeight: 48, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.turquesa}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700 }}>▶</button>
+            <button onClick={() => setRef(isoLocal())} style={{ minHeight: 48, padding: "0 16px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, cursor: "pointer", fontWeight: 700, fontSize: 16 }}>Hoy</button>
           </div>
         )}
-        <div style={{ marginTop: 12, fontSize: 14, fontWeight: 700, color: C.blue }}><Ic n="fecha-hora" tam={20} />{periodo.texto[0].toUpperCase() + periodo.texto.slice(1)} · {est.lectivos.length} día(s) lectivo(s)</div>
+        <div style={{ marginTop: 12, fontSize: 16, fontWeight: 700, color: R.azul }}><Ic n="fecha-hora" tam={20} />{periodo.texto[0].toUpperCase() + periodo.texto.slice(1)} · {est.lectivos.length} día(s) lectivo(s)</div>
       </div>
 
       {/* Cifras principales */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 14 }}>
         {[
-          { n: est.partes.length, t: "Partes", s: `${est.gravedad.leve} leves · ${est.gravedad.grave} graves · ${est.gravedad.muy_grave} muy graves`, c: C.teal, click: () => abrir("Todos los partes", () => true) },
-          { n: est.alumnosConParte, t: "Alumnos/as con parte", s: est.lectivos.length ? `${(est.partes.length / est.lectivos.length).toFixed(1)} partes por día` : "", c: C.blue },
-          { n: est.banos.length, t: "Salidas al baño", s: est.banoMedio ? `${est.banoMedio} min de media · ${est.banosLargos} de más de 10 min` : "", c: "#10b981" },
+          { n: est.partes.length, t: "Partes", s: `${est.gravedad.leve} leves · ${est.gravedad.grave} graves · ${est.gravedad.muy_grave} muy graves`, c: R.verde, click: () => abrir("Todos los partes", () => true) },
+          { n: est.alumnosConParte, t: "Alumnos/as con parte", s: est.lectivos.length ? `${(est.partes.length / est.lectivos.length).toFixed(1)} partes por día` : "", c: R.turquesa },
+          { n: est.banos.length, t: "Salidas al baño", s: est.banoMedio ? `${est.banoMedio} min de media · ${est.banosLargos} de más de 10 min` : "", c: R.verde },
           ...(esProfe ? [
-            { n: est.gravedad.grave + est.gravedad.muy_grave, t: "Graves y muy graves", s: "Pulsa para verlos", c: C.salmon, click: () => abrir("Partes graves y muy graves", p => p.gravedad !== "leve") },
+            { n: est.gravedad.grave + est.gravedad.muy_grave, t: "Graves y muy graves", s: "Pulsa para verlos", c: R.azul, click: () => abrir("Partes graves y muy graves", p => p.gravedad !== "leve") },
           ] : [
-            { n: est.ausencias.length, t: "Ausencias profesorado", s: `${est.horasAusencia} horas · ${est.profesoresAusentes} profesores/as`, c: C.salmon },
-            { n: est.guardiasDebidas ? `${pct(est.guardiasFirmadas, est.guardiasDebidas)} %` : "-", t: "Guardias firmadas", s: `${est.guardiasFirmadas} de ${est.guardiasDebidas}`, c: C.amber },
-            { n: est.listasPasadas, t: "Listas en guardia", s: `${est.faltasEnListas} faltas anotadas`, c: "#8b5cf6" },
+            { n: est.ausencias.length, t: "Ausencias profesorado", s: `${est.horasAusencia} horas · ${est.profesoresAusentes} profesores/as`, c: R.azul },
+            { n: est.guardiasDebidas ? `${pct(est.guardiasFirmadas, est.guardiasDebidas)} %` : "-", t: "Guardias firmadas", s: `${est.guardiasFirmadas} de ${est.guardiasDebidas}`, c: R.mostaza },
+            { n: est.listasPasadas, t: "Listas en guardia", s: `${est.faltasEnListas} faltas anotadas`, c: R.petroleo },
           ]),
         ].map(k => (
-          <div key={k.t} onClick={k.click} title={k.click ? "Pulsa para verlos en detalle" : undefined} style={{ background: C.white, borderRadius: 12, padding: 14, borderTop: `4px solid ${k.c}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", cursor: k.click ? "pointer" : "default" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: C.dark }}>{k.n}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{k.t}</div>
-            <div style={{ fontSize: 11, color: C.gray, marginTop: 2 }}>{k.s}</div>
+          <div key={k.t} onClick={k.click} title={k.click ? "Pulsa para verlos en detalle" : undefined} style={{ background: C.white, padding: 14, border: `1px solid ${R.turquesaClaro}`, borderTop: `8px solid ${k.c}`, cursor: k.click ? "pointer" : "default" }}>
+            <div style={{ fontFamily: TITULO, fontSize: 32, fontWeight: 400, color: R.petroleo }}>{k.n}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: R.petroleo }}>{k.t}</div>
+            <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{k.s}</div>
           </div>
         ))}
       </div>
@@ -5231,20 +5251,20 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
             {est.porDia.map(d => (
               <div key={d.fecha} title={`${fmtD(parseISO(d.fecha))}: ${d.partes} partes (${d.leve} leves, ${d.grave} graves, ${d.muy_grave} muy graves) · ${d.banos} baños · ${d.ausencias} ausencias. Pulsa para ver el detalle.`}
                 role="button" tabIndex={0} onClick={() => abrirDia(d.fecha)} onKeyDown={e => { if (e.key === "Enter") abrirDia(d.fecha); }}
-                onMouseOver={e => { e.currentTarget.style.background = "#f1f5f9"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}
+                onMouseOver={e => { e.currentTarget.style.background = R.azulClaro; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}
                 style={{ flex: "1 0 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", cursor: "pointer", borderRadius: 6 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.dark }}>{d.partes || ""}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: R.petroleo }}>{d.partes || ""}</div>
                 <div style={{ width: "100%", maxWidth: 34, display: "flex", flexDirection: "column-reverse", height: `${(100 * d.partes) / maxDia}%`, minHeight: d.partes ? 3 : 0, borderRadius: "4px 4px 0 0", overflow: "hidden" }}>
-                  <div style={{ flex: d.leve, background: C.teal }} /><div style={{ flex: d.grave, background: C.amber }} /><div style={{ flex: d.muy_grave, background: C.salmon }} />
+                  <div style={{ flex: d.leve, background: COLOR_GRAVEDAD.leve }} /><div style={{ flex: d.grave, background: COLOR_GRAVEDAD.grave }} /><div style={{ flex: d.muy_grave, background: COLOR_GRAVEDAD.muy_grave }} />
                 </div>
-                <div style={{ fontSize: 10, color: C.gray, marginTop: 3 }}>{parseISO(d.fecha).getDate()}</div>
+                <div style={{ fontSize: 12, color: R.petroleo, marginTop: 3 }}>{parseISO(d.fecha).getDate()}</div>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.gray, marginTop: 8, flexWrap: "wrap" }}>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.teal, borderRadius: 2 }} /> Leves</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.amber, borderRadius: 2 }} /> Graves</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: C.salmon, borderRadius: 2 }} /> Muy graves</span>
+          <div style={{ display: "flex", gap: 14, fontSize: 14, color: R.petroleo, marginTop: 10, flexWrap: "wrap" }}>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.leve, verticalAlign: -2 }} /> Leves</span>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.grave, verticalAlign: -2 }} /> Graves</span>
+            <span><span style={{ display: "inline-block", width: 14, height: 14, background: COLOR_GRAVEDAD.muy_grave, verticalAlign: -2 }} /> Muy graves</span>
             <span><b>Pulsa una columna</b> para ver ese día en grande: motivos, faltas que más se repiten y cada parte.</span>
           </div>
         </div>
@@ -5252,19 +5272,19 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
         <div style={tarjeta}><h3 style={h3}><Ic n="por-curso" tam={20} />Partes por grupo</h3><Barras datos={est.porGrupo.map(r => [`${r.curso}${r.tutor ? ` · ${r.tutor}` : ""}`, r.total, r.curso])} onClick={c => abrir(`Partes de ${c}`, p => p.curso === c)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="hora-reloj" tam={20} />Partes por hora de clase</h3><Barras datos={est.porHora} color={C.blue} onClick={h => abrir(`Partes a ${h}`, p => p.hora === h)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="por-alumno" tam={20} />Alumnado con más partes</h3><Barras datos={est.porAlumno} color={C.salmon} onClick={k => abrir(`Partes de ${k}`, p => `${p.alumno} (${p.curso})` === k)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="tipificacion" tam={20} />Faltas más frecuentes</h3><Barras datos={est.porTipificacion} color={C.amber} onClick={k => abrir(k, p => etiquetaTip(p) === k)} /></div>
-        <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Salidas al baño por grupo</h3><Barras datos={est.banosPorGrupo} color="#10b981" /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="hora-reloj" tam={20} />Partes por hora de clase</h3><Barras datos={est.porHora} color={R.azul} onClick={h => abrir(`Partes a ${h}`, p => p.hora === h)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="por-alumno" tam={20} />Alumnado con más partes</h3><Barras datos={est.porAlumno} color={R.mostaza} onClick={k => abrir(`Partes de ${k}`, p => `${p.alumno} (${p.curso})` === k)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="tipificacion" tam={20} />Faltas más frecuentes</h3><Barras datos={est.porTipificacion} color={R.petroleo} onClick={k => abrir(k, p => etiquetaTip(p) === k)} /></div>
+        <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Salidas al baño por grupo</h3><Barras datos={est.banosPorGrupo} color={R.verde} /></div>
         {esProfe
-          ? <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Alumnado que más sale al baño</h3><Barras datos={est.banosPorAlumno} color="#10b981" /></div>
-          : <div style={tarjeta}><h3 style={h3}><Ic n="profe-ausente" tam={20} />Ausencias del profesorado por motivo</h3><Barras datos={est.ausenciasPorMotivo} color="#8b5cf6" /></div>}
+          ? <div style={tarjeta}><h3 style={h3}><Ic n="banos" tam={20} />Alumnado que más sale al baño</h3><Barras datos={est.banosPorAlumno} color={R.verde} /></div>
+          : <div style={tarjeta}><h3 style={h3}><Ic n="profe-ausente" tam={20} />Ausencias del profesorado por motivo</h3><Barras datos={est.ausenciasPorMotivo} color={R.petroleo} /></div>}
       </div>
 
       {/* Documentos */}
       <div className="no-print" style={tarjeta}>
         <h3 style={h3}><Ic n="informe" tam={20} />Documentos de este periodo</h3>
-        <div style={{ fontSize: 12, color: C.gray, marginBottom: 12 }}>Al pulsar, el informe se abre <b>en pantalla</b>; desde ahí lo descargas o lo imprimes. Usan las fechas elegidas arriba.</div>
+        <div style={{ fontSize: 15, color: R.petroleo, marginBottom: 12 }}>Al pulsar, el informe se abre <b>en pantalla</b>; desde ahí lo descargas o lo imprimes. Usan las fechas elegidas arriba.</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>
           <button style={btnDoc()} onClick={() => pdfEstadisticas(est, periodo, esProfe ? `${ambitoOk === "mios" ? "Partes puestos por" : `Tutoría de ${ambitoOk} ·`} ${usuario}` : "")}>
             <Ic n="dashboard" tam={20} />Estadísticas del periodo<span style={sub}>Resumen, evolución por día, grupos, alumnado, faltas y profesorado</span>
@@ -5288,7 +5308,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
           </button>
         </div>
 
-        <div style={{ borderTop: `1px dashed ${C.cream}`, marginTop: 16, paddingTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
+        <div style={{ borderTop: `1px solid ${R.turquesaClaro}`, marginTop: 16, paddingTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
           <div>
             <label style={labelStyle}><Ic n="por-alumno" tam={20} />Partes de un alumno/a</label>
             <select value={alumnoDoc} onChange={e => setAlumnoDoc(e.target.value)} style={{ ...selStyle, marginBottom: 8 }}>
@@ -5324,7 +5344,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
             </button>
           </div>}
         </div>
-        <div style={{ fontSize: 11, color: C.gray, marginTop: 12 }}>Las faltas oficiales de asistencia del alumnado se registran en Raíces; aquí solo aparecen las anotadas en las listas de guardia.</div>
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 12 }}>Las faltas oficiales de asistencia del alumnado se registran en Raíces; aquí solo aparecen las anotadas en las listas de guardia.</div>
       </div>
     </div>
   );
@@ -5420,7 +5440,7 @@ function PreguntasFrecuentes() {
     <div role="dialog" aria-modal="true" aria-labelledby="rumbo-faq-titulo" onClick={() => setAbierto(false)}
       style={{ position: "fixed", inset: 0, zIndex: 2250, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, fontFamily: "system-ui,sans-serif" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, width: "min(680px, 100%)", maxHeight: "92vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
-        <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ background: R.azul, color: "#fff", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div id="rumbo-faq-titulo" style={{ fontWeight: 900, fontSize: 18 }}>❓ Preguntas frecuentes</div>
           <button onClick={() => setAbierto(false)} aria-label="Cerrar preguntas frecuentes" style={{ background: "rgba(255,255,255,.2)", border: "1px solid rgba(255,255,255,.4)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>✕</button>
         </div>
@@ -5908,9 +5928,10 @@ function AppInterna() {
   }
 
   // Estilos base
-  const inpStyle = { width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid #d1d5db`, fontSize: 14, boxSizing: "border-box", background: C.white, outline: "none" };
+  // Campos como los de Raíces: borde turquesa grueso, 48 px de alto y letra de 16 px
+  const inpStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", boxSizing: "border-box", background: C.white, color: R.noche };
   const selStyle = { ...inpStyle };
-  const labelStyle = { display: "block", fontWeight: 600, marginBottom: 6, color: C.dark, fontSize: 13 };
+  const labelStyle = { display: "block", fontWeight: 700, marginBottom: 8, color: R.petroleo, fontSize: 15 };
   // Campos de la pantalla principal (rediseño): 48 px de alto, letra de 16 px y borde que se ve
   const campoStyle = { width: "100%", minHeight: 48, padding: "10px 14px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, lineHeight: 1.4, fontFamily: "inherit", boxSizing: "border-box", background: C.white, color: R.noche };
   const etiquetaStyle = { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontWeight: 700, marginBottom: 8, color: R.petroleo, fontSize: 15 };
@@ -6061,7 +6082,7 @@ function AppInterna() {
           .gd-tab { border-right: none; border-bottom: 1px solid rgba(255,255,255,.8); padding: 6px 16px 6px 34px; white-space: normal; text-align: left; color: ${R.noche}; }
           .gd-tab.activo { box-shadow: inset 5px 0 0 ${R.azul}; color: ${R.petroleo}; }
         }
-        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } }
+        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } .gd-logo-sub { display: none; } }
         @media (max-width: 600px) {
           .gd-header { padding: 8px 12px !important; }
           .gd-redondo { width: 46px; height: 46px; }
@@ -6081,10 +6102,9 @@ function AppInterna() {
       <div className="gd-header" style={{ background: C.white, color: R.petroleo, padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 12, borderBottom: "1px solid #E3E9EC" }}>
         <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <img className="gd-logo" src="/icono-rumboaula.png" alt="" style={{ width: 40, height: 40, borderRadius: 10 }} />
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: TITULO, fontWeight: 500, fontSize: 30, lineHeight: 1.05, color: R.turquesa }}>{APP}</div>
-              <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
+              <Logo tam={34} />
+              <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo, marginTop: 4 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
             </div>
           </div>
           <div className="gd-saludo-cab" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: R.petroleo, minWidth: 0 }}>
@@ -6305,11 +6325,11 @@ function AppInterna() {
         {/* ── Parte de grupo ── */}
         {tab === "parte_grupo" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="grupos" tam={44} />Parte de Grupo</h2>
-            {grupoGenerado && <Card style={{ background: "#E8F5F3", border: `2px solid ${C.teal}`, marginBottom: 20 }}><strong style={{ color: C.teal }}>✅ {grupoGenerado.total} partes generados para {grupoGenerado.curso} · {fmt(grupoGenerado.ts)}</strong></Card>}
-            <Card>
+            <TituloBloque titulo="Parte de Grupo" sub="Un parte para cada alumno/a del grupo" icono="grupos" />
+            {grupoGenerado && <Card style={{ ...caja(R.verde), marginTop: 16, marginBottom: 20 }}><strong style={{ color: R.petroleo, fontSize: 16 }}>✅ {grupoGenerado.total} partes generados para {grupoGenerado.curso} · {fmt(grupoGenerado.ts)}</strong></Card>}
+            <Card style={{ background: R.azulClaro, border: "none" }}>
               <div style={{ marginBottom: 16 }}>
-                <label style={labelStyle}><Ic n="por-curso" tam={20} />Seleccionar curso / grupo</label>
+                <label style={labelStyle}><Ic n="por-curso" tam={24} />Seleccionar curso / grupo</label>
                 <select value={gCurso} onChange={e => { setGCurso(e.target.value); setGExcluidos([]); }} style={selStyle}>
                   <option value="">— Selecciona un curso —</option>
                   {cursos.map(c => <option key={c}>{c}</option>)}
@@ -6320,24 +6340,24 @@ function AppInterna() {
                 const activos = grupo.filter(a => !gExcluidos.includes(a.id));
                 return (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <label style={{ ...labelStyle, marginBottom: 0 }}><Ic n="por-alumno" tam={20} />Alumnos <span style={{ color: C.gray, fontWeight: 400 }}>({activos.length} de {grupo.length})</span></label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <label style={{ ...labelStyle, marginBottom: 0 }}><Ic n="por-alumno" tam={24} />Alumnos <span style={{ color: R.petroleo, fontWeight: 400 }}>({activos.length} de {grupo.length})</span></label>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setGExcluidos(grupo.map(a => a.id))} style={{ background: "#FDF0EF", color: C.salmon, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Excluir todos</button>
-                        <button onClick={() => setGExcluidos([])} style={{ background: "#E8F5F3", color: C.teal, border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Incluir todos</button>
+                        <button onClick={() => setGExcluidos(grupo.map(a => a.id))} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Excluir todos</button>
+                        <button onClick={() => setGExcluidos([])} style={{ background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 12px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>Incluir todos</button>
                       </div>
                     </div>
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{ border: `1px solid ${R.turquesaClaro}`, overflow: "hidden", background: C.white }}>
                       {grupo.map(a => {
                         const excl = gExcluidos.includes(a.id);
                         return (
                           <div key={a.id}
                             onClick={() => setGExcluidos(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : [...prev, a.id])}
-                            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid #f3f4f6", cursor: "pointer", background: excl ? "#FDF0EF" : C.white }}
-                            onMouseOver={e => e.currentTarget.style.background = excl ? "#FDE8E8" : C.cream}
-                            onMouseOut={e => e.currentTarget.style.background = excl ? "#FDF0EF" : C.white}>
-                            <span style={{ fontSize: 13, textDecoration: excl ? "line-through" : "none", color: excl ? "#9ca3af" : C.dark }}><strong>{a.nombre}</strong></span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: excl ? C.salmon : C.teal, background: excl ? "#FDF0EF" : "#E8F5F3", borderRadius: 6, padding: "2px 10px" }}>{excl ? "Excluido" : "✔ Incluido"}</span>
+                            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 52, padding: "8px 14px", borderBottom: `1px solid ${R.turquesaClaro}`, cursor: "pointer", background: excl ? R.gris : C.white }}
+                            onMouseOver={e => e.currentTarget.style.background = excl ? "#DDE4EC" : R.azulClaro}
+                            onMouseOut={e => e.currentTarget.style.background = excl ? R.gris : C.white}>
+                            <span style={{ fontSize: 16, textDecoration: excl ? "line-through" : "none", color: R.petroleo }}><strong>{a.nombre}</strong></span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: excl ? R.petroleo : R.noche, background: excl ? C.white : R.verde, border: excl ? `1px solid ${R.turquesaClaro}` : "none", borderRadius: 4, padding: "3px 10px", whiteSpace: "nowrap" }}>{excl ? "Excluido" : "✔ Incluido"}</span>
                           </div>
                         );
                       })}
@@ -6345,28 +6365,28 @@ function AppInterna() {
                   </div>
                 );
               })()}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
-                <div><label style={labelStyle}><ConIcono texto="⏰ Hora" tam={40} /></label><select value={gHora} onChange={e => setGHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="📂 Tipo" tam={40} /></label><select value={gTipo} onChange={e => setGTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
-                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={40} /></label><select value={gGravedad} onChange={e => { setGGravedad(e.target.value); setGTipificacion(""); }} style={selStyle}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
+              <div className="gd-rejilla-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
+                <div><label style={labelStyle}><ConIcono texto="⏰ Hora" tam={30} /></label><select value={gHora} onChange={e => setGHora(e.target.value)} style={selStyle}>{HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}</select></div>
+                <div><label style={labelStyle}><ConIcono texto="📂 Tipo" tam={30} /></label><select value={gTipo} onChange={e => setGTipo(e.target.value)} style={selStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
+                <div><label style={labelStyle}><ConIcono texto="🎯 Gravedad" tam={30} /></label><select value={gGravedad} onChange={e => { setGGravedad(e.target.value); setGTipificacion(""); }} style={{ ...selStyle, borderLeft: `14px solid ${COLOR_GRAVEDAD[gGravedad] || R.turquesa}`, fontWeight: 700 }}>{GRAVEDAD.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}</select></div>
                 {gGravedad && TIPIFICACION[gGravedad]?.length > 0 && (
                   <div style={{ gridColumn: "1/-1" }}>
-                    <label style={labelStyle}><ConIcono texto="⚖️ Tipificación de la falta" tam={40} /></label>
+                    <label style={labelStyle}><ConIcono texto="⚖️ Tipificación de la falta" tam={30} /></label>
                     <select value={gTipificacion} onChange={e => setGTipificacion(e.target.value)} style={selStyle}>
                       <option value="">— Seleccionar tipificación —</option>
                       {TIPIFICACION[gGravedad].map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                     </select>
-                    {gGravedad !== "leve" && <div style={{ fontSize: 11, color: C.gray, marginTop: 4 }}>Decreto 32/2019 de la CAM</div>}
-                    {gGravedad === "leve" && <div style={{ fontSize: 11, color: C.gray, marginTop: 4 }}>Plan de Convivencia del Centro</div>}
+                    {gGravedad !== "leve" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Decreto 32/2019 de la CAM</div>}
+                    {gGravedad === "leve" && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Plan de Convivencia del Centro</div>}
                   </div>
                 )}
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}><ConIcono texto="📝 Descripción" tam={40} /></label>
+                <label style={labelStyle}><ConIcono texto="📝 Descripción" tam={30} /></label>
                 <FrasesRapidas tipo={gTipo} tipificacion={gTipificacion} texto={gDesc} setTexto={setGDesc} />
                 <textarea value={gDesc} onChange={e => setGDesc(e.target.value)} rows={4} placeholder="Describe el comportamiento del grupo…" style={{ ...inpStyle, resize: "vertical" }} />
               </div>
-              <Btn onClick={crearParteGrupo} disabled={!gCurso || !gDesc.trim()} color={C.teal} style={{ width: "100%", fontSize: 15, padding: "14px" }}>
+              <Btn onClick={crearParteGrupo} disabled={!gCurso || !gDesc.trim()} style={{ width: "100%", minHeight: 52 }}>
                 <Ic n="grupos" tam={20} />Generar Parte para {gCurso ? `${alumnos.filter(a => a.curso === gCurso && !gExcluidos.includes(a.id)).length} alumnos de ${gCurso}` : "el grupo"}
               </Btn>
             </Card>
@@ -6376,46 +6396,46 @@ function AppInterna() {
         {/* ── Baños (profesor) ── */}
         {tab === "bano" && (
           <div>
-            <h2 style={{ color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="banos" tam={44} />Control de Salidas al Baño</h2>
-            <Card>
-              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={40} /></label>
+            <TituloBloque titulo="Control de Salidas al Baño" sub="Quién sale y cuándo vuelve" icono="banos" />
+            <Card style={{ background: R.azulClaro, border: "none" }}>
+              <label style={labelStyle}><ConIcono texto="🔍 Buscar alumno" tam={30} /></label>
               <input value={bBusqueda} onChange={e => { setBBusqueda(e.target.value); setBAlumno(""); }} placeholder="Nombre o curso…" style={{ ...inpStyle, marginBottom: 8 }} />
               {bBusqueda && !bAlumno && (
-                <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, background: C.white, maxHeight: 160, overflowY: "auto", marginBottom: 12 }}>
+                <div style={{ border: `3px solid ${R.turquesa}`, borderRadius: 6, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 12 }}>
                   {alumnos.filter(a => a.nombre.toLowerCase().includes(bBusqueda.toLowerCase()) || a.curso.toLowerCase().includes(bBusqueda.toLowerCase())).map(a => (
                     <div key={a.id} onClick={() => { setBAlumno(a.id); setBBusqueda(a.nombre); }}
-                      style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #f3f4f6", fontSize: 13 }}
-                      onMouseOver={e => e.currentTarget.style.background = C.cream}
+                      style={{ minHeight: 48, padding: "12px 14px", cursor: "pointer", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 16, color: R.noche }}
+                      onMouseOver={e => e.currentTarget.style.background = R.azulClaro}
                       onMouseOut={e => e.currentTarget.style.background = C.white}>
                       <strong>{a.nombre}</strong> — {a.curso}
                     </div>
                   ))}
                 </div>
               )}
-              <Btn onClick={registrarSalida} disabled={!bAlumno} color={C.blue}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="banos" tam={24} />Registrar Salida</span></Btn>
+              <Btn onClick={registrarSalida} disabled={!bAlumno} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="banos" tam={24} />Registrar Salida</span></Btn>
             </Card>
             {banoActivos.length > 0 && (
-              <Card style={{ background: "#FFF8E8", border: `1px solid ${C.salmon}` }}>
-                <h3 style={{ margin: "0 0 12px", color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="fuera-ahora" tam={32} />Fuera ahora ({banoActivos.length})</h3>
+              <Card style={{ padding: 0, border: "none" }}>
+                <h3 style={{ margin: 0, padding: "10px 14px", background: R.mostaza, color: R.noche, fontSize: 18, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="fuera-ahora" tam={32} />Fuera ahora ({banoActivos.length})</h3>
                 {banoActivos.map(b => (
-                  <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.cream}` }}>
-                    <div style={{ fontSize: 13 }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>
+                  <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 14px", background: R.crema, borderBottom: `2px solid ${C.white}` }}>
+                    <div style={{ fontSize: 16, color: R.petroleo }}><strong>{b.alumno}</strong> — {b.curso} — {fmt(b.salida)}</div>
                     <button onClick={() => setBanos(prev => prev.map(x => x.id === b.id ? { ...x, regreso: new Date().toISOString() } : x))}
-                      style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>✅ Regresó</button>
+                      style={{ background: R.verde, color: R.noche, border: "none", borderRadius: 6, minHeight: 48, padding: "0 16px", cursor: "pointer", fontSize: 17, fontWeight: 700, flexShrink: 0 }}>✅ Regresó</button>
                   </div>
                 ))}
               </Card>
             )}
             <Card>
-              <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="horario" tam={32} />Historial de hoy</h3>
+              <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="horario" tam={32} />Historial de hoy</h3>
               {banos.filter(b => b.fecha === todayStr()).length === 0
-                ? <p style={{ color: C.gray }}>Sin registros hoy</p>
+                ? <p style={{ color: R.petroleo }}>Sin registros hoy</p>
                 : banos.filter(b => b.fecha === todayStr()).map(b => {
                   const mins = b.regreso ? Math.round((new Date(b.regreso) - new Date(b.salida)) / 60000) : null;
                   return (
-                    <div key={b.id} style={{ padding: "8px 0", borderBottom: `1px solid ${C.cream}`, fontSize: 13, display: "flex", justifyContent: "space-between" }}>
+                    <div key={b.id} style={{ padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.petroleo, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                       <span><strong>{b.alumno}</strong> — {b.curso}</span>
-                      <span style={{ color: C.gray }}>{fmt(b.salida)} {b.regreso ? `· ${mins} min` : "· 🔴 Fuera"}</span>
+                      <span>{fmt(b.salida)} {b.regreso ? `· ${mins} min` : "· 🔴 Fuera"}</span>
                     </div>
                   );
                 })}
@@ -6478,9 +6498,10 @@ function AppInterna() {
         {/* ── Mis Partes ── */}
         {tab === "historial" && (
           <div>
-            <h2 style={{color: C.dark, marginTop: 0, display: "flex", alignItems: "center", gap: 12 }}><Icono nombre="documentos" tam={44} />Mis Partes Enviados</h2>
+            <TituloBloque titulo="Mis Partes Enviados" sub="Pulsa un parte para verlo en grande" icono="documentos" />
+            <div style={{ height: 16 }} />
             {partes.filter(p => p.profesor === fProfesor).length === 0
-              ? <Card style={{ textAlign: "center", color: C.gray, padding: 40 }}>No has generado ningún parte aún</Card>
+              ? <Card style={{ textAlign: "center", color: R.petroleo, padding: 40, fontSize: 16 }}>No has generado ningún parte aún</Card>
               : partes.filter(p => p.profesor === fProfesor).map(p => <ParteCard key={p.id} parte={p} onVer={() => setShowParte(completar(p))} onPrint={() => pdfParte(completar(p))} />)}
           </div>
         )}
@@ -6548,7 +6569,7 @@ function AppInterna() {
                   <div key={c} style={{ padding: "12px 20px", borderBottom: `1px solid ${C.cream}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ fontWeight: 700, color: C.dark }}><Ic n="por-curso" tam={20} />{c} <span style={{ color: C.gray, fontWeight: 400, fontSize: 13 }}>— {pC.length} parte(s)</span></div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                     </div>
                   </div>
                 );
@@ -6564,7 +6585,7 @@ function AppInterna() {
                     {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FFF0CC", color: "#b45309", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⚠️ Acumulación</span>}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                    {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                     <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>Total: {partesDeAlumno(a.id).length}</span>
                   </div>
                 </div>
@@ -6583,10 +6604,10 @@ function AppInterna() {
               const alC = alumnos.filter(a => a.curso === curso);
               return (
                 <div key={curso} style={{ background: C.white, borderRadius: 14, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                  <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ background: R.azul, color: "#fff", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ fontWeight: 700, fontSize: 16 }}>{curso}</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pC.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                       <span style={{ background: "rgba(255,255,255,0.2)", borderRadius: 8, padding: "2px 10px", fontSize: 13 }}>Total: {pC.length}</span>
                     </div>
                   </div>
@@ -6600,7 +6621,7 @@ function AppInterna() {
                           <div style={{ padding: "10px 20px", background: C.cream, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontWeight: 600, fontSize: 14, color: C.dark }}>{a.nombre}</span>
                             <div style={{ display: "flex", gap: 6 }}>
-                              {["leve", "grave", "muy_grave"].map(g => { const n = pA.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                              {["leve", "grave", "muy_grave"].map(g => { const n = pA.filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                             </div>
                           </div>
                           {pA.map(p => (
@@ -6648,7 +6669,7 @@ function AppInterna() {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                      {["leve", "grave", "muy_grave"].map(g => { const n = pAl.filter(p => p.gravedad === g).length; const gv = gObj(g); return <div key={g} style={{ flex: 1, background: gv.bg, borderRadius: 10, padding: 12, textAlign: "center", border: `2px solid ${gv.color}` }}><div style={{ fontSize: 24, fontWeight: 800, color: gv.color }}>{n}</div><div style={{ fontSize: 12, color: gv.color, fontWeight: 600 }}>{gv.label}</div></div>; })}
+                      {["leve", "grave", "muy_grave"].map(g => { const n = pAl.filter(p => p.gravedad === g).length; const gv = gObj(g); return <div key={g} style={{ flex: 1, background: gv.color, padding: 12, textAlign: "center" }}><div style={{ fontSize: 26, fontWeight: 700, color: gv.texto }}>{n}</div><div style={{ fontSize: 14, color: gv.texto, fontWeight: 700 }}>{gv.label}</div></div>; })}
                     </div>
                     {partesLeves(al.id) >= 3 && <div style={{ marginTop: 12, background: "#FFF0CC", border: "1px solid #fbbf24", borderRadius: 8, padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "#92400e" }}>⚠️ Acumulación de {partesLeves(al.id)} partes leves — Considerar sanción</div>}
                   </Card>
@@ -6671,7 +6692,7 @@ function AppInterna() {
                         {partesLeves(a.id) >= 3 && <span style={{ marginLeft: 8, background: "#FFF0CC", color: "#b45309", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⚠️</span>}
                       </div>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.bg, color: gv.color, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
+                        {["leve", "grave", "muy_grave"].map(g => { const n = partesDeAlumno(a.id).filter(p => p.gravedad === g).length; if (!n) return null; const gv = gObj(g); return <span key={g} style={{ background: gv.color, color: gv.texto, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={g === "muy_grave" ? "muy-grave" : g} tam={18} />×{n}</span>; })}
                         <span style={{ background: "#EEF5F8", color: C.blue, borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{partesDeAlumno(a.id).length}</span>
                         <span style={{ color: C.gray, fontSize: 16 }}>›</span>
                       </div>
@@ -7083,7 +7104,7 @@ function AppInterna() {
       {showCuadrante && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: C.white, borderRadius: 16, maxWidth: "95vw", width: "100%", maxHeight: "80vh", overflowY: "auto" }}>
-            <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="fecha-hora" tam={20} />Cuadrante de Guardias</div>
                 <button onClick={() => setSemanaCuadrante(w => w - 1)} aria-label="Semana anterior" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>←</button>
@@ -7157,10 +7178,10 @@ function AppInterna() {
       {showParte && (
         <div onClick={() => setShowParte(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: parteGrande ? 0 : 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: C.white, borderRadius: parteGrande ? 0 : 16, maxWidth: parteGrande ? "none" : 760, width: "100%", height: parteGrande ? "100%" : "auto", maxHeight: parteGrande ? "100%" : "92vh", overflowY: "auto", fontSize: parteGrande ? 18 : 15, zoom: parteGrande ? 1.25 : 1 }}>
-            <div style={{ position: "sticky", top: 0, zIndex: 2, background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: parteGrande ? 0 : "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: parteGrande ? 0 : "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{APP} · Parte de Incidencia</div>
-                <div style={{ fontSize: 12, opacity: .8 }}>Ref: PARTE-{showParte.id}</div>
+                <div style={{ fontSize: 14, opacity: .9 }}>Ref: PARTE-{showParte.id}</div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 <button onClick={() => pdfParte(showParte)} title="Descargar PDF" style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}><Ic n="informe" tam={20} />PDF</button>
@@ -7169,8 +7190,8 @@ function AppInterna() {
               </div>
             </div>
             <div style={{ padding: 24, maxWidth: parteGrande ? 900 : "none", margin: "0 auto" }}>
-              {(() => { const g = gObj(showParte.gravedad); return <div style={{ background: g.bg, border: `2px solid ${g.color}`, borderRadius: 10, padding: 12, marginBottom: 20, textAlign: "center" }}><strong style={{ color: g.color, fontSize: 16 }}>{g.label} — {g.desc}</strong></div>; })()}
-              {showParte.esGrupal && <div style={{ background: "#E8F5F3", borderRadius: 8, padding: "8px 14px", fontSize: 13, color: C.teal, fontWeight: 600, marginBottom: 12 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
+              {(() => { const g = gObj(showParte.gravedad); return <div style={{ background: g.color, padding: 12, marginBottom: 20, textAlign: "center" }}><strong style={{ color: g.texto, fontSize: 17 }}>{g.label} — {g.desc}</strong></div>; })()}
+              {showParte.esGrupal && <div style={{ background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, padding: "8px 14px", fontSize: 15, color: R.petroleo, fontWeight: 700, marginBottom: 12 }}><Ic n="grupos" tam={20} />Parte generado como parte de grupo</div>}
               {[["Alumno", showParte.alumno], ["Curso", showParte.curso], ["Tutor/a del grupo", showParte.tutor || "—"], ["Correo del tutor/a", showParte.tutorEmail || "—"], ["Tipo", showParte.tipo], ["Hora", showParte.hora || "No especificada"], ["Fecha y hora", fmt(showParte.ts)], ["Profesor", showParte.profesor]].map(([k, v]) => (
                 <InfoRow key={k} label={k} value={v} />
               ))}
@@ -7178,17 +7199,17 @@ function AppInterna() {
                 const tipObj = TIPIFICACION[showParte.gravedad]?.find(t => t.id === showParte.tipificacion);
                 const fuente = showParte.gravedad === "leve" ? "Plan de Convivencia" : "Decreto 32/2019";
                 return (
-                  <div style={{ margin: "8px 0", padding: "8px 12px", background: "#EEF5F8", borderRadius: 8, border: `1px solid ${C.blue}`, fontSize: 12 }}>
-                    <span style={{ fontWeight: 700, color: C.blue }}><Ic n="tipificacion" tam={20} />Tipificación </span>
-                    <span style={{ color: C.gray }}>({fuente})</span>
-                    <div style={{ marginTop: 3, color: C.dark }}>{tipObj?.label}</div>
+                  <div style={{ margin: "10px 0", padding: "10px 12px", background: R.azulClaro, borderLeft: `8px solid ${R.turquesa}`, fontSize: 15 }}>
+                    <span style={{ fontWeight: 700, color: R.petroleo }}><Ic n="tipificacion" tam={22} />Tipificación </span>
+                    <span style={{ color: R.petroleo }}>({fuente})</span>
+                    <div style={{ marginTop: 4, color: R.noche }}>{tipObj?.label}</div>
                   </div>
                 );
               })()}
-              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: C.dark, flexWrap: "wrap" }}>
-                <Icono nombre="descripcion" tam={40} />Descripción del incidente
+              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: R.petroleo, fontSize: 17, flexWrap: "wrap" }}>
+                <Icono nombre="descripcion" tam={36} />Descripción del incidente
                 {!rectificando && puedeRectificar(showParte) && (
-                  <button onClick={empezarRectificar} style={{ marginLeft: "auto", background: C.white, color: C.dark, border: `1px solid ${C.teal}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+                  <button onClick={empezarRectificar} style={{ marginLeft: "auto", background: C.white, color: R.petroleo, border: `2px solid ${R.azul}`, borderRadius: 6, minHeight: 44, padding: "0 14px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
                     ✏️ Rectificar <span style={{ fontWeight: 400, color: C.gray }}>(quedan {Math.max(1, Math.ceil(HORAS_RECTIFICAR - horasDesde(showParte)))} h)</span>
                   </button>
                 )}
@@ -7240,7 +7261,7 @@ function AppInterna() {
       {showCoordinacion && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20, overflowY: "auto" }}>
           <div style={{ background: C.white, borderRadius: 16, maxWidth: "95vw", width: "100%", maxHeight: "90vh", overflowY: "auto", marginY: 20 }}>
-            <div style={{ background: `linear-gradient(90deg,${C.dark},${C.blue})`, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ background: R.azul, color: "#fff", padding: "16px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 10 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}><Ic n="eventos" tam={24} />Coordinación Diaria de Ausencias</div>
               <button onClick={() => setShowCoordinacion(false)} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 16 }}>✕</button>
             </div>
