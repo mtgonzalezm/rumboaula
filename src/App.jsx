@@ -2590,14 +2590,14 @@ function guardiasDeProfesor({ fecha, profesor, profesores, cuadrante, apoyos = {
 // o del profesor al que sustituye el sustituto. En el recreo no hay clase.
 function tareasDeGuardia(g, fecha, ausencias) {
   if (g.hora === "Recreo") return [];
-  return ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(g.hora) &&
-    (a.profesor === g.sit?.sustituyeA || !a.edificio || !g.edificio || g.edificio === "-" || a.edificio === g.edificio));
+  return ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(g.hora)).map(a => enHora(a, g.hora)).filter(a =>
+    a.profesor === g.sit?.sustituyeA || !a.edificio || !g.edificio || g.edificio === "-" || a.edificio === g.edificio);
 }
 // Tarjeta con lo que ha dejado el profesor ausente
 const TareaAusente = ({ a, C }) => (
   <div style={{ background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: 10, fontSize: 14, color: "#78350F", lineHeight: 1.5 }}>
     <div style={{ fontWeight: 700, marginBottom: 4 }}><Ic n="profe-ausente" tam={22} />Deja {a.profesor}{a.asignatura ? ` · ${a.asignatura}` : ""}</div>
-    {(a.aula || a.edificio) && <div><Ic n="aula" tam={20} />Aula {a.aula || "?"}{a.edificio ? ` · Edificio ${a.edificio}` : ""}</div>}
+    {(a.aula || a.edificio) && <div><Ic n="aula" tam={20} />{a.aula || "?"}{a.sala ? ` · ${a.sala}` : ""}{a.edificio ? ` · Edificio ${a.edificio}` : ""}</div>}
     <div><Ic n="ejercicios" tam={20} />{a.tarea ? a.tarea : <em>No ha dejado tarea</em>}</div>
     {a.ubicacion && <div><Ic n="material" tam={20} />Material: {a.ubicacion}</div>}
     {a.enlace && <div><a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, fontWeight: 600 }}>🔗 Ver recursos</a></div>}
@@ -2621,7 +2621,8 @@ const clasesCubiertasDia = (fecha, profesor, coberturas) =>
 // Clase que cubre un profesor a una hora (la ausencia) o null
 function claseQueCubre(fecha, hora, profesor, coberturas, ausencias) {
   const k = Object.keys(coberturas).find(k => coberturas[k] === profesor && k.startsWith(`${fecha}|${hora}|`));
-  return k ? ausencias.find(a => String(a.id) === k.split("|")[2]) || null : null;
+  const a = k ? ausencias.find(x => String(x.id) === k.split("|")[2]) : null;
+  return a ? enHora(a, hora) : null;
 }
 // Lista ordenada de quién puede cubrir la clase de una ausencia a una hora.
 // Solo profesorado de guardia a esa hora; nunca deja una zona vacía.
@@ -2661,7 +2662,8 @@ function candidatosClase({ fecha, hora, ausencia, profesores, cuadrante, apoyos 
 }
 
 // Quién cubre una clase a una hora: sugerencias y botón de asignar (solo jefatura)
-function CubrirClase({ fecha, hora, ausencia, equipo, coberturas = {}, setCoberturas, puedeAsignar = false, C }) {
+function CubrirClase({ fecha, hora, ausencia: ausenciaDia, equipo, coberturas = {}, setCoberturas, puedeAsignar = false, C }) {
+  const ausencia = enHora(ausenciaDia, hora);
   const [verTodos, setVerTodos] = useState(false);
   const clave = claveCob(fecha, hora, ausencia.id);
   const asignado = coberturas[clave];
@@ -2898,10 +2900,10 @@ const AYUDAS = {
     "Si cubres una clase, pulsa «Pasar lista» y marca solo a quien falta.",
     "Pulsa un día del calendario para ver tus guardias de ese día."] },
   notif_ausencia: { titulo: "Avisar de una ausencia", pasos: [
-    "Elige la fecha y marca las horas en que vas a faltar.",
-    "Indica el edificio, el aula y la asignatura, para que sepan qué clase cubrir.",
-    "Deja la tarea para los alumnos y dónde está el material.",
-    "Pulsa «Notificar». Esto completa, no sustituye, el correo de EducaMadrid y la llamada al instituto."] },
+    "Elige la fecha y marca las horas en que vas a faltar, o pulsa «Día completo». Las horas con clase en tu horario llevan un punto.",
+    "Cada clase sale con su grupo, materia y aula. Deja una consigna para cada una, o una tarea general para todas.",
+    "Pulsa «Notificar». En «Mis ausencias» verás quién cubre cada clase; puedes modificarla o borrarla hasta que empiece.",
+    "Esto completa, no sustituye, el aviso oficial al instituto."] },
   guardias_ver: { titulo: "Guardias del día", pasos: [
     "Todas las zonas de guardia de hoy, hora a hora, con quién está en cada una.",
     "En naranja, las zonas en las que entra el sustituto; en rojo, las que se han quedado sin nadie."] },
@@ -3648,130 +3650,311 @@ function MiGuardiaHoy({ medidas = [], onMarcarMedida, coberturas = {}, firmas = 
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICAR AUSENCIA (Profesor)
 // ═══════════════════════════════════════════════════════════════════════════
-function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle, fmt }) {
-  const [enviado, setEnviado] = useState(false);
+// Datos de una ausencia a una hora concreta: las clases que salen del horario (grupo, aula, materia)
+// y la consigna de esa hora. Las ausencias antiguas, sin «sesiones», se quedan como estaban.
+function enHora(a, hora) {
+  const s = a?.sesiones?.[hora];
+  if (!s) return a;
+  return { ...a, aula: s.grupo || a.aula, sala: s.aula || "", edificio: s.edificio || a.edificio, asignatura: s.materia || a.asignatura, tarea: s.consigna || a.tarea };
+}
+const horaTerminada = (fecha, hora, ahora = new Date()) => {
+  const hoy = isoLocal(ahora);
+  if (fecha !== hoy) return fecha < hoy;
+  const fin = (HORARIO[hora] || "0:00 – 0:00").split("–")[1].trim();
+  return ahora.getHours() * 60 + ahora.getMinutes() >= minutosDe(fin);
+};
+// Una ausencia está «comunicada» mientras no haya empezado ninguna de sus horas; luego queda «consolidada»
+const ausenciaConsolidada = a => (a.horas || []).some(h => horaEmpezada(isoLocal(a.fecha), h));
+// Clases del horario de un profe un día: { hora: { grupo, aula, edificio, materia } }
+function clasesDelDia(horarios, profesor, fecha) {
+  if (!profesor || !fecha) return {};
+  const dia = DIAS_ES[parseISO(fecha).getDay()];
+  const r = {};
+  HORAS_GUARDIA.forEach(h => { const c = horarios[`${dia}|${h}|${profesor}`]; if (c) r[h] = c; });
+  return r;
+}
+// Estado de cobertura y de consignas de una ausencia (solo cuentan las horas con clase)
+function resumenAusencia(a, coberturas) {
+  const conClase = (a.horas || []).filter(h => h !== "Recreo");
+  const cubiertas = conClase.filter(h => coberturas[claveCob(isoLocal(a.fecha), h, a.id)]);
+  const conConsigna = conClase.filter(h => (a.sesiones?.[h]?.consigna || a.tarea || "").trim());
+  const nivel = (n, total, si, parcial, no) => !total ? "—" : n === total ? si : n ? parcial : no;
+  return {
+    cobertura: nivel(cubiertas.length, conClase.length, "Sí", "Parcialmente", "No"),
+    consigna: nivel(conConsigna.length, conClase.length, "Registrada", "Parcialmente registrada", "Sin registro"),
+  };
+}
+
+function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, horarios = {}, coberturas = {}, setCoberturas, setMensajes, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle }) {
+  const [enviado, setEnviado] = useState("");
   const [ausEdificio, setAusEdificio] = useState("");
+  const [consignas, setConsignas] = useState({});      // consigna de cada hora
+  const [editando, setEditando] = useState(null);      // id de la ausencia que se está modificando
+  const [errores, setErrores] = useState([]);
+  const [borrando, setBorrando] = useState(null);
+  const hoy = isoLocal();
+  const clases = clasesDelDia(horarios, ausProfesor, ausFecha);
+  const horasClase = Object.keys(clases);
+  const tieneHorario = Object.keys(horarios).some(k => k.endsWith(`|${ausProfesor}`));
+  const sinHorario = ausHoras.filter(h => h !== "Recreo" && !clases[h]);
 
   function toggleHora(h) {
+    setErrores([]);
     setAusHoras(prev => prev.includes(h) ? prev.filter(x => x !== h) : [...prev, h]);
+  }
+  const ordenar = hs => [...hs].sort((x, y) => HORAS_GUARDIA.indexOf(x) - HORAS_GUARDIA.indexOf(y));
+  const diaCompleto = () => { setErrores([]); setAusHoras(horasClase.length ? horasClase : HORAS_GUARDIA.filter(h => h !== "Recreo")); };
+
+  function limpiar() {
+    setAusFecha(""); setAusHoras([]); setAusTarea(""); setAusEnlace(""); setAusUbicacion(""); setAusAula(""); setAusAsignatura(""); setAusEdificio("");
+    setConsignas({}); setEditando(null); setErrores([]);
+  }
+
+  // Comprobaciones antes de guardar, como en Rayuela
+  function comprobar() {
+    const e = [];
+    if (!ausProfesor) e.push("Elige el profesor o la profesora.");
+    if (!ausFecha) e.push("Elige la fecha de la ausencia.");
+    if (!ausHoras.length) e.push("Marca al menos una hora.");
+    if (ausFecha && ausFecha < hoy) e.push("No se puede avisar de una ausencia en un día que ya ha pasado.");
+    if (ausFecha === hoy) {
+      const pasadas = ausHoras.filter(h => modoJefatura ? horaTerminada(ausFecha, h) : horaEmpezada(ausFecha, h));
+      if (pasadas.length) e.push(`${modoJefatura ? "Ya han terminado" : "Ya han empezado"}: ${ordenar(pasadas).join(", ")}. Quita esas horas.`);
+    }
+    const solapes = ausencias.filter(a => a.id !== editando && a.profesor === ausProfesor && isoLocal(a.fecha) === ausFecha && a.horas.some(h => ausHoras.includes(h)));
+    if (solapes.length) {
+      const horas = ordenar([...new Set(solapes.flatMap(a => a.horas.filter(h => ausHoras.includes(h))))]);
+      e.push(`Ya hay una ausencia de ${ausProfesor === usuario ? "ti" : ausProfesor} ese día a ${horas.join(", ")}. Modifica la que ya existe.`);
+    }
+    if (tieneHorario && ausHoras.length && !ausHoras.some(h => clases[h])) e.push("Ninguna de esas horas tiene clase en el horario: la ausencia no afecta a ningún grupo.");
+    return e;
+  }
+
+  // Avisa por Galvángram a quien tenía asignada una clase que ya no hace falta cubrir
+  function avisarCoberturasQuitadas(a, horasQuitadas) {
+    const fecha = isoLocal(a.fecha);
+    const quitadas = horasQuitadas.map(h => [h, coberturas[claveCob(fecha, h, a.id)]]).filter(([, p]) => p);
+    if (!quitadas.length) return;
+    setCoberturas?.(prev => { const n = { ...prev }; horasQuitadas.forEach(h => delete n[claveCob(fecha, h, a.id)]); return n; });
+    const vivas = quitadas.filter(([h]) => !horaTerminada(fecha, h));
+    if (!vivas.length || !setMensajes) return;
+    const base = Date.now(), ts = new Date(base).toISOString();
+    setMensajes(prev => [...vivas.map(([h, p], i) => ({
+      id: base + i, aviso: base + i, remitente: "RumboAula", destinatario: p, conCopia: [], leido: false, urgente: false, ts, lugar: null,
+      texto: `Ya no tienes que cubrir la clase de ${a.profesor} (${fmtD(parseISO(fecha))}, ${conTramo(h)}): se ha anulado su ausencia a esa hora.`,
+    })), ...prev]);
   }
 
   function enviar() {
-    if (!ausProfesor || !ausFecha || ausHoras.length === 0) return;
-    const nueva = { id:Date.now(), profesor:ausProfesor, motivo:ausMotivo, fecha:ausFecha, horas:ausHoras, tarea:ausTarea, enlace:ausEnlace, ubicacion:ausUbicacion, aula:ausAula, asignatura:ausAsignatura, edificio:ausEdificio, ts:new Date().toISOString(), leida:false,
-      ...(modoJefatura && ausProfesor !== usuario ? { registradaPor: usuario } : {}) };
-    setAusencias(prev => [nueva, ...prev]);
-    setEnviado(true);
-    setAusFecha(""); setAusHoras([]); setAusTarea(""); setAusEnlace(""); setAusUbicacion(""); setAusAula(""); setAusAsignatura(""); setAusEdificio("");
-    setTimeout(() => setEnviado(false), 4000);
+    const e = comprobar();
+    setErrores(e);
+    if (e.length) return;
+    const sesiones = {};
+    ordenar(ausHoras).forEach(h => {
+      const c = clases[h];
+      sesiones[h] = { grupo: c?.grupo || ausAula || "", aula: c?.aula || "", edificio: c?.edificio || ausEdificio || "", materia: c?.materia || ausAsignatura || "", consigna: (consignas[h] || "").trim() };
+    });
+    const primera = sesiones[ordenar(ausHoras).find(h => h !== "Recreo")] || {};
+    const datos = { profesor: ausProfesor, motivo: ausMotivo, fecha: ausFecha, horas: ordenar(ausHoras), tarea: ausTarea, enlace: ausEnlace, ubicacion: ausUbicacion,
+      aula: primera.grupo || ausAula, asignatura: primera.materia || ausAsignatura, edificio: primera.edificio || ausEdificio, sesiones };
+    if (editando) {
+      const antes = ausencias.find(a => a.id === editando);
+      if (antes) avisarCoberturasQuitadas(antes, antes.horas.filter(h => !ausHoras.includes(h)));
+      setAusencias(prev => prev.map(a => a.id === editando ? { ...a, ...datos, modificada: new Date().toISOString() } : a));
+      setEnviado("Ausencia modificada. Jefatura verá los cambios.");
+    } else {
+      setAusencias(prev => [{ id: Date.now(), ...datos, ts: new Date().toISOString(), leida: false, ...(modoJefatura && ausProfesor !== usuario ? { registradaPor: usuario } : {}) }, ...prev]);
+      setEnviado("Ausencia notificada. Jefatura ha sido informada.");
+    }
+    limpiar();
+    setTimeout(() => setEnviado(""), 4000);
   }
 
-  const misAusencias = modoJefatura ? [] : ausencias.filter(a => a.profesor === fProfesor);
+  function modificar(a) {
+    setEditando(a.id); setErrores([]);
+    setAusProfesor(a.profesor); setAusFecha(isoLocal(a.fecha)); setAusMotivo(a.motivo || MOTIVOS[0]); setAusHoras(a.horas);
+    setAusTarea(a.tarea || ""); setAusEnlace(a.enlace || ""); setAusUbicacion(a.ubicacion || ""); setAusAula(a.aula || ""); setAusAsignatura(a.asignatura || ""); setAusEdificio(a.edificio || "");
+    setConsignas(Object.fromEntries(Object.entries(a.sesiones || {}).map(([h, s]) => [h, s.consigna || ""])));
+    window.scrollTo(0, 0);
+  }
+  function borrar(a) {
+    avisarCoberturasQuitadas(a, a.horas);
+    setAusencias(prev => prev.filter(x => x.id !== a.id));
+    if (editando === a.id) limpiar();
+    setBorrando(null);
+    setEnviado("Ausencia borrada. Si alguien tenía que cubrir tu clase, ya le ha llegado el aviso.");
+    setTimeout(() => setEnviado(""), 4000);
+  }
+
+  const misAusencias = modoJefatura ? [] : ausencias.filter(a => a.profesor === fProfesor).sort((x, y) => isoLocal(y.fecha).localeCompare(isoLocal(x.fecha)));
+  const boton = (fondo, letra) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: fondo === C.white ? `2px solid ${R.azul}` : "none", background: fondo, color: letra, fontSize: 15, fontWeight: 700, cursor: "pointer" });
+  const chip = (txt, fondo, letra = R.noche) => <span style={{ background: fondo, color: letra, borderRadius: 4, padding: "2px 10px", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>{txt}</span>;
+  const colorNivel = v => v === "Sí" || v === "Registrada" ? R.verde : v === "—" ? R.gris : R.mostaza;
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : "Notificar Ausencia"} icono="profe-ausente" /></div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={modoJefatura ? "Registrar una ausencia comunicada por teléfono" : editando ? "Modificar la ausencia" : "Notificar Ausencia"} icono="profe-ausente" /></div>
       {modoJefatura && <p style={{ marginTop: -6, color: C.gray, fontSize: 14 }}>Para cuando un profesor llama al instituto y no puede avisar desde la app. Su guardia y la tarea llegan igual a quien le cubre.</p>}
-      {enviado && (
-        <div style={{ background:"#DDF0F4", border:`2px solid ${C.teal}`, borderRadius:12, padding:16, marginBottom:16, fontWeight:700, color:C.teal, fontSize:15 }}>
-          ✅ Ausencia notificada. Jefatura ha sido informada.
-        </div>
-      )}
-      <div style={{ background:C.white, borderRadius:12, padding:20, boxShadow:"0 2px 10px rgba(0,0,0,0.06)", marginBottom:16 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:16 }}>
+      {enviado && <div role="status" style={{ ...caja(R.verde), padding: 14, marginBottom: 16, fontWeight: 700, color: R.petroleo, fontSize: 16 }}>✅ {enviado}</div>}
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 20, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 16 }}>
           <div>
-            <label style={labelStyle}>Soy el/la profesor/a *</label>
-            <select value={ausProfesor} onChange={e => setAusProfesor(e.target.value)} style={selStyle} disabled={!modoJefatura && profesores.includes(usuario)}>
+            <label style={labelStyle} htmlFor="gd-aus-profe">Soy el/la profesor/a *</label>
+            <select id="gd-aus-profe" value={ausProfesor} onChange={e => { setAusProfesor(e.target.value); setErrores([]); }} style={selStyle} disabled={!!editando || (!modoJefatura && profesores.includes(usuario))}>
               <option value="">— Seleccionar —</option>
               {profesores.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Fecha de ausencia *</label>
-            <input type="date" value={ausFecha} onChange={e => setAusFecha(e.target.value)} style={inpStyle} />
+            <label style={labelStyle} htmlFor="gd-aus-fecha">Fecha de ausencia *</label>
+            <input id="gd-aus-fecha" type="date" min={hoy} value={ausFecha} onChange={e => { setAusFecha(e.target.value); setAusHoras([]); setConsignas({}); setErrores([]); }} style={inpStyle} />
           </div>
-          <div style={{ gridColumn:"1/-1" }}>
-            <label style={labelStyle}>Motivo</label>
-            <select value={ausMotivo} onChange={e => setAusMotivo(e.target.value)} style={selStyle}>
+          <div style={{ gridColumn: "1/-1" }}>
+            <label style={labelStyle} htmlFor="gd-aus-motivo">Motivo</label>
+            <select id="gd-aus-motivo" value={ausMotivo} onChange={e => setAusMotivo(e.target.value)} style={selStyle}>
               {MOTIVOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
         </div>
-        <div style={{ marginBottom:16 }}>
-          <label style={labelStyle}>Horas afectadas * (selecciona todas las que correspondan)</label>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:6 }}>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Horas afectadas *</label>
+            {ausFecha && ausProfesor && <button type="button" onClick={diaCompleto} style={boton(C.white, R.petroleo)}>Día completo</button>}
+          </div>
+          {ausFecha && ausProfesor && (
+            <div style={{ fontSize: 15, color: R.petroleo, margin: "6px 0 2px" }}>
+              {horasClase.length ? <>Tus clases ese día: <b>{horasClase.join(", ")}</b>. Las horas con clase llevan un punto.</> : tieneHorario ? "Ese día no tienes clases en tu horario." : "No hay horario de clases cargado: indica abajo el aula y la asignatura."}
+            </div>
+          )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
             {HORAS_GUARDIA.map(h => {
               const sel = ausHoras.includes(h);
               return (
-                <button key={h} onClick={() => toggleHora(h)}
-                  style={{ padding:"8px 14px", borderRadius:8, border:`2px solid ${sel?C.teal:"#CDE9ED"}`, background:sel?C.teal:C.white, color:sel?"#fff":C.dark, cursor:"pointer", fontWeight:600, fontSize:14, transition:"all .15s", lineHeight:1.2 }}>
-                  {h}<br/><span style={{ fontSize:13, fontWeight:500, opacity:.8 }}>{HORARIO[h]}</span>
+                <button key={h} type="button" onClick={() => toggleHora(h)} aria-pressed={sel}
+                  style={{ minHeight: 48, padding: "6px 12px", borderRadius: 6, border: `2px solid ${sel ? R.azul : R.turquesaClaro}`, background: sel ? R.azul : C.white, color: sel ? "#fff" : R.petroleo, cursor: "pointer", fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>
+                  {clases[h] ? "• " : ""}{h}<br /><span style={{ fontSize: 13, fontWeight: 400 }}>{HORARIO[h]}</span>
                 </button>
               );
             })}
           </div>
         </div>
-        <div style={{ marginBottom:20 }}>
-          <label style={labelStyle}>Tarea para el profesor sustituto (opcional)</label>
-          <textarea value={ausTarea} onChange={e => setAusTarea(e.target.value)} rows={3}
-            placeholder="Describe qué deben hacer los alumnos, qué material hay preparado..."
-            style={{ ...inpStyle, resize:"vertical" }} />
+
+        {/* Clases afectadas, sacadas del horario, con una consigna para cada una */}
+        {ausHoras.filter(h => h !== "Recreo").length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ background: R.turquesa, color: "#fff", fontWeight: 700, padding: "8px 12px" }}>Clases afectadas</div>
+            <div style={{ display: "grid", gap: 1, background: R.turquesaClaro }}>
+              {ordenar(ausHoras).filter(h => h !== "Recreo").map(h => {
+                const c = clases[h];
+                return (
+                  <div key={h} style={{ background: R.azulClaro, padding: 12, display: "grid", gap: 6 }}>
+                    <div style={{ fontWeight: 700, color: R.petroleo }}>{conTramo(h)} · {c ? `${c.grupo} · ${c.materia || "Clase"} · ${c.aula}${c.edificio ? ` · Edificio ${c.edificio}` : ""}` : "No está en tu horario"}</div>
+                    <label style={{ fontSize: 14, color: R.petroleo }} htmlFor={`gd-consigna-${h}`}>Consigna para quien cubra esta clase (opcional)</label>
+                    <textarea id={`gd-consigna-${h}`} rows={2} value={consignas[h] || ""} onChange={e => setConsignas(v => ({ ...v, [h]: e.target.value }))}
+                      placeholder={ausTarea ? `Si la dejas vacía, se usa la tarea general: «${ausTarea.slice(0, 50)}»` : "Qué tiene que hacer el grupo en esta clase"} style={{ ...inpStyle, resize: "vertical" }} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle} htmlFor="gd-aus-tarea">Tarea general para todas las clases (opcional)</label>
+          <textarea id="gd-aus-tarea" value={ausTarea} onChange={e => setAusTarea(e.target.value)} rows={2}
+            placeholder="Se usa en las clases que no tengan su propia consigna" style={{ ...inpStyle, resize: "vertical" }} />
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:14, marginBottom:20 }}>
+        {sinHorario.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <div style={{ gridColumn: "1/-1", fontSize: 15, color: R.petroleo }}>Datos de la clase para {sinHorario.join(", ")}, que no está en el horario:</div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-edificio">Edificio del aula</label>
+              <select id="gd-aus-edificio" value={ausEdificio} onChange={e => setAusEdificio(e.target.value)} style={selStyle}>
+                <option value="">— Seleccionar —</option>
+                {EDIFICIOS.map(e => <option key={e} value={e}>Edificio {e}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-aula">Grupo o aula</label>
+              <input id="gd-aus-aula" type="text" value={ausAula} onChange={e => setAusAula(e.target.value)} placeholder="3º ESO B, Sala 5, Taller 2..." style={inpStyle} />
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="gd-aus-asig">Asignatura o función</label>
+              <input id="gd-aus-asig" type="text" value={ausAsignatura} onChange={e => setAusAsignatura(e.target.value)} placeholder="Matemáticas, Inglés, Tutoría..." style={inpStyle} />
+            </div>
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 20 }}>
           <div>
-            <label style={labelStyle}>Edificio del aula</label>
-            <select value={ausEdificio} onChange={e => setAusEdificio(e.target.value)} style={selStyle}>
-              <option value="">— Seleccionar —</option>
-              {["A","B","C"].map(e => <option key={e} value={e}>Edificio {e}</option>)}
-            </select>
+            <label style={labelStyle} htmlFor="gd-aus-enlace">Enlace a recursos (opcional)</label>
+            <input id="gd-aus-enlace" type="url" value={ausEnlace} onChange={e => setAusEnlace(e.target.value)} placeholder="https://drive.google.com/..." style={inpStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Aula donde imparto clase (importante para el profesor de guardia)</label>
-            <input type="text" value={ausAula} onChange={e => setAusAula(e.target.value)}
-              placeholder="3ºB, Sala 5, Taller 2..."
-              style={inpStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Asignatura o función</label>
-            <input type="text" value={ausAsignatura} onChange={e => setAusAsignatura(e.target.value)}
-              placeholder="Matemáticas, Inglés, Tutoría..."
-              style={inpStyle} />
-          </div>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
-          <div>
-            <label style={labelStyle}>Enlace a recursos (opcional)</label>
-            <input type="url" value={ausEnlace} onChange={e => setAusEnlace(e.target.value)}
-              placeholder="https://drive.google.com/..."
-              style={inpStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Ubicación del material (opcional)</label>
-            <input type="text" value={ausUbicacion} onChange={e => setAusUbicacion(e.target.value)}
-              placeholder="Conserjería, Mi despacho, Fotocopias..."
-              style={inpStyle} />
+            <label style={labelStyle} htmlFor="gd-aus-ubic">Ubicación del material (opcional)</label>
+            <input id="gd-aus-ubic" type="text" value={ausUbicacion} onChange={e => setAusUbicacion(e.target.value)} placeholder="Conserjería, Mi despacho, Fotocopias..." style={inpStyle} />
           </div>
         </div>
-        <button onClick={enviar} disabled={!ausProfesor || !ausFecha || ausHoras.length === 0}
-          style={{ width:"100%", padding:14, borderRadius:10, border:"none", background:(!ausProfesor||!ausFecha||ausHoras.length===0)?"#EBF0F6":C.salmon, color:"#fff", fontWeight:700, fontSize:15, cursor:(!ausProfesor||!ausFecha||ausHoras.length===0)?"not-allowed":"pointer" }}>
-          <Ti tam={22}>{modoJefatura ? "📞 Registrar la ausencia" : "📢 Notificar Ausencia a Jefatura"}</Ti>
-        </button>
+        {errores.length > 0 && (
+          <div role="alert" style={{ ...caja(R.mostaza), padding: "10px 14px", marginBottom: 14, color: R.noche }}>
+            {errores.map(e => <div key={e} style={{ fontSize: 15, fontWeight: 600 }}>⚠️ {e}</div>)}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <Btn onClick={enviar} style={{ flex: "1 1 260px", minHeight: 52 }}>
+            <Ic n="profe-ausente" tam={22} />{editando ? "Guardar los cambios" : modoJefatura ? "Registrar ausencia" : "Notificar Ausencia a Jefatura"}
+          </Btn>
+          {editando && <button type="button" onClick={limpiar} style={{ minHeight: 44, border: "none", background: "none", color: R.azul, textDecoration: "underline", fontSize: 16, cursor: "pointer" }}>Cancelar</button>}
+        </div>
+        <p style={{ fontSize: 14, color: R.petroleo, margin: "12px 0 0" }}>Avísalo con antelación siempre que puedas. Su tramitación depende de las normas del centro y de la aprobación del equipo directivo.</p>
       </div>
+
       {misAusencias.length > 0 && (
         <div>
-          <h3 style={{ color:C.dark }}>Mis ausencias notificadas</h3>
-          {misAusencias.map(a => (
-            <div key={a.id} style={{ background:C.white, borderRadius:10, padding:14, marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)", borderLeft:`4px solid ${C.salmon}` }}>
-              <div style={{ fontWeight:700, color:C.dark }}><Ic n="fecha-hora" tam={20} />{new Date(a.fecha).toLocaleDateString("es-ES")} · {a.motivo}</div>
-              <div style={{ fontSize:14, color:C.gray, marginTop:4 }}>Horas: {a.horas.join(", ")}</div>
-              {a.aula && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="por-curso" tam={20} />Aula: {a.aula}</div>}
-              {a.asignatura && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="aula" tam={20} />Asignatura: {a.asignatura}</div>}
-              {a.tarea && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="ejercicios" tam={20} />Tarea: {a.tarea}</div>}
-              {a.enlace && <div style={{ fontSize:14, color:C.blue, marginTop:4, background:"#DDF0F4", borderRadius:6, padding:"6px 10px" }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer" style={{ color:C.blue, textDecoration:"underline" }}>Ver recursos</a></div>}
-              {a.ubicacion && <div style={{ fontSize:14, color:C.dark, marginTop:4, background:C.light, borderRadius:6, padding:"6px 10px" }}><Ic n="edificio" tam={20} />Ubicación: {a.ubicacion}</div>}
-              <div style={{ fontSize:13, color:C.gray, marginTop:4 }}>Notificado el {fmt(a.ts)}</div>
-            </div>
-          ))}
+          <h3 style={{ color: R.petroleo, fontSize: 20 }}>Mis ausencias notificadas</h3>
+          {misAusencias.map(a => {
+            const fecha = isoLocal(a.fecha);
+            const consolidada = ausenciaConsolidada(a);
+            const res = resumenAusencia(a, coberturas);
+            return (
+              <div key={a.id} data-ausencia={a.id} style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${consolidada ? R.gris : R.turquesa}`, padding: 14, marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <div style={{ fontWeight: 700, color: R.petroleo, fontSize: 17 }}><Ic n="fecha-hora" tam={22} />{parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })} · {a.motivo}</div>
+                  {chip(consolidada ? "Consolidada" : "Comunicada", consolidada ? R.gris : R.azulClaro, R.petroleo)}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "8px 0", fontSize: 15, color: R.petroleo, alignItems: "center" }}>
+                  Clases cubiertas: {chip(res.cobertura, colorNivel(res.cobertura))} · Consigna: {chip(res.consigna, colorNivel(res.consigna))}
+                </div>
+                <div style={{ display: "grid", gap: 1, background: R.turquesaClaro, border: `1px solid ${R.turquesaClaro}` }}>
+                  {a.horas.map(h => {
+                    const s = enHora(a, h), cubre = coberturas[claveCob(fecha, h, a.id)];
+                    return (
+                      <div key={h} style={{ background: C.white, padding: "8px 10px", display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", fontSize: 15, color: R.petroleo }}>
+                        <span><b>{conTramo(h)}</b>{h !== "Recreo" && <> · {[s.aula, s.asignatura, s.sala].filter(Boolean).join(" · ")}</>}{h !== "Recreo" && !s.tarea && <span style={{ color: R.noche }}> · sin consigna</span>}</span>
+                        {h !== "Recreo" && (cubre ? <span style={{ fontWeight: 700 }}>Cubre: {cubre}</span> : chip("Pendiente", R.crema))}
+                      </div>
+                    );
+                  })}
+                </div>
+                {a.enlace && <div style={{ fontSize: 14, marginTop: 6 }}>🔗 <a href={a.enlace} target="_blank" rel="noopener noreferrer">{a.enlace}</a></div>}
+                {a.ubicacion && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 4 }}><Ic n="edificio" tam={20} />Material: {a.ubicacion}</div>}
+                <div style={{ fontSize: 13, color: R.petroleo, marginTop: 6 }}>Notificada el {fmt(a.ts)}{a.modificada ? ` · modificada el ${fmt(a.modificada)}` : ""}</div>
+                {!consolidada && (
+                  borrando === a.id
+                    ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10, background: R.crema, padding: 10 }}>
+                        <span style={{ fontWeight: 700, color: R.noche }}>¿Borrar esta ausencia?</span>
+                        <button type="button" onClick={() => borrar(a)} style={boton(R.azul, "#fff")}>Sí, borrar</button>
+                        <button type="button" onClick={() => setBorrando(null)} style={boton(C.white, R.petroleo)}>No</button>
+                      </div>
+                    : <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                        <button type="button" onClick={() => modificar(a)} style={boton(C.white, R.petroleo)}>Modificar</button>
+                        <button type="button" onClick={() => setBorrando(a.id)} style={boton(C.white, R.petroleo)}>Borrar</button>
+                      </div>
+                )}
+                {consolidada && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>Ya ha empezado: no se puede modificar ni borrar. Si hace falta, avisa a Jefatura.</div>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -4841,7 +5024,7 @@ function AhoraGuardias({ profesores, cuadrante, apoyosGuardia = {}, sustitutosGu
   const zonas = zonasDe(hora);
   const zonasSig = zonasDe(siguiente);
   const ausentesAhora = hora ? ausencias.filter(a => isoLocal(a.fecha) === fecha && a.horas.includes(hora)) : [];
-  const clasesSinProfe = hora === "Recreo" ? [] : ausentesAhora;
+  const clasesSinProfe = hora === "Recreo" ? [] : ausentesAhora.map(a => enHora(a, hora));
   const sinCubrir = clasesSinProfe.filter(a => !coberturas[claveCob(fecha, hora, a.id)]).length;
   const miClase = usuario && hora ? claseQueCubre(fecha, hora, usuario, coberturas, ausencias) : null;
   const miGuardia = usuario && hora
@@ -7489,6 +7672,7 @@ function AppInterna() {
           <NotificarAusencia
             usuario={usuario}
             profesores={profesores} ausencias={ausencias} setAusencias={setAusencias}
+            horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes}
             ausProfesor={ausProfesor} setAusProfesor={setAusProfesor}
             ausMotivo={ausMotivo} setAusMotivo={setAusMotivo}
             ausFecha={ausFecha} setAusFecha={setAusFecha}
@@ -7558,6 +7742,7 @@ function AppInterna() {
             {registroTelefono && (
               <NotificarAusencia modoJefatura usuario={usuario}
                 profesores={profesores} ausencias={ausencias} setAusencias={setAusencias}
+                horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes}
                 ausProfesor={ausProfesor} setAusProfesor={setAusProfesor}
                 ausMotivo={ausMotivo} setAusMotivo={setAusMotivo}
                 ausFecha={ausFecha} setAusFecha={setAusFecha}

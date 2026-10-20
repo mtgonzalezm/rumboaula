@@ -96,7 +96,7 @@ test('Notificar ausencia: llega a Jefatura y aparece como clase sin cubrir', asy
   await expect(page.locator('select').filter({ hasText: '— Seleccionar —' }).first()).toHaveValue('Carmen López')
   await page.locator('input[type=date]').first().fill('2026-10-07')
   await page.getByRole('button', { name: /6ª hora/ }).click()
-  await page.getByPlaceholder(/Describe qué deben hacer los alumnos/).fill('Prueba automática: ejercicios 1 a 5.')
+  await page.locator('#gd-aus-tarea').fill('Prueba automática: ejercicios 1 a 5.')
   await page.getByRole('button', { name: /Notificar/ }).last().click()
   const aus = await leer(page, 'ausencias')
   expect(aus.some((a: { profesor: string, horas: string[] }) => a.profesor === 'Carmen López' && a.horas.includes('6ª hora'))).toBe(true)
@@ -506,5 +506,73 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   await expect(page.getByText(/Pide a Administración del centro que restablezca tu clave/)).toBeVisible()
   await page.getByRole('button', { name: /Preguntas frecuentes/ }).first().click()
   await expect(page.getByRole('dialog', { name: 'Preguntas frecuentes' })).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+// ───────────────────────── Ausencias: como los preavisos de Rayuela ─────────────────────────
+test('Ausencias: comprobaciones, clases del horario, consigna por clase, modificar y borrar avisando a quien cubría', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page) // miércoles 7 de octubre, 12:50 (5ª hora en curso)
+  await comoProfe(page) // Carmen López
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Notificar Ausencia')
+  const avisos = page.getByRole('alert')
+  // Día pasado
+  await page.locator('#gd-aus-fecha').fill('2026-10-06')
+  await page.getByRole('button', { name: /^1ª hora/ }).click()
+  await page.getByRole('button', { name: /Notificar Ausencia a Jefatura/ }).click()
+  await expect(avisos).toContainText('ya ha pasado')
+  // Hoy, una hora que ya ha empezado
+  await page.locator('#gd-aus-fecha').fill('2026-10-07')
+  await page.getByRole('button', { name: /^• 1ª hora|^1ª hora/ }).click()
+  await page.getByRole('button', { name: /Notificar Ausencia a Jefatura/ }).click()
+  await expect(avisos).toContainText('Ya han empezado: 1ª hora')
+  // Mañana: día completo con las clases del horario
+  await page.locator('#gd-aus-fecha').fill('2026-10-08')
+  await expect(page.getByText(/Tus clases ese día:/)).toBeVisible()
+  await page.getByRole('button', { name: 'Día completo' }).click()
+  const horas = await page.locator('[id^=gd-consigna-]').evaluateAll(es => es.map(e => e.id.replace('gd-consigna-', '')))
+  expect(horas.length).toBeGreaterThan(0)
+  await page.locator(`#gd-consigna-${horas[0].replace(/ /g, '\\ ')}`).fill('Consigna de la primera clase.')
+  await page.locator('#gd-aus-tarea').fill('Tarea general.')
+  await page.getByRole('button', { name: /Notificar Ausencia a Jefatura/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Ausencia notificada' })).toBeVisible()
+  let aus = (await leer(page, 'ausencias')).find((a: { profesor: string, fecha: string }) => a.profesor === 'Carmen López' && a.fecha === '2026-10-08')
+  expect(aus.horas).toEqual(horas)
+  expect(aus.sesiones[horas[0]]).toMatchObject({ consigna: 'Consigna de la primera clase.' })
+  expect(aus.sesiones[horas[0]].grupo).toBeTruthy()
+  // No se puede solapar con otra del mismo día
+  await page.locator('#gd-aus-fecha').fill('2026-10-08')
+  await page.getByRole('button', { name: new RegExp('^• ' + horas[0].replace('ª', '.')) }).click()
+  await page.getByRole('button', { name: /Notificar Ausencia a Jefatura/ }).click()
+  await expect(avisos).toContainText('Ya hay una ausencia')
+  // Aparece en «Mis ausencias», comunicada y pendiente de cubrir
+  const tarjeta = page.locator(`[data-ausencia="${aus.id}"]`)
+  await expect(tarjeta).toContainText('Comunicada')
+  await expect(tarjeta).toContainText('Pendiente')
+  // Alguien cubre la primera clase
+  await page.evaluate(([id, h]) => {
+    const c = JSON.parse(localStorage.getItem('galvandesk:coberturas_clase') || '{}'); c[`2026-10-08|${h}|${id}`] = 'Laura Torres'
+    localStorage.setItem('galvandesk:coberturas_clase', JSON.stringify(c))
+  }, [aus.id, horas[0]])
+  await page.reload()
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Notificar Ausencia')
+  await expect(page.locator(`[data-ausencia="${aus.id}"]`)).toContainText('Cubre: Laura Torres')
+  // Modificar: se quita la hora cubierta → se avisa a Laura y se libera la cobertura
+  await page.locator(`[data-ausencia="${aus.id}"]`).getByRole('button', { name: 'Modificar' }).click()
+  await page.getByRole('button', { name: new RegExp('^• ' + horas[0].replace('ª', '.')) }).click()
+  if (horas.length === 1) await page.getByRole('button', { name: /^• |^[0-9]ª hora/ }).nth(2).click()
+  await page.getByRole('button', { name: 'Guardar los cambios' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Ausencia modificada' })).toBeVisible()
+  aus = (await leer(page, 'ausencias')).find((a: { id: number }) => a.id === aus.id)
+  expect(aus.horas).not.toContain(horas[0])
+  expect(Object.keys(await leer(page, 'coberturas_clase')).some(k => k.endsWith('|' + aus.id))).toBe(false)
+  expect((await leer(page, 'mensajes')).some((m: { destinatario: string, texto: string }) => m.destinatario === 'Laura Torres' && m.texto.includes('Ya no tienes que cubrir'))).toBe(true)
+  // Borrar
+  await page.locator(`[data-ausencia="${aus.id}"]`).getByRole('button', { name: 'Borrar' }).click()
+  await page.getByRole('button', { name: 'Sí, borrar' }).click()
+  expect((await leer(page, 'ausencias')).some((a: { id: number }) => a.id === aus.id)).toBe(false)
+  await sinFalloEnPantalla(page)
   expect(errores).toEqual([])
 })
