@@ -45,17 +45,14 @@ const TituloBloque = ({ titulo, sub, icono, nivel = "h2" }) => {
   );
 };
 
-// Logotipo de RumboAula, dibujado con letras: «Sistema para la Gestión de Centro», línea negra con acento y el nombre en turquesa.
-// Con completo={false} solo se ve la línea y el nombre (cabecera en pantallas estrechas).
-const LOGO_TURQUESA = "#12C4D5";
-const Logo = ({ tam = 34, completo = true }) => (
-  <div role="img" aria-label={`${APP} · Sistema para la Gestión de Centro`} style={{ display: "inline-flex", flexDirection: "column", fontFamily: TITULO, lineHeight: 1, flexShrink: 0 }}>
-    {completo && <div className="gd-logo-sub" aria-hidden="true" style={{ fontWeight: 700, fontSize: Math.round(tam * 0.4), color: "#000", lineHeight: 1.05, marginBottom: Math.round(tam * 0.16), letterSpacing: "-0.01em" }}>Sistema para la<br />Gestión de Centro</div>}
-    <div aria-hidden="true" style={{ position: "relative", height: Math.max(3, Math.round(tam * 0.09)), background: "#000", marginBottom: Math.round(tam * 0.2) }}>
-      <span style={{ position: "absolute", left: "38%", top: "100%", width: Math.round(tam * 0.32), height: Math.round(tam * 0.16), background: "#000", clipPath: "polygon(40% 0, 100% 0, 45% 100%, 0 100%)" }} />
-    </div>
-    <div aria-hidden="true" style={{ fontWeight: 800, fontSize: tam, color: LOGO_TURQUESA, letterSpacing: "-0.03em", lineHeight: .9 }}>{APP}</div>
-  </div>
+// Logotipo de RumboAula (public/logo-rumboaula-completo.png y, sin el texto de arriba, logo-rumboaula-nombre.png).
+// En la cabecera, las pantallas estrechas muestran la versión corta (ver la regla .gd-logo-corto).
+const Logo = ({ alto = 64, corto = false }) => (
+  <span style={{ display: "inline-flex", flexShrink: 0 }}>
+    <img className={corto ? "gd-logo-grande" : undefined} src="/logo-rumboaula-completo.png" alt={`${APP} · Sistema para la Gestión de Centro`}
+      style={{ height: alto, width: "auto", maxWidth: "100%", display: "block" }} />
+    {corto && <img className="gd-logo-corto" src="/logo-rumboaula-nombre.png" alt={APP} style={{ height: Math.round(alto * 0.5), width: "auto", display: "none" }} />}
+  </span>
 );
 
 // Enlace «Ver todos ▷» de Raíces: texto azul con triángulo mostaza
@@ -431,7 +428,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     <div style={{ minHeight: "100vh", background: C.white, color: R.petroleo, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE, padding: 20 }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }`}</style>
       <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, borderRadius: 12, padding: "32px 28px", maxWidth: 440, width: "100%", textAlign: "center" }}>
-        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo tam={48} /></h1>
+        <h1 style={{ margin: "0 0 14px", display: "flex", justifyContent: "center" }}><Logo alto={110} /></h1>
         <div style={{ fontSize: 13, color: C.gray, letterSpacing: 2, marginBottom: 4 }}>{CENTRO.toUpperCase()} · {CIUDAD.toUpperCase()}</div>
         <p style={{ color: R.petroleo, marginBottom: 20, fontSize: 16 }}>Todo lo que importa en tu aula</p>
         <AvisoDemo />
@@ -5943,7 +5940,7 @@ function AppInterna() {
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.white, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FUENTE }}>
       <div style={{ color: R.petroleo, textAlign: "center" }}>
-        <Logo tam={44} />
+        <Logo alto={90} />
         <div style={{ fontSize: 18, fontWeight: 600, marginTop: 16 }}>Cargando {APP}…</div>
       </div>
     </div>
@@ -6085,7 +6082,7 @@ function AppInterna() {
           .gd-tab { border-right: none; border-bottom: 1px solid rgba(255,255,255,.8); padding: 6px 16px 6px 34px; white-space: normal; text-align: left; color: ${R.noche}; }
           .gd-tab.activo { box-shadow: inset 5px 0 0 ${R.azul}; color: ${R.petroleo}; }
         }
-        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } .gd-logo-sub { display: none; } }
+        @media (max-width: 1100px) { .gd-saludo-cab { display: none !important; } .gd-solo-movil { display: block; } .gd-logo-grande { display: none !important; } .gd-logo-corto { display: block !important; } }
         @media (max-width: 600px) {
           .gd-header { padding: 8px 12px !important; }
           .gd-redondo { width: 46px; height: 46px; }
@@ -6106,7 +6103,7 @@ function AppInterna() {
         <div className="gd-header-izq" style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div style={{ minWidth: 0 }}>
-              <Logo tam={34} />
+              <Logo alto={68} corto />
               <div className="gd-solo-movil" style={{ fontSize: 14, lineHeight: 1.3, color: R.petroleo, marginTop: 4 }}>{CENTRO} · {sinEmoji1(perfil.label)}</div>
             </div>
           </div>
