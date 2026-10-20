@@ -457,7 +457,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", color: R.petroleo, fontFamily: FUENTE, overflowX: "hidden",
       // La ilustración ocupa todo el fondo; encima, la cabecera y la tarjeta de acceso
-      background: "#E3EAF0 url(/portada-ilustracion.jpg) left 30% center / cover no-repeat" }}>
+      background: "#E3EAF0 url(/portada-ilustracion.jpg) center / cover no-repeat" }}>
       <style>{`* { box-sizing: border-box; } body { margin: 0; }
         .gd-portada-menu a, .gd-portada-menu button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; background: none; border: none; color: ${R.noche}; font-size: 17px; font-family: inherit; cursor: pointer; text-decoration: none; }
         .gd-portada-menu a:hover, .gd-portada-menu button:hover { color: ${R.azul}; text-decoration: underline; }
