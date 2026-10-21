@@ -161,6 +161,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#medidas">Medidas correctoras</a>
     <a href="#guardias">Guardias</a>
     <a href="#espacios">Espacios</a>
+    <a href="#material">Material</a>
     <a href="#galvangram">Galvángram</a>
     <a href="#tutoria">Tutoría</a>
     <a href="#jefatura">Jefatura</a>
@@ -177,7 +178,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para todos</span>
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">RumboAula tiene cuatro módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves) y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="entrada">RumboAula tiene cinco módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática y laboratorios) y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
   <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la relación diaria entre Dirección, Jefatura y profesorado y, en algunos casos, con las familias. No sustituye a Raíces: la complementa y da agilidad al día a día. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
@@ -514,9 +515,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Módulo <span class="btn m">Espacios</span>. Cada aula especial (laboratorios, aulas de informática, sala de usos múltiples, aula de Economía, salón de actos…) tiene dos secciones: <b>Reservas</b>, para reservarla por día y hora, y <b>Llaves</b>, para anotar quién se lleva su llave y quién la deja.</p>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/horario.svg" alt="">Reservar un espacio <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/horario.svg" alt="">Reservar un espacio</h3>
       <ol>
         <li>En <span class="btn t">Reservas</span>, elige el <b>espacio</b>. Verás la semana con las horas libres y las ya reservadas; con <b>‹ ›</b> cambias de semana. En el móvil se ve un día cada vez.</li>
         <li>Pulsa <span class="btn g">+ Reservar</span> en una hora libre.</li>
@@ -532,9 +533,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/llave.svg" alt="">Llaves: quién se la lleva y quién la deja <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/llave.svg" alt="">Llaves: quién se la lleva y quién la deja</h3>
       <p>La tabla muestra cada espacio con llave, <b>dónde se guarda</b> (Conserjería o Dirección), <b>quién la tiene</b> y desde qué hora. Si el espacio está reservado en ese momento, también lo indica.</p>
       <ul>
         <li><b>Profesorado</b>: pulsa <span class="btn p">Me la llevo</span> al recogerla y <span class="btn v">La devuelvo</span> al dejarla.</li>
@@ -554,6 +555,63 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       <p>En la portada, <b>Conserjería</b> entra directamente a <b>Llaves</b> y <b>Reservas</b>, sin ver nada del alumnado. Así, desde el ordenador de conserjería se ve en todo momento quién tiene cada llave y qué espacios están reservados.</p>
       <p>Sus cuentas van <b>aparte del profesorado</b>: Administración las crea en <span class="btn m">Profesores</span> › <b>Personal de Conserjería</b>, una por persona o una para el puesto. No salen en guardias, partes ni listas de profesores. Cada cuenta crea su clave la primera vez que entra con <b>Entrar con nombre y clave</b>.</p>
     </div>
+  </div>
+</section>
+
+<!-- ═══════════ MATERIAL DEL CENTRO ═══════════ -->
+<section class="parte" id="material">
+  <span class="etiqueta">Profesorado y Jefatura</span>
+  <div class="titulo"><h2>Material del centro</h2><img src="/iconos/ordenador.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Módulo <span class="btn m">Material del centro</span>, dividido por aulas y por función (informática, laboratorio…). Cada alumno/a queda asociado a un puesto del aula, con el día, la hora y el profesor/a que estaba con el grupo, para saber quién cuida el material.</p>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/ordenador.svg" alt="">Sesión en el aula <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li>Elige el <b>aula</b>, el <b>grupo</b>, el <b>día</b> y la <b>hora</b>.</li>
+        <li>El plano se ve desde tu mesa: el <b>PC01</b> queda a tu <b>izquierda</b> y la numeración sigue por la fila completa, con el pasillo en medio, hasta tu derecha; después, la fila siguiente.</li>
+        <li>La primera vez, pulsa <span class="btn g">Por orden de lista</span> o toca cada puesto y elige quién se sienta. Las siguientes veces el grupo sale colocado igual: es su <b>plantilla</b>.</li>
+        <li>Si alguien falta, toca su puesto y elige <b>Nadie (libre)</b>.</li>
+        <li>Pulsa <span class="btn p">Guardar la sesión</span>: queda constancia de quién se ha sentado en cada puesto y contigo.</li>
+      </ol>
+      <p class="nota ojo"><b>¿Algo roto?</b> Toca el puesto, escribe qué pasa y pulsa <b>Anotar incidencia</b>. Verás quién lo usó antes, con qué grupo y con qué profesor/a, y se avisa a Coordinación TIC.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/material-sesion.webp" aria-label="Ampliar: sesión en el aula"><img src="img/material-sesion.webp" alt="Plano del aula de informática con los puestos y el alumnado sentado" loading="lazy" width="1200" height="1080"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/historial.svg" alt="">Historial de puestos e incidencias <span class="novedad">Nuevo</span></h3>
+      <ul>
+        <li><span class="btn t">Historial de puestos</span>: toca un puesto para ver todos sus usos (día, hora, alumno/a, grupo y profesor/a) y sus incidencias.</li>
+        <li>Escribe el nombre de un alumno/a para ver <b>dónde se ha sentado</b> en cada sesión.</li>
+        <li>Abajo, todas las sesiones del aula, con un <b>PDF</b> de cada una para firmar.</li>
+        <li><span class="btn t">Incidencias de puestos</span>: lo que se ha roto o falta en cada puesto, quién se sentaba y quién lo usó antes. Al anotarla, se avisa por Galvángram a <b>Coordinación TIC</b> (aulas de informática) o a Jefatura. <b>Jefatura</b> y <b>Administración</b> (Coordinación TIC) pulsan <b>Marcar resuelta</b> cuando se arregla; las abiertas avisan en la campana de Jefatura.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/material-historial.webp" aria-label="Ampliar: historial de un puesto"><img src="img/material-historial.webp" alt="Historial de un puesto con quién lo ha usado y con qué profesor" loading="lazy" width="1200" height="827"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Necesidades y avisos <span class="novedad">Nuevo</span></h3>
+      <p>Para avisar de cualquier cosa del material del centro, no solo de los puestos.</p>
+      <ol>
+        <li>En <span class="btn t">Necesidades y avisos</span>, elige <b>Algo roto o que no funciona</b> o <b>Material que hace falta</b>.</li>
+        <li>Indica el <b>tipo de material</b> (informática y audiovisuales, mobiliario, laboratorios, deportes, papelería…), <b>dónde</b>, qué pasa y, si es una necesidad, la <b>cantidad</b>. Marca <b>Urgente</b> si impide dar clase.</li>
+        <li>Pulsa <span class="btn p">Enviar aviso</span>. Llega por <b>Galvángram</b> a quien lo gestiona: <b>Coordinación TIC</b> la informática, <b>Secretaría</b> el mobiliario y la papelería, <b>Jefatura</b> lo demás (o si no hay nadie con ese cargo) y, si es urgente, también <b>Dirección</b>.</li>
+      </ol>
+      <p>En <b>Mis avisos</b> ves su estado: <b>Pendiente</b>, <b>En curso</b> o <b>Resuelto</b>. Cuando te contestan, te llega un mensaje y la respuesta sale en el aviso.</p>
+      <p class="nota ok"><b>Jefatura y Administración</b> ven todos los avisos, escriben una respuesta, los marcan <b>En curso</b> o <b>Resuelto</b> y pueden descargar la lista en <b>PDF</b>, por ejemplo para hacer un pedido.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/material-avisos.webp" aria-label="Ampliar: necesidades y avisos"><img src="img/material-avisos.webp" alt="Formulario para avisar de una incidencia o necesidad de material y la lista de avisos" loading="lazy" width="1200" height="804"></button>
+    </figure>
   </div>
 </section>
 
@@ -758,9 +816,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/llave.svg" alt="">Espacios del centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/llave.svg" alt="">Espacios del centro</h3>
       <ul>
         <li>Lista de las aulas especiales y otros espacios con llave. Puedes cambiar el <b>nombre</b> y el <b>edificio</b>.</li>
         <li>Elige si la llave se guarda en <b>Conserjería</b> o en <b>Dirección</b>.</li>
@@ -770,6 +828,20 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
     <figure>
       <button class="cap limitada" data-ampliar="img/espacios-admin.webp" aria-label="Ampliar: espacios del centro"><img src="img/espacios-admin.webp" alt="Lista de espacios con edificio, dónde se guarda la llave y si se reservan" loading="lazy" width="1200" height="1359"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/ordenador.svg" alt="">Aulas con puestos (Material del centro) <span class="novedad">Nuevo</span></h3>
+      <ul>
+        <li>Para cada aula: <b>nombre</b>, <b>función</b> (Informática, Laboratorio, Tecnología…) y el <b>espacio</b> al que pertenece.</li>
+        <li>Su plano: número de <b>filas</b> y de <b>puestos a cada lado del pasillo</b>, y cómo se llaman (PC, Mesa…). Pulsa <b>Ver plano</b> para comprobarlo.</li>
+        <li><b>+ Añadir aula</b> para las que falten; <b>Ocultar</b> las quita sin perder las sesiones guardadas.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/material-admin.webp" aria-label="Ampliar: aulas con puestos"><img src="img/material-admin.webp" alt="Configuración de un aula de informática con su plano" loading="lazy" width="1200" height="642"></button>
     </figure>
   </div>
 
