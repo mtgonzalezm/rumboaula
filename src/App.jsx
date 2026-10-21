@@ -2823,6 +2823,16 @@ function MisCoberturas({ usuario, coberturas = {}, propias = {}, ausencias = [],
 
 // ─── Conductas positivas: lo que el alumnado hace bien ────────────────────────
 const TIPOS_POSITIVA = ["Ayuda a un compañero/a", "Esfuerzo o mejora notable", "Participación destacada", "Buen comportamiento", "Responsabilidad con sus tareas", "Resolución pacífica de un conflicto", "Otra"];
+// Ideas para el detalle: se tocan para copiarlas y se pueden retocar
+const FRASES_POSITIVA = {
+  "Ayuda a un compañero/a": ["Ha ayudado a un compañero/a a entender la tarea sin que se lo pidieran.", "Ha acogido con amabilidad a un compañero/a nuevo en el grupo.", "Ha compartido su material con quien lo necesitaba."],
+  "Esfuerzo o mejora notable": ["Ha mejorado mucho en la entrega de las tareas en las últimas semanas.", "Se ha esforzado por terminar el trabajo aunque le costaba.", "Ha superado una dificultad con constancia y buena actitud."],
+  "Participación destacada": ["Ha participado activamente con aportaciones muy interesantes.", "Ha presentado su trabajo ante la clase con seguridad.", "Ha animado al grupo a participar en la actividad."],
+  "Buen comportamiento": ["Ha mantenido una actitud respetuosa y tranquila durante toda la clase.", "Ha respetado el turno de palabra y ha escuchado a los demás.", "Ha cuidado el material y el aula."],
+  "Responsabilidad con sus tareas": ["Ha traído las tareas hechas y el material preparado.", "Ha organizado bien su trabajo y ha cumplido los plazos.", "Ha asumido con responsabilidad su papel en el trabajo en grupo."],
+  "Resolución pacífica de un conflicto": ["Ha resuelto un desacuerdo hablando, con calma y respeto.", "Ha pedido ayuda a un adulto en lugar de responder a una provocación.", "Ha ayudado a que dos compañeros/as se entendieran."],
+  "Otra": ["Ha tenido un gesto de amabilidad que merece reconocerse.", "Ha representado muy bien al centro en una actividad.", "Ha mostrado una actitud ejemplar en una salida o actividad."],
+};
 function positivasEjemplo(alumnos, profesores) {
   const hoy = new Date(), l = [];
   alumnos.slice(0, 18).forEach((a, i) => {
@@ -2891,6 +2901,19 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpS
             </button>
           ))}
         </div>
+        {tipo && (
+          <div data-frases style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 6 }}>💡 Ideas para el detalle: toca una para usarla y retócala si quieres.</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {FRASES_POSITIVA[tipo].map(f => (
+                <button key={f} onClick={() => setDetalle(f)} aria-pressed={detalle === f}
+                  style={{ textAlign: "left", minHeight: 44, padding: "8px 12px", border: `1px dashed ${detalle === f ? R.verdeCamino : R.turquesa}`, borderRadius: 6, background: detalle === f ? R.verdeCaminoClaro : "#fff", color: R.noche, fontSize: 15, fontStyle: "italic", cursor: "pointer", fontFamily: "inherit" }}>
+                  «{f}»
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <label htmlFor="gd-pos-detalle" style={labelStyle}>Detalle (opcional)</label>
         <textarea id="gd-pos-detalle" value={detalle} onChange={e => setDetalle(e.target.value)} rows={2} placeholder="Por ejemplo: ha ayudado a un compañero a entender el ejercicio." style={{ ...inpStyle, marginBottom: 12, resize: "vertical" }} />
         <Btn onClick={anotar} disabled={!al || !tipo} style={{ width: "100%", minHeight: 52 }}>⭐ Anotar</Btn>
@@ -3227,7 +3250,7 @@ const AYUDAS = {
     "Esto completa, no sustituye, el aviso oficial al instituto."] },
   positivas: { titulo: "Conducta positiva", pasos: [
     "Busca al alumno o alumna por su nombre o su grupo.",
-    "Elige qué ha hecho bien y, si quieres, añade un detalle.",
+    "Elige qué ha hecho bien. Te saldrán ideas de frases: toca una para usarla y retócala, o escribe la tuya.",
     "Pulsa «Anotar». Lo verán su tutor/a y Jefatura, y saldrá en el informe para la familia.",
     "Debajo tienes tus anotaciones; puedes borrar una si te has equivocado."] },
   mis_coberturas: { titulo: "Mis coberturas", pasos: [
@@ -6608,7 +6631,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// GLOBITOS DE ADVERTENCIAS: número morado en módulos, pestañas y cabecera
+// GLOBITOS DE ADVERTENCIAS: número en azul noche en módulos, pestañas y cabecera
 // ════════════════════════════════════════════════════════════════════════════
 const Globito = ({ n, flota = false }) => n > 0
   ? <span className={"gd-globo" + (flota ? " flota" : "")} aria-hidden="true">{n > 99 ? "99+" : n}</span>
@@ -6643,7 +6666,7 @@ function PanelAdvertencias({ lista, onIr }) {
         <Icono nombre="alertas" tam={52} /><Globito n={total} flota />
       </button>
       {abierto && (
-        <div role="dialog" aria-label="Advertencias" style={{ position: "fixed", right: pos.right, top: pos.top, zIndex: 150, width: pos.width, maxHeight: `calc(100vh - ${pos.top + 12}px)`, overflowY: "auto", background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `4px solid ${R.morado}`, boxShadow: "0 12px 32px rgba(22,51,63,.18)", borderRadius: 8, padding: 8 }}>
+        <div role="dialog" aria-label="Advertencias" style={{ position: "fixed", right: pos.right, top: pos.top, zIndex: 150, width: pos.width, maxHeight: `calc(100vh - ${pos.top + 12}px)`, overflowY: "auto", background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `4px solid ${R.noche}`, boxShadow: "0 12px 32px rgba(22,51,63,.18)", borderRadius: 8, padding: 8 }}>
           <div style={{ fontFamily: TITULO, fontSize: 17, color: R.petroleo, padding: "6px 8px 8px" }}>Tienes pendiente</div>
           {lista.length === 0
             ? <div style={{ padding: "8px 8px 12px", color: R.noche, fontSize: 15 }}>✅ Nada pendiente. Todo al día.</div>
@@ -6651,7 +6674,7 @@ function PanelAdvertencias({ lista, onIr }) {
               <button key={a.id} onClick={() => { setAbierto(false); onIr(a); }}
                 style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 48, padding: "6px 8px", border: "none", borderTop: `1px solid ${R.gris}`, background: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, color: R.noche }}>
                 <Icono nombre={a.icono} tam={32} />
-                <span style={{ flex: 1 }}><strong style={{ color: R.morado }}>{a.n}</strong> {a.txt}</span>
+                <span style={{ flex: 1 }}><strong>{a.n}</strong> {a.txt}</span>
                 <span aria-hidden="true" style={{ color: R.petroleo, fontSize: 18 }}>›</span>
               </button>
             ))}
@@ -7511,7 +7534,7 @@ function AppInterna() {
         .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
         .gd-tab:hover { background: rgba(255,255,255,.6); }
         .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
-        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${R.morado}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
+        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${R.noche}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
         .gd-globo.flota { position: absolute; top: -2px; right: -4px; margin: 0; border: 2px solid #fff; height: 24px; min-width: 24px; border-radius: 12px; }
         @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
