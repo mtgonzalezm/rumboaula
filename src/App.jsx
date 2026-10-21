@@ -10,6 +10,7 @@ const CENTRO_POR_DEFECTO = { nombre: "Centro educativo", ciudad: "Madrid" };
 let CENTRO = CENTRO_POR_DEFECTO.nombre;
 let CIUDAD = CENTRO_POR_DEFECTO.ciudad;
 let LOGO_CENTRO = null; // { data, w, h }: imagen que el centro pone al pie de los PDF
+let POSITIVAS_PDF = []; // conductas positivas, para el informe a la familia (las pone la app al cargar)
 function fijarCentro(d) {
   CENTRO = d?.nombre?.trim() || CENTRO_POR_DEFECTO.nombre;
   CIUDAD = d?.ciudad?.trim() || CENTRO_POR_DEFECTO.ciudad;
@@ -2820,6 +2821,221 @@ function MisCoberturas({ usuario, coberturas = {}, propias = {}, ausencias = [],
   );
 }
 
+// ─── Conductas positivas: lo que el alumnado hace bien ────────────────────────
+const TIPOS_POSITIVA = ["Ayuda a un compañero/a", "Esfuerzo o mejora notable", "Participación destacada", "Buen comportamiento", "Responsabilidad con sus tareas", "Resolución pacífica de un conflicto", "Otra"];
+function positivasEjemplo(alumnos, profesores) {
+  const hoy = new Date(), l = [];
+  alumnos.slice(0, 18).forEach((a, i) => {
+    if (i % 3 === 2) return;
+    const d = new Date(hoy); d.setDate(d.getDate() - (i * 2 + 1)); d.setHours(10 + (i % 4), 15);
+    l.push({ id: 5000 + i, alumnoId: a.id, alumno: a.nombre, curso: a.curso, tipo: TIPOS_POSITIVA[i % (TIPOS_POSITIVA.length - 1)],
+      detalle: ["Ha ayudado a un compañero nuevo a ponerse al día.", "", "Gran mejora en la entrega de tareas este mes.", "Ha mediado en una discusión en el recreo."][i % 4],
+      profesor: profesores[(i * 5) % profesores.length], ts: d.toISOString() });
+  });
+  return l;
+}
+function PositivasAlumno({ lista, C }) {
+  if (!lista.length) return null;
+  const orden = [...lista].sort((a, b) => b.ts.localeCompare(a.ts));
+  return (
+    <div data-positivas style={{ marginTop: 12, background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, padding: "10px 14px" }}>
+      <div style={{ fontWeight: 700, color: R.verdeOscuro, fontSize: 15, marginBottom: 6 }}>⭐ {lista.length} {lista.length === 1 ? "conducta positiva" : "conductas positivas"}</div>
+      <div style={{ display: "grid", gap: 6 }}>
+        {orden.map(x => (
+          <div key={x.id} style={{ fontSize: 14, color: C.dark }}>
+            <strong>{x.tipo}</strong> · {fmtD(x.ts)} · {x.profesor}{x.detalle ? <span style={{ color: C.gray }}> — {x.detalle}</span> : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpStyle, labelStyle }) {
+  const [busca, setBusca] = useState("");
+  const [alumnoId, setAlumnoId] = useState(null);
+  const [tipo, setTipo] = useState("");
+  const [detalle, setDetalle] = useState("");
+  const [hecho, setHecho] = useState("");
+  const al = alumnos.find(a => a.id === alumnoId);
+  const coinciden = busca && !al ? alumnos.filter(a => `${a.nombre} ${a.curso}`.toLowerCase().includes(busca.toLowerCase())).slice(0, 30) : [];
+  const anotar = () => {
+    if (!al || !tipo) return;
+    setPositivas(prev => [{ id: Date.now(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, tipo, detalle: detalle.trim(), profesor: usuario, ts: new Date().toISOString() }, ...prev]);
+    setHecho(`Anotado: ${tipo} · ${al.nombre}`); setBusca(""); setAlumnoId(null); setTipo(""); setDetalle("");
+    setTimeout(() => setHecho(""), 4000);
+  };
+  const mias = positivas.filter(x => x.profesor === usuario).sort((a, b) => b.ts.localeCompare(a.ts));
+  return (
+    <div>
+      <TituloBloque titulo="Conducta positiva" sub="Anota también lo que el alumnado hace bien" icono="saludo" />
+      {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+      <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
+        <label htmlFor="gd-pos-busca" style={labelStyle}><ConIcono texto="🔍 Alumno o alumna" tam={30} /></label>
+        <input id="gd-pos-busca" value={busca} onChange={e => { setBusca(e.target.value); setAlumnoId(null); }} placeholder="Nombre o grupo…" style={{ ...inpStyle, marginBottom: 8 }} />
+        {coinciden.length > 0 && (
+          <div style={{ border: `3px solid ${R.turquesa}`, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 12 }}>
+            {coinciden.map(a => (
+              <button key={a.id} onClick={() => { setAlumnoId(a.id); setBusca(`${a.nombre} — ${a.curso}`); }}
+                style={{ display: "block", width: "100%", textAlign: "left", minHeight: 48, padding: "12px 14px", border: "none", borderBottom: `1px solid ${R.turquesaClaro}`, background: "none", cursor: "pointer", fontSize: 16, color: R.noche, fontFamily: "inherit" }}>
+                <strong>{a.nombre}</strong> — {a.curso}
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ ...labelStyle, marginTop: 6 }}>¿Qué ha hecho bien?</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {TIPOS_POSITIVA.map(t => (
+            <button key={t} aria-pressed={tipo === t} onClick={() => setTipo(t)}
+              style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: `2px solid ${tipo === t ? R.verdeCamino : R.turquesaClaro}`, background: tipo === t ? R.verdeCaminoClaro : "#fff", color: tipo === t ? R.verdeOscuro : R.noche, fontWeight: tipo === t ? 700 : 400, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
+              {tipo === t ? "✓ " : ""}{t}
+            </button>
+          ))}
+        </div>
+        <label htmlFor="gd-pos-detalle" style={labelStyle}>Detalle (opcional)</label>
+        <textarea id="gd-pos-detalle" value={detalle} onChange={e => setDetalle(e.target.value)} rows={2} placeholder="Por ejemplo: ha ayudado a un compañero a entender el ejercicio." style={{ ...inpStyle, marginBottom: 12, resize: "vertical" }} />
+        <Btn onClick={anotar} disabled={!al || !tipo} style={{ width: "100%", minHeight: 52 }}>⭐ Anotar</Btn>
+        {(!al || !tipo) && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>{!al ? "Elige primero al alumno o alumna." : "Elige qué ha hecho bien."}</div>}
+      </Card>
+      <Card>
+        <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18 }}>Mis anotaciones ({mias.length})</h3>
+        {mias.length === 0 ? <p style={{ color: R.petroleo, margin: 0 }}>Todavía no has anotado ninguna.</p> : mias.map(x => (
+          <div key={x.id} data-positiva={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.noche }}>
+            <div><strong>{x.alumno}</strong> — {x.curso}<div style={{ color: R.verdeOscuro, fontWeight: 700 }}>⭐ {x.tipo}</div>{x.detalle && <div style={{ color: C.gray, fontSize: 14 }}>{x.detalle}</div>}<div style={{ color: C.gray, fontSize: 13 }}>{fmtD(x.ts)}</div></div>
+            <button onClick={() => setPositivas(prev => prev.filter(y => y.id !== x.id))} aria-label={`Borrar la anotación de ${x.alumno}`} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer", flexShrink: 0 }}>Borrar</button>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+// ─── Jefatura: reparto de coberturas y ausencias de un mes o del curso ───────
+function datosResumenGuardias({ profesores, ausencias, coberturas, propias, desde, hasta }) {
+  const dentro = f => f >= desde && f <= hasta;
+  const cob = Object.entries(coberturas).filter(([k]) => dentro(k.slice(0, 10)));
+  const reparto = profesores.map(p => {
+    const mias = cob.filter(([, x]) => x === p);
+    return { profesor: p, cubiertas: mias.length, propias: mias.filter(([k]) => esPropia(k, coberturas, propias)).length,
+      ultima: mias.map(([k]) => k.slice(0, 10)).sort().pop() || "" };
+  }).sort((a, b) => b.cubiertas - a.cubiertas || a.profesor.localeCompare(b.profesor, "es"));
+  const ausPeriodo = ausencias.filter(a => dentro(isoLocal(a.fecha)));
+  const clasesDe = a => a.horas.filter(h => h !== "Recreo");
+  const cubiertaA = (a, h) => !!coberturas[claveCob(isoLocal(a.fecha), h, a.id)];
+  const porProfesor = Object.values(ausPeriodo.reduce((acc, a) => {
+    const r = acc[a.profesor] || (acc[a.profesor] = { profesor: a.profesor, ausencias: 0, horas: 0, clases: 0, cubiertas: 0, motivos: {} });
+    r.ausencias++; r.horas += a.horas.length; r.clases += clasesDe(a).length; r.cubiertas += clasesDe(a).filter(h => cubiertaA(a, h)).length;
+    r.motivos[a.motivo || "Sin motivo"] = (r.motivos[a.motivo || "Sin motivo"] || 0) + 1;
+    return acc;
+  }, {})).sort((a, b) => b.horas - a.horas || a.profesor.localeCompare(b.profesor, "es"));
+  const porMotivo = Object.entries(ausPeriodo.reduce((acc, a) => { const m = a.motivo || "Sin motivo"; acc[m] = (acc[m] || 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1]);
+  const clases = porProfesor.reduce((n, r) => n + r.clases, 0), cubiertas = porProfesor.reduce((n, r) => n + r.cubiertas, 0);
+  return { reparto, porProfesor, porMotivo, totalCob: cob.length, ausencias: ausPeriodo.length, clases, cubiertas,
+    media: profesores.length ? cob.length / profesores.length : 0 };
+}
+const motivosTxt = m => Object.entries(m).map(([k, n]) => n > 1 ? `${k} (${n})` : k).join(", ");
+
+function pdfResumenGuardias(d, periodoTxt) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, "Coberturas y ausencias", `${periodoTxt} · Jefatura de Estudios`);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...OSCURO);
+  doc.text(`${d.totalCob} clases cubiertas · ${d.ausencias} ausencias · ${d.cubiertas} de ${d.clases} clases sin profesor cubiertas`, 14, y);
+  autoTable(doc, { ...estiloTabla, startY: y + 4, head: [["Profesor/a", "Clases cubiertas", "Se las asignó", "Última"]],
+    body: d.reparto.map(r => [r.profesor, String(r.cubiertas), String(r.propias), r.ultima ? fmtD(parseISO(r.ultima)) : "-"].map(sinEmoji)),
+    columnStyles: { 1: { halign: "center", cellWidth: 34 }, 2: { halign: "center", cellWidth: 30 }, 3: { cellWidth: 30 } } });
+  y = doc.lastAutoTable.finalY + 10;
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text("Ausencias por profesor/a", 14, y);
+  autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Profesor/a", "Ausencias", "Horas", "Clases cubiertas", "Motivos"]],
+    body: d.porProfesor.length ? d.porProfesor.map(r => [r.profesor, String(r.ausencias), String(r.horas), `${r.cubiertas} de ${r.clases}`, motivosTxt(r.motivos)].map(sinEmoji)) : [["Sin ausencias en este periodo", "", "", "", ""]],
+    columnStyles: { 1: { halign: "center", cellWidth: 28 }, 2: { halign: "center", cellWidth: 20 }, 3: { halign: "center", cellWidth: 30 } } });
+  y = doc.lastAutoTable.finalY + 10;
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text("Ausencias por motivo", 14, y);
+  autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Motivo", "Ausencias"]], body: d.porMotivo.length ? d.porMotivo.map(([k, n]) => [k, String(n)]) : [["-", "0"]],
+    columnStyles: { 1: { halign: "center", cellWidth: 30 } } });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GRIS);
+  doc.text("Documento interno del centro. Las ausencias oficiales se tramitan por la vía establecida (Raíces).", 14, doc.lastAutoTable.finalY + 6);
+  guardarPDF(doc, `coberturas-ausencias-${periodoTxt.toLowerCase().replace(/[^a-z0-9áéíóúñ]+/g, "-")}.pdf`);
+}
+
+function ResumenGuardias({ profesores, ausencias = [], coberturas = {}, propias = {}, C }) {
+  const hoy = isoLocal(new Date());
+  const [mes, setMes] = useState(hoy.slice(0, 7)); // "" = todo el curso
+  const desde = mes ? `${mes}-01` : inicioCurso(hoy);
+  const hasta = mes ? `${mes}-31` : hoy;
+  const nombreMes = m => { const t = parseISO(`${m}-01`).toLocaleDateString("es-ES", { month: "long", year: "numeric" }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const periodoTxt = mes ? nombreMes(mes) : `Curso ${desde.slice(0, 4)}-${Number(desde.slice(0, 4)) + 1} (hasta hoy)`;
+  const d = datosResumenGuardias({ profesores, ausencias, coberturas, propias, desde, hasta });
+  const max = Math.max(1, ...d.reparto.map(r => r.cubiertas));
+  const meses = (() => { const l = [], [a, m] = inicioCurso(hoy).split("-").map(Number); for (let i = 0; i < 12; i++) { const mm = ((m - 1 + i) % 12) + 1, aa = a + Math.floor((m - 1 + i) / 12), k = `${aa}-${String(mm).padStart(2, "0")}`; if (k > hoy.slice(0, 7)) break; l.push(k); } return l.reverse(); })();
+  const tarjeta = { background: C.white, borderRadius: 12, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", marginBottom: 14 };
+  const th = { textAlign: "left", padding: "8px 10px", background: R.gris, color: R.noche, fontSize: 14, whiteSpace: "nowrap" };
+  const td = { padding: "8px 10px", borderBottom: `1px solid ${R.gris}`, fontSize: 14, color: R.noche, verticalAlign: "top" };
+  return (
+    <div>
+      <TituloBloque titulo="Coberturas y ausencias" sub="Reparto de las clases cubiertas y ausencias del profesorado" icono="estadisticas" />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", margin: "16px 0 14px" }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo }}>Periodo
+          <select id="gd-resumen-mes" value={mes} onChange={e => setMes(e.target.value)} style={{ minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 4, fontSize: 16, color: R.noche, background: "#fff" }}>
+            {meses.map(m => <option key={m} value={m}>{nombreMes(m)}</option>)}
+            <option value="">Todo el curso</option>
+          </select>
+        </label>
+        <button onClick={() => pdfResumenGuardias(d, periodoTxt)} style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Descargar PDF</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, marginBottom: 14 }}>
+        {[["Clases cubiertas", d.totalCob, R.morado], ["Media por profesor/a", d.media.toLocaleString("es-ES", { maximumFractionDigits: 1 }), R.morado], ["Ausencias", d.ausencias, R.azul], ["Clases sin profesor cubiertas", `${d.cubiertas} de ${d.clases}`, R.verdeCamino]].map(([t, v, col]) => (
+          <div key={t} data-total={t} style={{ background: C.white, borderRadius: 10, padding: 12, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderTop: `4px solid ${col}` }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: C.dark }}>{v}</div>
+            <div style={{ fontSize: 13, color: C.gray, marginTop: 2 }}>{t}</div>
+          </div>
+        ))}
+      </div>
+      <div style={tarjeta}>
+        <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 4 }}><Ic n="profe-ausente" tam={22} />Reparto de coberturas · {periodoTxt}</div>
+        <div style={{ fontSize: 13, color: C.gray, marginBottom: 10 }}>Sirve para que el reparto sea equilibrado: al proponer quién cubre, la app da prioridad a quien ha cubierto menos en el curso.</div>
+        <div style={{ overflowX: "auto" }}>
+          <table data-tabla="reparto" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr><th style={th}>Profesor/a</th><th style={{ ...th, width: "40%" }}>Clases cubiertas</th><th style={th}>Se las asignó</th><th style={th}>Última</th></tr></thead>
+            <tbody>{d.reparto.map(r => (
+              <tr key={r.profesor} data-profesor={r.profesor}>
+                <td style={td}>{r.profesor}</td>
+                <td style={td}><div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div aria-hidden="true" style={{ height: 10, borderRadius: 5, background: R.morado, width: `${(r.cubiertas / max) * 100}%`, minWidth: r.cubiertas ? 6 : 0 }} />
+                  <strong>{r.cubiertas}</strong></div></td>
+                <td style={td}>{r.propias || "-"}</td>
+                <td style={td}>{r.ultima ? fmtD(parseISO(r.ultima)) : "-"}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+      <div style={tarjeta}>
+        <div style={{ fontWeight: 800, color: C.dark, fontSize: 15, marginBottom: 10 }}><Ic n="fecha" tam={22} />Ausencias del profesorado · {periodoTxt}</div>
+        {d.porProfesor.length === 0 ? <div style={{ padding: 16, textAlign: "center", color: C.gray, fontSize: 14 }}>No hay ausencias en este periodo.</div> : (
+          <div style={{ overflowX: "auto" }}>
+            <table data-tabla="ausencias" style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><th style={th}>Profesor/a</th><th style={th}>Ausencias</th><th style={th}>Horas</th><th style={th}>Clases cubiertas</th><th style={th}>Motivos</th></tr></thead>
+              <tbody>{d.porProfesor.map(r => (
+                <tr key={r.profesor}>
+                  <td style={td}>{r.profesor}</td><td style={td}>{r.ausencias}</td><td style={td}>{r.horas}</td>
+                  <td style={{ ...td, color: r.cubiertas < r.clases ? R.morado : R.noche, fontWeight: r.cubiertas < r.clases ? 700 : 400 }}>{r.cubiertas} de {r.clases}</td>
+                  <td style={td}>{motivosTxt(r.motivos)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        {d.porMotivo.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+            {d.porMotivo.map(([k, n]) => <span key={k} style={{ background: R.azulClaro, color: R.noche, borderRadius: 4, padding: "4px 10px", fontSize: 14 }}><strong>{n}</strong> · {k}</span>)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Firmar guardia y pasar lista ────────────────────────────────────────────
 // Firma: {id, fecha, hora, zonaId, zona, profesor, rol, ts}
 // Lista: {id, fecha, hora, curso, profesor, ausentes:[{id, nombre}], ts}
@@ -3009,6 +3225,11 @@ const AYUDAS = {
     "Cada clase sale con su grupo, materia y aula. Deja una consigna para cada una, o una tarea general para todas.",
     "Pulsa «Notificar». En «Mis ausencias» verás quién cubre cada clase; puedes modificarla o borrarla hasta que empiece.",
     "Esto completa, no sustituye, el aviso oficial al instituto."] },
+  positivas: { titulo: "Conducta positiva", pasos: [
+    "Busca al alumno o alumna por su nombre o su grupo.",
+    "Elige qué ha hecho bien y, si quieres, añade un detalle.",
+    "Pulsa «Anotar». Lo verán su tutor/a y Jefatura, y saldrá en el informe para la familia.",
+    "Debajo tienes tus anotaciones; puedes borrar una si te has equivocado."] },
   mis_coberturas: { titulo: "Mis coberturas", pasos: [
     "Aquí están las clases que has cubierto: las de hoy, las del mes y las del curso, desde el 1 de septiembre.",
     "Arriba, las próximas clases que tienes que cubrir. Cada una dice si te la asignaste tú o Jefatura.",
@@ -3061,6 +3282,11 @@ const AYUDAS = {
   ausencias_jef: { titulo: "Ausencias de profesores", pasos: [
     "Aquí llegan las ausencias que notifica el profesorado. Pulsa una para marcarla como leída.",
     "Si alguien llama por teléfono, pulsa «Registrar una ausencia comunicada por teléfono» y rellénala por él."] },
+  resumen_cob: { titulo: "Coberturas y ausencias", pasos: [
+    "Elige un mes o «Todo el curso».",
+    "Arriba, el reparto de coberturas: cuántas clases ha cubierto cada profesor/a y cuántas se asignó él mismo. Ayuda a que el reparto sea equilibrado.",
+    "Debajo, las ausencias del profesorado: cuántas, cuántas horas, cuántas de sus clases se cubrieron y los motivos.",
+    "Pulsa «Descargar PDF» para archivarlo o llevarlo a una reunión."] },
   firmas_jef: { titulo: "Firmas y listas", pasos: [
     "Elige una fecha.",
     "Verás quién ha firmado cada guardia y a qué hora; las que faltan salen en naranja.",
@@ -3360,11 +3586,11 @@ function datosEjemploGuardias(profesores) {
     if (!esLectivo(d) || atras % 2) continue;
     const otros = profesores.filter(p => p !== sugerido);
     const ausente = otros[(idx * 7 + 3) % otros.length];
-    const cubre = idx % 3 !== 2 ? sugerido : otros.filter(p => p !== ausente)[(idx * 5 + 1) % (otros.length - 1)];
+    const cubre = idx % 3 === 0 ? sugerido : otros.filter(p => p !== ausente)[(idx * 5 + 1) % 7];
     const hora = horasClase[(idx * 3 + 1) % horasClase.length];
     const [grupo, materia, edificio] = clasesPasadas[idx % clasesPasadas.length];
     const id = 100 + idx;
-    ausencias.push({ id, profesor: ausente, motivo: "Enfermedad", fecha: f, horas: [hora], edificio, aula: grupo, asignatura: materia, tarea: consignas[idx % consignas.length], ts, leida: true });
+    ausencias.push({ id, profesor: ausente, motivo: ["Enfermedad", "Formación", "Asunto personal", "Enfermedad", "Baja médica"][idx % 5], fecha: f, horas: [hora], edificio, aula: grupo, asignatura: materia, tarea: consignas[idx % consignas.length], ts, leida: true });
     coberturas[claveCob(f, hora, id)] = cubre;
     if (idx % 2 === 0) propias[claveCob(f, hora, id)] = cubre;
     idx++;
@@ -5761,6 +5987,15 @@ function pdfInformeFamilia(alumno, partes, banos, periodo, tutores = {}, remiten
     d.faltas.slice(0, 3).forEach(([k, n]) => { const l = doc.splitTextToSize(`• ${sinEmoji(k)} (${n})`, w - 28); doc.text(l, 14, y); y += l.length * 5; });
     y += 3;
   }
+  const pos = POSITIVAS_PDF.filter(x => x.alumnoId === alumno.id && (!periodo.desde || isoLocal(x.ts) >= periodo.desde) && (!periodo.hasta || isoLocal(x.ts) <= periodo.hasta))
+    .sort((a, b) => a.ts.localeCompare(b.ts));
+  if (pos.length) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text(`Aspectos positivos (${pos.length})`, 14, y); doc.setTextColor(0);
+    autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Fecha", "Conducta positiva", "Profesor/a", "Detalle"]], headStyles: { ...estiloTabla.headStyles, fillColor: [46, 125, 35] },
+      body: pos.map(x => [fmtD(x.ts), x.tipo, x.profesor, x.detalle || "-"].map(sinEmoji)), columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 48 }, 2: { cellWidth: 32 } } });
+    y = doc.lastAutoTable.finalY + 8;
+    if (y > 250) { doc.addPage(); y = 24; }
+  }
   doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text("Detalle de los partes", 14, y); doc.setTextColor(0);
   autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Fecha", "Hora", "Gravedad", "Conducta", "Profesor/a", "Qué ocurrió"]],
     body: d.ordenados.length ? d.ordenados.map(p => [fmtD(p.ts), p.hora || "-", sinEmoji(gObj(p.gravedad)?.label), etiquetaTip(p) || p.tipo, p.profesor, p.descripcion].map(sinEmoji)) : [["-", "-", "-", "Ningún parte en este periodo", "-", "-"]],
@@ -6373,6 +6608,60 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// GLOBITOS DE ADVERTENCIAS: número morado en módulos, pestañas y cabecera
+// ════════════════════════════════════════════════════════════════════════════
+const Globito = ({ n, flota = false }) => n > 0
+  ? <span className={"gd-globo" + (flota ? " flota" : "")} aria-hidden="true">{n > 99 ? "99+" : n}</span>
+  : null;
+// Para lectores de pantalla: el número va como descripción del botón, sin cambiar su nombre
+const avisosTxt = n => n > 0 ? (n === 1 ? "1 aviso" : `${n} avisos`) : undefined;
+// Campana de la cabecera: al pulsarla, lista de lo que tienes pendiente, con acceso directo
+function PanelAdvertencias({ lista, onIr }) {
+  const [abierto, setAbierto] = useState(false);
+  const [pos, setPos] = useState({ top: 0, right: 12, width: 340 });
+  const ref = useRef(null);
+  const total = lista.reduce((n, a) => n + a.n, 0);
+  // El panel se coloca bajo la campana sin salirse de la pantalla (en el móvil la campana no está en la esquina)
+  const abrir = () => {
+    if (abierto) { setAbierto(false); return; }
+    const r = ref.current.getBoundingClientRect(), vw = window.innerWidth;
+    const width = Math.min(340, vw - 24);
+    const right = Math.min(Math.max(12, vw - r.right), vw - 12 - width);
+    setPos({ top: r.bottom + 8, right, width }); setAbierto(true);
+  };
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = e => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    const esc = e => { if (e.key === "Escape") setAbierto(false); };
+    document.addEventListener("mousedown", fuera); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", fuera); document.removeEventListener("keydown", esc); };
+  }, [abierto]);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button className="gd-redondo" style={{ position: "relative" }} onClick={abrir} aria-expanded={abierto}
+        aria-label={total ? `Advertencias: ${total}` : "Advertencias: ninguna"} title="Advertencias">
+        <Icono nombre="alertas" tam={52} /><Globito n={total} flota />
+      </button>
+      {abierto && (
+        <div role="dialog" aria-label="Advertencias" style={{ position: "fixed", right: pos.right, top: pos.top, zIndex: 150, width: pos.width, maxHeight: `calc(100vh - ${pos.top + 12}px)`, overflowY: "auto", background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `4px solid ${R.morado}`, boxShadow: "0 12px 32px rgba(22,51,63,.18)", borderRadius: 8, padding: 8 }}>
+          <div style={{ fontFamily: TITULO, fontSize: 17, color: R.petroleo, padding: "6px 8px 8px" }}>Tienes pendiente</div>
+          {lista.length === 0
+            ? <div style={{ padding: "8px 8px 12px", color: R.noche, fontSize: 15 }}>✅ Nada pendiente. Todo al día.</div>
+            : lista.map(a => (
+              <button key={a.id} onClick={() => { setAbierto(false); onIr(a); }}
+                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 48, padding: "6px 8px", border: "none", borderTop: `1px solid ${R.gris}`, background: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, color: R.noche }}>
+                <Icono nombre={a.icono} tam={32} />
+                <span style={{ flex: 1 }}><strong style={{ color: R.morado }}>{a.n}</strong> {a.txt}</span>
+                <span aria-hidden="true" style={{ color: R.petroleo, fontSize: 18 }}>›</span>
+              </button>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // PREGUNTAS FRECUENTES (también desde la pantalla de entrada)
 // Las respuestas sobre datos y mensajes describen la versión de demostración:
 // cambiarlas cuando la app funcione con el servidor del centro.
@@ -6676,6 +6965,8 @@ function AppInterna() {
   const [medidas, setMedidas]     = useState([]);
   DATOS_CENTRO.partes = partes;
   const [banos, setBanos]         = useState([]);
+  // Conductas positivas: {id, alumnoId, alumno, curso, tipo, detalle, profesor, ts}
+  const [positivas, setPositivas] = useState([]);
   const [alertas, setAlertas]     = useState([]);
   const [mensajes, setMensajes]   = useState([]);
   const [guardias, setGuardias]   = useState([]);
@@ -6789,6 +7080,7 @@ function AppInterna() {
       setLoading(true);
       const p  = await sGet("partes");    if (p)  setPartes(p);
       const b  = await sGet("banos");     if (b)  setBanos(b);
+      const pos = await sGet("positivas"); if (pos) setPositivas(pos);
       const a  = await sGet("alertas");   if (a)  setAlertas(a);
       const m  = await sGet("mensajes");  if (m)  setMensajes(m);
       const al = await sGet("alumnos");   if (al) setAlumnos(al);
@@ -6836,6 +7128,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("partes", partes); },     [partes, loading]);
   useEffect(() => { if (!loading) sSet("medidas", medidas); },   [medidas, loading]);
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
+  useEffect(() => { POSITIVAS_PDF = positivas; if (!loading) sSet("positivas", positivas); }, [positivas, loading]);
   useEffect(() => { if (!loading) sSet("alertas", alertas); },   [alertas, loading]);
   useEffect(() => { if (!loading) sSet("mensajes", mensajes); }, [mensajes, loading]);
   useEffect(() => { if (!loading) sSet("alumnos", alumnos); },   [alumnos, loading]);
@@ -6911,7 +7204,7 @@ function AppInterna() {
 
   function cargarEjemploGuardias() {
     const conv = datosEjemploConvivencia(DEMO_PROFESORES);
-    setAlumnos(conv.alumnos); setPartes(conv.partes); setBanos(conv.banos); setAlertas(conv.alertas); setInformes(conv.informes); setTutores(conv.tutores);
+    setAlumnos(conv.alumnos); setPartes(conv.partes); setBanos(conv.banos); setPositivas(positivasEjemplo(conv.alumnos, DEMO_PROFESORES)); setAlertas(conv.alertas); setInformes(conv.informes); setTutores(conv.tutores);
     // El ejemplo usa los profesores ficticios de demostración; se añaden a la lista si faltan
     const lista = [...new Set([...profesores, ...DEMO_PROFESORES])];
     setProfesores(lista);
@@ -7094,8 +7387,9 @@ function AppInterna() {
           { id: "partes",      label: "📋 Nuevo Parte", color: "#06b6d4" },
           { id: "parte_grupo", label: "👥 Parte de Grupo", color: "#ec4899" },
           { id: "bano",        label: "🚻 Baños", color: "#63CBA1" },
+          { id: "positivas",   label: "Conducta positiva", color: R.verdeCamino },
           { id: "historial",   label: "🗂 Mis Partes", color: "#2B647E" },
-          { id: "mis_estadisticas", label: `📈 Estadísticas${avisosPendientes ? ` · 🔔 ${avisosPendientes}` : ""}`, color: "#06b6d4" },
+          { id: "mis_estadisticas", label: "📈 Estadísticas", color: "#06b6d4" },
         ]
       : moduloProfesor === "guardias"
       ? [
@@ -7113,9 +7407,9 @@ function AppInterna() {
           { id: "por_curso",    label: "🏫 Por Curso", color: "#ec4899" },
           { id: "por_alumno",   label: "👤 Por Alumno", color: "#63CBA1" },
           { id: "partes_todos", label: "📋 Partes", color: "#2B647E" },
-          { id: "medidas",      label: `⚖️ Medidas${medidasHoy ? ` (${medidasHoy})` : ""}`, color: "#2B647E" },
+          { id: "medidas",      label: "⚖️ Medidas", color: "#2B647E" },
           { id: "bano_live",    label: "🚻 Baños", color: "#06b6d4" },
-          { id: "alertas",      label: `🔔${alertasNoLeidas > 0 ? ` (${alertasNoLeidas})` : ""} Alertas`, color: "#ec4899" },
+          { id: "alertas",      label: "🔔 Alertas", color: "#ec4899" },
           { id: "informe",      label: "📤 Informe", color: "#63CBA1" },
           { id: "estadisticas", label: "📈 Estadísticas", color: "#2B647E" },
         ]
@@ -7127,6 +7421,7 @@ function AppInterna() {
           { id: "parte_dia",     label: "🔄 Parte del Día", color: "#ec4899" },
           { id: "ausencias_jef", label: "📢 Ausencias de Profesores", color: "#63CBA1" },
           { id: "firmas_jef",    label: "✍️ Firmas y listas", color: "#06b6d4" },
+          { id: "resumen_cob",   label: "📊 Coberturas y ausencias", color: R.morado },
           { id: "estadisticas",  label: "📈 Estadísticas", color: "#2B647E" },
         ]
       : [] // Galvángram no tiene tabs adicionales
@@ -7142,13 +7437,13 @@ function AppInterna() {
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
         { id: "guardias", label: "🔄 Guardias" },
-        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+        { id: "galvangramm", label: "💬 Galvángram" },
       ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
     : perfil.id === "jefatura"
     ? [
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
         { id: "guardias", label: "🔄 Guardias & Ausencias" },
-        { id: "galvangramm", label: `💬 Galvángram${sinLeerMios ? ` (${sinLeerMios})` : ""}` },
+        { id: "galvangramm", label: "💬 Galvángram" },
       ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
     : perfil.id === "admin"
     ? [
@@ -7157,6 +7452,39 @@ function AppInterna() {
       ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
     : [];
   const moduloActivo = perfil.id === "profesor" ? moduloProfesor : moduloJefatura;
+
+  // Advertencias pendientes: salen en el globito de la cabecera, de cada módulo y de cada pestaña
+  const advertencias = (() => {
+    const hoy = isoLocal(), lista = [];
+    const add = (n, txt, modulo, tabId, icono) => { if (n > 0) lista.push({ id: `${modulo}-${tabId}`, n, txt, modulo, tab: tabId, icono }); };
+    const equipoHoy = { profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias };
+    if (perfil.id === "profesor") {
+      const yo = fProfesor || usuario;
+      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Galvángram" : "mensajes sin leer en Galvángram", "galvangramm", "mensajeria", "mensaje-sin-leer");
+      add(avisosPendientes, avisosPendientes === 1 ? "familia por avisar (3 o más partes)" : "familias por avisar (3 o más partes)", "alumnos", "mis_estadisticas", "alertas");
+      const sinFirmar = esLectivo(new Date()) && yo ? guardiasDeProfesor({ fecha: hoy, profesor: yo, ...equipoHoy })
+        .filter(g => horaEmpezada(hoy, g.hora) && !firmas.some(f => f.fecha === hoy && f.hora === g.hora && f.profesor === yo)).length : 0;
+      add(sinFirmar, sinFirmar === 1 ? "guardia de hoy sin firmar" : "guardias de hoy sin firmar", "guardias", "mi_guardia", "firmar");
+      const porCubrir = Object.entries(coberturas).filter(([k, p]) => p === yo && k.startsWith(`${hoy}|`) && !horaEmpezada(hoy, k.split("|")[1])).length;
+      add(porCubrir, porCubrir === 1 ? "clase que cubres hoy" : "clases que cubres hoy", "guardias", "mis_coberturas", "profe-ausente");
+    } else if (perfil.id === "jefatura") {
+      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Galvángram" : "mensajes sin leer en Galvángram", "galvangramm", "mensajeria", "mensaje-sin-leer");
+      add(alertasNoLeidas, alertasNoLeidas === 1 ? "alerta de convivencia sin leer" : "alertas de convivencia sin leer", "alumnos", "alertas", "alertas");
+      add(medidasHoy, medidasHoy === 1 ? "medida correctora por programar o para hoy" : "medidas correctoras por programar o para hoy", "alumnos", "medidas", "tipificacion");
+      const ausSinLeer = ausencias.filter(a => !a.leida && isoLocal(a.fecha) >= hoy).length;
+      add(ausSinLeer, ausSinLeer === 1 ? "ausencia de profesorado sin revisar" : "ausencias de profesorado sin revisar", "guardias", "ausencias_jef", "profe-ausente");
+      const sinCubrir = ausencias.filter(a => isoLocal(a.fecha) === hoy).reduce((n, a) => n + a.horas.filter(h => h !== "Recreo" && !horaTerminada(hoy, h) && !coberturas[claveCob(hoy, h, a.id)]).length, 0);
+      add(sinCubrir, sinCubrir === 1 ? "clase de hoy sin cubrir" : "clases de hoy sin cubrir", "guardias", "coordinacion", "hora-reloj");
+    }
+    return lista;
+  })();
+  const globoModulo = id => advertencias.filter(a => a.modulo === id).reduce((n, a) => n + a.n, 0);
+  const globoTab = id => advertencias.filter(a => a.modulo === moduloActivo && a.tab === id).reduce((n, a) => n + a.n, 0);
+  const irAdvertencia = a => {
+    if (a.modulo === "galvangramm") { abrirMensajes(); return; }
+    if (perfil.id === "profesor") setModuloProfesor(a.modulo); else setModuloJefatura(a.modulo);
+    setTab(a.tab);
+  };
 
   return (
     <CorreosCentroCtx.Provider value={{ correos: correosCentro, setCorreos: setCorreosCentro, profes: profesores.map(p => ({ nombre: p, email: cuentas[p]?.email || (MODO_DEMO ? correoDemo(p) : "") })) }}>
@@ -7183,6 +7511,8 @@ function AppInterna() {
         .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
         .gd-tab:hover { background: rgba(255,255,255,.6); }
         .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
+        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${R.morado}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
+        .gd-globo.flota { position: absolute; top: -2px; right: -4px; margin: 0; border: 2px solid #fff; height: 24px; min-width: 24px; border-radius: 12px; }
         @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
         @media (min-width: 900px) {
@@ -7227,6 +7557,7 @@ function AppInterna() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
+          {perfil.id !== "admin" && <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />}
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
             setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
             if (perfil.id === "profesor") setModuloProfesor("alumnos");
@@ -7244,9 +7575,9 @@ function AppInterna() {
       {modulos.length > 0 && (
         <div className="gd-modulos">
           {modulos.map((m, i) => (
-            <button key={m.id} className={"gd-modulo" + (moduloActivo === m.id ? " activo" : "")} style={{ order: 2 * i }}
+            <button key={m.id} className={"gd-modulo" + (moduloActivo === m.id ? " activo" : "")} style={{ order: 2 * i }} aria-description={avisosTxt(globoModulo(m.id))}
               onClick={m.ir}>
-              {sinEmoji1(m.label)}
+              {sinEmoji1(m.label)}<Globito n={globoModulo(m.id)} />
             </button>
           ))}
         </div>
@@ -7255,8 +7586,8 @@ function AppInterna() {
       {tabs.length > 0 && (
         <div className="gd-tabs" style={{ order: 2 * Math.max(0, modulos.findIndex(m => m.id === moduloActivo)) + 1 }}>
           {tabs.map(t => (
-            <button key={t.id} className={"gd-tab" + (tab === t.id ? " activo" : "")} onClick={() => setTab(t.id)}>
-              {sinEmoji1(t.label)}
+            <button key={t.id} className={"gd-tab" + (tab === t.id ? " activo" : "")} onClick={() => setTab(t.id)} aria-description={avisosTxt(globoTab(t.id))}>
+              {sinEmoji1(t.label)}<Globito n={globoTab(t.id)} />
             </button>
           ))}
         </div>
@@ -7388,6 +7719,7 @@ function AppInterna() {
                         <div style={{ marginTop: 4 }}><Ic n="mensaje-enviar" tam={20} />{alumnoSel.email} · 📱 {alumnoSel.telefono}</div>
                         {partesLeves(alumnoSel.id) >= 3 && <div style={{ marginTop: 6, color: R.petroleo, fontWeight: 700, borderLeft: `6px solid ${R.mostaza}`, paddingLeft: 8 }}>⚠️ Acumulación: {partesLeves(alumnoSel.id)} partes leves</div>}
                         <div style={{ marginTop: 2, color: R.petroleo }}>Eres su tutor/a · Partes en total: {partesDeAlumno(alumnoSel.id).length}</div>
+                        <PositivasAlumno lista={positivas.filter(x => x.alumnoId === alumnoSel.id)} C={C} />
                       </>) : (<>
                         <div style={{ marginTop: 4, color: R.petroleo }}>Partes que le has puesto tú: <strong style={{ color: R.petroleo }}>{mios.length}</strong></div>
                         <div style={{ marginTop: 2, fontSize: 14, color: R.petroleo }}>El contacto de la familia aparece al generar el parte, para que puedas avisarla.</div>
@@ -7508,6 +7840,10 @@ function AppInterna() {
         )}
 
         {/* ── Baños (profesor) ── */}
+        {tab === "positivas" && (
+          <ConductasPositivas alumnos={alumnos} positivas={positivas} setPositivas={setPositivas} usuario={fProfesor || usuario} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
+        )}
+
         {tab === "bano" && (
           <div>
             <TituloBloque titulo="Control de Salidas al Baño" sub="Quién sale y cuándo vuelve" icono="banos" />
@@ -7790,6 +8126,7 @@ function AppInterna() {
                     <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                       {["leve", "grave", "muy_grave"].map(g => { const n = pAl.filter(p => p.gravedad === g).length; const gv = gObj(g); return <div key={g} style={{ flex: 1, background: gv.color, padding: 12, textAlign: "center" }}><div style={{ fontSize: 26, fontWeight: 700, color: gv.texto }}>{n}</div><div style={{ fontSize: 14, color: gv.texto, fontWeight: 700 }}>{gv.label}</div></div>; })}
                     </div>
+                    <PositivasAlumno lista={positivas.filter(x => x.alumnoId === al.id)} C={C} />
                     {partesLeves(al.id) >= 3 && <div style={{ marginTop: 12, background: "#FDF1D9", border: "1px solid #F6C862", borderRadius: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600, color: "#16333F" }}>⚠️ Acumulación de {partesLeves(al.id)} partes leves — Considerar sanción</div>}
                   </Card>
                   {pAl.length === 0
@@ -7940,6 +8277,10 @@ function AppInterna() {
         )}
 
         {/* ── Gestión Ausencias (Jefatura) ── */}
+        {tab === "resumen_cob" && (
+          <ResumenGuardias profesores={profesores} ausencias={ausencias} coberturas={coberturas} propias={coberturasPropias} C={C} />
+        )}
+
         {tab === "firmas_jef" && (
           <FirmasYListas profesores={profesores} cuadrante={cuadrante} apoyosGuardia={apoyosGuardia} sustitutosGuardia={sustitutosGuardia}
             ausencias={ausencias} firmas={firmas} listas={listas} C={C} inpStyle={inpStyle} />

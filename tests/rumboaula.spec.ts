@@ -40,7 +40,7 @@ async function recorrerPantallas(page: Page) {
     const nombres = await page.evaluate(() => {
       const mod = document.querySelector('.gd-modulos')
       const sig = mod?.nextElementSibling
-      return sig ? Array.from(sig.querySelectorAll('button')).map(b => (b.textContent || '').trim()).filter(Boolean) : []
+      return sig ? Array.from(sig.querySelectorAll('button')).map(b => { const c = b.cloneNode(true) as HTMLElement; c.querySelectorAll('.gd-globo').forEach(g => g.remove()); return (c.textContent || '').trim() }).filter(Boolean) : []
     })
     for (const n of nombres) {
       await page.getByRole('button', { name: n, exact: true }).first().click()
@@ -86,10 +86,10 @@ test('Cubrir clases: jefatura asigna y la profe lo ve', async ({ page }) => {
   await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
   await page.getByRole('button', { name: 'Ahora', exact: true }).click()
   await expect(page.getByText('1 sin cubrir')).toBeVisible()
-  // La primera sugerencia es del mismo edificio que la clase
-  await expect(page.getByText('⭐ Jorge Ruiz')).toBeVisible()
+  // La primera sugerencia es del mismo edificio que la clase y, a igualdad, quien menos ha cubierto en el curso
+  await expect(page.getByText('⭐ Pablo Díaz')).toBeVisible()
   await page.getByRole('button', { name: 'Asignar' }).first().click()
-  await expect(page.getByText('✅ Cubre Jorge Ruiz')).toBeVisible()
+  await expect(page.getByText('✅ Cubre Pablo Díaz')).toBeVisible()
   await expect(page.getByText('todas cubiertas')).toBeVisible()
   await expect(page.getByText(/Cubre 2º ESO B de Marta Rubio/).first()).toBeVisible()
   expect(errores).toEqual([])
