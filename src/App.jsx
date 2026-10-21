@@ -7881,13 +7881,14 @@ const QueEsRumboAula = () => (
     <ul style={{ margin: "0 0 8px", paddingLeft: 20 }}>
       <li><strong>Agilidad:</strong> lo que antes llevaba varios pasos o un paseo hasta conserjería se hace desde el móvil, en uno o dos toques.</li>
       <li><strong>Todo en un solo sitio:</strong> deja atrás la libreta de llaves, la hoja de reservas pegada en la puerta, el cuadrante de guardias en papel y la hoja de puestos del aula de informática.</li>
+      <li><strong>Menos papel, mesas sin papeles:</strong> partes, guardias, ausencias, reservas, llaves y avisos se consultan en la pantalla en lugar de imprimirse y fotocopiarse. Se gasta menos en papel y tóner y se reduce el impacto ambiental del centro. El PDF se genera solo cuando hace falta firmar o archivar algo.</li>
       <li><strong>Coordinación al momento:</strong> partes, ausencias, coberturas, reservas e incidencias llegan a quien tiene que verlas, con aviso en Galvángram y en la campana.</li>
       <li><strong>Responsabilidad y cuidado del material:</strong> queda constancia de quién tiene cada llave y de quién se sienta en cada puesto, y con qué profesor/a.</li>
       <li><strong>Equilibrio y seguimiento:</strong> reparto justo de las coberturas, estadísticas de convivencia y avisos del alumnado con varios partes.</li>
       <li><strong>Familias, cuando hace falta:</strong> informes y correos preparados, también para reconocer lo que el alumnado hace bien.</li>
       <li><strong>Menos tiempo en trámites</strong> y más tiempo para el alumnado.</li>
     </ul>
-    <p style={{ margin: 0 }}>En resumen: <strong>Raíces es el registro oficial; RumboAula es la herramienta ágil de la organización diaria</strong> del centro, para Dirección, Jefatura, profesorado, Conserjería y, cuando hace falta, las familias.</p>
+    <p style={{ margin: 0 }}>En resumen: <strong>Raíces es el registro oficial; RumboAula es la herramienta ágil de la organización diaria</strong> del centro, para Dirección, Jefatura, profesorado, Conserjería y, cuando hace falta, las familias. Y con <strong>menos papel</strong>.</p>
   </>
 );
 
