@@ -131,6 +131,7 @@ td.si { color: var(--azul); font-weight: 700; }
 td.no { color: #6B7579; }
 
 /* Para el TIC */
+code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: var(--azul-claro); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
 .correo-tic { background: var(--azul-claro); border: 1px dashed var(--azul); padding: 14px; white-space: pre-wrap; font: 15.5px/1.55 inherit; font-family: inherit; margin: 0 0 10px; overflow-x: auto; }
 .boton-descarga { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; background: var(--azul); color: #fff !important; font-weight: 700; text-decoration: none; border-radius: 6px; }
 .boton-descarga:focus-visible { outline: 3px solid var(--mostaza); outline-offset: 2px; }
@@ -952,6 +953,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Lo que pida la Delegación, normalmente: <b>evaluación de impacto</b> (hay datos de menores y de convivencia), alta en el <b>registro de actividades de tratamiento</b> y las <b>medidas de seguridad</b> del Esquema Nacional de Seguridad.</li>
         <li><b>Informar a las familias y al personal</b> de qué datos se usan y con qué fin.</li>
       </ol>
+      <p>Para pedir la aprobación ayuda llevar tres documentos: una <b>ficha técnica</b> de una página (qué datos, dónde se guardan y quién accede), el <b>aviso de privacidad</b> para el profesorado y una <b>evaluación de impacto</b> sencilla.</p>
       <p class="nota ojo">Aunque los datos estén en el centro, estos pasos siguen siendo necesarios. Hay que preguntar también si la Consejería permite guardar datos del alumnado fuera de sus plataformas oficiales (Raíces y EducaMadrid).</p>
     </div>
   </div>
@@ -993,7 +995,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="tarjeta sola nueva">
     <div>
       <h3><img src="/iconos/documentos.svg" alt="">Descárgalo para enviarlo o imprimirlo <span class="novedad">Nuevo</span></h3>
-      <p>Todo este apartado, con el correo incluido, en un documento de 4 páginas.</p>
+      <p>Todo este apartado, con el correo incluido, en un documento PDF.</p>
       <p><a class="boton-descarga" href="RumboAula-propuesta-TIC.pdf" download>⬇️ Descargar el PDF para Coordinación TIC</a></p>
     </div>
   </div>
@@ -1030,14 +1032,15 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="tarjeta sola nueva">
     <div>
       <h3><img src="/iconos/mensajes.svg" alt="">Lo que hay que preguntar a la Consejería <span class="novedad">Nuevo</span></h3>
-      <p>La red de los institutos suele gestionarla la Consejería, así que antes de nada conviene consultar:</p>
+      <p>La red de los institutos suele gestionarla la Consejería, así que antes de nada conviene consultar, por ejemplo a través del <b>CAU de EducaMadrid</b>, y <b>pedir la respuesta por escrito</b>:</p>
       <ul>
         <li>¿Podemos tener un <b>servidor propio</b> conectado a la red del centro?</li>
         <li>¿Los dispositivos conectados a la <b>wifi del profesorado</b> pueden comunicarse con un equipo de la red del centro, o están aislados?</li>
-        <li>¿Nos pueden asignar una <b>IP fija interna</b> y, si hace falta, un <b>nombre interno</b> para el servidor?</li>
+        <li>¿Nos pueden asignar una <b>IP fija interna</b> (del tipo 192.168.x.x o 10.x.x.x, por ejemplo con una reserva en el router) y, si hace falta, un <b>nombre interno</b> sencillo para el servidor, como <code>rumboaula.local</code>?</li>
+        <li>¿Hay algún <b>cortafuegos</b> que bloquee el puerto del servidor, o algún aislamiento entre dispositivos de la wifi?</li>
         <li>¿Hay alguna <b>norma de seguridad</b> (antivirus, actualizaciones, inventario) que deba cumplir ese equipo?</li>
       </ul>
-      <p class="nota ok">La propuesta es que funcione <b>solo dentro del centro</b>: no hace falta abrir puertos hacia internet ni acceder desde casa.</p>
+      <p class="nota ok">La propuesta es que funcione <b>solo dentro del centro</b>: no hace falta una IP pública, ni abrir puertos hacia internet, ni un dominio. Si algún día hiciera falta entrar desde fuera, solo mediante una VPN y con permiso de la Consejería.</p>
     </div>
   </div>
 
@@ -1053,6 +1056,38 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Ser el contacto si algo falla y aplicar las actualizaciones.</li>
       </ol>
       <p class="nota ojo">No depende de TIC: la aprobación del equipo directivo, la consulta a la Delegación de Protección de Datos y la información al personal. Están en <a href="#implantacion">Implantación en el centro</a>.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/sin-clave.svg" alt="">La conexión segura dentro del centro <span class="novedad">Nuevo</span></h3>
+      <p>El profesorado entrará escribiendo en el navegador la dirección del servidor, por ejemplo <code>https://rumboaula.local</code> o <code>https://192.168.x.x</code>, conectado a la wifi del centro.</p>
+      <p>En un servidor interno, los navegadores suelen avisar de que <b>el certificado no es de confianza</b>. Hay dos formas de resolverlo:</p>
+      <ul>
+        <li>Crear un <b>certificado del centro</b> e instalarlo una vez en los móviles y ordenadores del profesorado. Es lo más limpio.</li>
+        <li>Para empezar el piloto, aceptar el aviso la primera vez, <b>explicándoselo antes al profesorado</b> para que no le extrañe.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/importar.svg" alt="">Cómo se instalará y se actualizará <span class="novedad">Nuevo</span></h3>
+      <p>Cuando esté programada la parte del servidor, la instalación será así:</p>
+      <ol>
+        <li>En el servidor (mejor con Linux) se instalan <b>Git</b> y <b>Docker</b>.</li>
+        <li>Se descarga RumboAula desde GitHub: <code>git clone https://github.com/mtgonzalezm/rumboaula.git</code>. El repositorio es público, así que no hace falta ninguna clave. Nunca contiene datos ni contraseñas.</li>
+        <li>Se escriben los ajustes del centro en un archivo <code>.env</code> que solo existe en el servidor.</li>
+        <li>Se arranca con <code>docker compose up -d --build</code>. La app y la base de datos quedan en marcha y vuelven a arrancar solas si se reinicia el equipo. Los datos se guardan aparte, en su propio espacio.</li>
+      </ol>
+      <p><b>Para actualizar</b> después de una mejora basta con <code>git pull</code> y otra vez <code>docker compose up -d --build</code>. Los datos no se tocan.</p>
+      <ul>
+        <li><b>Internet en el servidor:</b> hace falta al menos durante la instalación. Si la red del centro no lo permite, se puede llevar todo en un pendrive.</li>
+        <li>La app se prepara <b>en el propio servidor</b>, no en otro ordenador, porque los procesadores pueden ser distintos (por ejemplo, un Mac frente a un PC).</li>
+        <li><b>Copias de seguridad:</b> una copia diaria de la base de datos, cifrada y guardada en otro equipo del centro.</li>
+      </ul>
+      <p class="nota ok"><b>Seguridad mínima prevista:</b> usuarios con sus perfiles (profesorado, Jefatura, Orientación, Conserjería, Administración), claves guardadas cifradas, registro de accesos, copias cifradas y actualizaciones periódicas. Del alumnado se importará de Raíces solo lo imprescindible, y se fijará cuánto tiempo se conservan los datos.</p>
     </div>
   </div>
 
