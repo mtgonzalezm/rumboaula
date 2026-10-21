@@ -130,7 +130,8 @@ th { font-weight: 700; color: #fff; background: var(--azul); }
 td.si { color: var(--azul); font-weight: 700; }
 td.no { color: #6B7579; }
 
-/* Para el TIC */
+/* Para el TIC y mensajes modelo */
+.quien-envia { font-size: 15px; color: var(--azul); font-weight: 700; }
 code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: var(--azul-claro); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
 .correo-tic { background: var(--azul-claro); border: 1px dashed var(--azul); padding: 14px; white-space: pre-wrap; font: 15.5px/1.55 inherit; font-family: inherit; margin: 0 0 10px; overflow-x: auto; }
 .boton-descarga { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; background: var(--azul); color: #fff !important; font-weight: 700; text-decoration: none; border-radius: 6px; }
@@ -185,6 +186,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#administracion">Administración</a>
     <a href="#implantacion">Implantación</a>
     <a href="#tic">Para el TIC</a>
+    <a href="#mensajes">Mensajes</a>
     <a href="#ayuda">Ayuda y datos</a>
   </div>
 </nav>
@@ -910,9 +912,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/edificio.svg" alt="">Una RumboAula para cada centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/edificio.svg" alt="">Una RumboAula para cada centro</h3>
       <ul>
         <li><b>Es una app individual de cada centro.</b> Cada instituto tiene su propia instalación, en su propio servidor, con su profesorado, sus espacios y sus datos. No se comparte nada con otros centros ni hay un servidor común.</li>
         <li><b>Funciona conectándose a la wifi del centro</b> (o a su red por cable). El servidor solo se ve desde dentro del instituto: fuera del centro, con los datos del móvil o desde casa, no se puede entrar.</li>
@@ -965,6 +967,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Lo que pida la Delegación, normalmente: <b>evaluación de impacto</b> (hay datos de menores y de convivencia), alta en el <b>registro de actividades de tratamiento</b> y las <b>medidas de seguridad</b> del Esquema Nacional de Seguridad.</li>
         <li><b>Informar a las familias y al personal</b> de qué datos se usan y con qué fin.</li>
       </ol>
+      <p class="nota ok">Los mensajes para cada uno de estos pasos están listos para copiar en <a href="#mensajes">Mensajes para enviar</a>.</p>
       <p>Para pedir la aprobación ayuda llevar tres documentos: una <b>ficha técnica</b> de una página (qué datos, dónde se guardan y quién accede), el <b>aviso de privacidad</b> para el profesorado y una <b>evaluación de impacto</b> sencilla.</p>
       <p class="nota ojo">Aunque los datos estén en el centro, estos pasos siguen siendo necesarios. Hay que preguntar también si la Consejería permite guardar datos del alumnado fuera de sus plataformas oficiales (Raíces y EducaMadrid).</p>
     </div>
@@ -1004,9 +1007,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Qué hace falta para instalar RumboAula en el instituto con un ordenador del propio centro como servidor. Es una guía orientativa para valorarlo juntos con quien coordine las TIC.</p>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/edificio.svg" alt="">Una RumboAula para cada centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/edificio.svg" alt="">Una RumboAula para cada centro</h3>
       <ul>
         <li><b>Es una app individual de cada centro.</b> Cada instituto tiene su propia instalación, en su propio servidor, con su profesorado, sus espacios y sus datos. No se comparte nada con otros centros ni hay un servidor común.</li>
         <li><b>Funciona conectándose a la wifi del centro</b> (o a su red por cable). El servidor solo se ve desde dentro del instituto: fuera del centro, con los datos del móvil o desde casa, no se puede entrar.</li>
@@ -1118,7 +1121,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="tarjeta sola">
     <div>
       <h3><img src="/iconos/mensaje-enviar.svg" alt="">Correo para enviar</h3>
-      <p>Texto preparado para mandárselo a Coordinación TIC; retócalo a tu gusto.</p>
+      <p>Texto preparado para mandárselo a Coordinación TIC; retócalo a tu gusto. Los mensajes para el equipo directivo, el CAU, la Delegación de Protección de Datos y el claustro están en <a href="#mensajes">Mensajes para enviar</a>.</p>
 <pre class="correo-tic" id="texto-correo-tic">Hola:
 
 Te escribo por RumboAula, una aplicación interna para organizar el día a día del centro: guardias y ausencias, reserva de espacios y llaves, avisos de material y mensajes entre el profesorado. Puedes verla con datos ficticios en https://rumboaula.vercel.app y el manual en https://rumboaula.vercel.app/manual
@@ -1135,6 +1138,176 @@ Para ello necesitaríamos:
 
 Gracias. Un saludo.</pre>
       <p><button class="copiar" id="copiar-correo-tic" type="button">Copiar el texto del correo</button></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ MENSAJES PARA ENVIAR ═══════════ -->
+<section class="parte" id="mensajes">
+  <span class="etiqueta">Para poner RumboAula en marcha</span>
+  <div class="titulo"><h2>Mensajes para enviar</h2><img src="/iconos/mensaje-enviar.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Un modelo para cada responsable, en el orden en que suelen hacer falta. Pulsa «Copiar el mensaje», pégalo en tu correo del centro y completa lo que va entre corchetes, como el nombre o el código del centro.</p>
+  <div class="tarjeta sola">
+    <div>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">El orden habitual</h3>
+      <ol>
+        <li><a href="#mensaje-equipo">Al equipo directivo</a>: propuesta de piloto.</li>
+        <li><a href="#mensaje-tic">A Coordinación TIC</a>: qué hace falta en la red y el servidor.</li>
+        <li><a href="#mensaje-cau">Al CAU de EducaMadrid</a>: consulta sobre la red del centro, la envía la dirección.</li>
+        <li><a href="#mensaje-dpd">A la Delegación de Protección de Datos</a>: consulta antes de usar datos reales, la envía la dirección.</li>
+        <li><a href="#mensaje-claustro">Al claustro</a>: cuando el piloto esté autorizado e instalado.</li>
+        <li><a href="#mensaje-demo">A quien pruebe la demostración</a>: que no use datos reales.</li>
+      </ol>
+      <p class="nota ojo">Mientras no haya autorización e instalación en el centro, RumboAula es <b>solo una demostración con datos ficticios</b>: no se deben introducir datos reales de alumnado, familias ni profesorado.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva" id="mensaje-equipo">
+    <div>
+      <h3><img src="/iconos/cargo-direccion.svg" alt="">1. Al equipo directivo: propuesta de piloto <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: la persona que propone RumboAula. Cuándo: lo primero de todo.</p>
+<pre class="correo-tic" id="modelo-equipo">Asunto: Propuesta de piloto de RumboAula en el centro
+
+Hola:
+
+Os escribo para proponeros probar en el centro RumboAula, una aplicación interna para organizar el día a día: guardias y ausencias del profesorado, reserva de espacios y llaves, avisos de material y mensajes entre el profesorado. No sustituye a Raíces, que sigue siendo el registro oficial.
+
+Podéis verla funcionando, con datos ficticios, en https://rumboaula.vercel.app y el manual en https://rumboaula.vercel.app/manual
+
+La propuesta es un piloto sin datos del alumnado. RumboAula sería una instalación propia de nuestro centro, en un ordenador del instituto que haga de servidor, y se usaría conectándose a la wifi del centro: su uso sería local y los datos no saldrían del instituto ni irían a ningún servicio externo.
+
+Para ponerlo en marcha haría falta:
+- Vuestra autorización para el piloto.
+- Consultar con Coordinación TIC y con el CAU de EducaMadrid el uso de la red del centro.
+- Consultar a la Delegación de Protección de Datos de la Consejería.
+
+En el manual están preparados los mensajes para cada paso (https://rumboaula.vercel.app/manual/#mensajes). Si os parece bien, lo hablamos cuando podáis.
+
+Un saludo.</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-equipo">Copiar el mensaje</button></p>
+    </div>
+  </div>
+  <div class="tarjeta sola nueva" id="mensaje-tic">
+    <div>
+      <h3><img src="/iconos/cargo-tic.svg" alt="">2. A Coordinación TIC <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: la persona que propone RumboAula o la dirección. Cuándo: con el visto bueno del equipo directivo.</p>
+<pre class="correo-tic" id="modelo-tic">Hola:
+
+Te escribo por RumboAula, una aplicación interna para organizar el día a día del centro: guardias y ausencias, reserva de espacios y llaves, avisos de material y mensajes entre el profesorado. Puedes verla con datos ficticios en https://rumboaula.vercel.app y el manual en https://rumboaula.vercel.app/manual
+
+Nos gustaría valorar un piloto sin datos del alumnado. RumboAula sería una instalación propia de nuestro centro, en un ordenador del instituto que haga de servidor, y se usaría conectándose a la wifi del centro: solo se vería desde dentro, su uso sería local y los datos no saldrían del instituto ni irían a ningún servicio externo.
+
+Para ello necesitaríamos:
+- Un ordenador o miniPC que haga de servidor (unos 8 GB de RAM y un SSD de 128 GB), con SAI y un disco para copias de seguridad.
+- Conectarlo por cable a la red del centro con una IP fija interna.
+- Que los móviles conectados a la wifi del profesorado puedan llegar a ese equipo.
+- Un certificado para la conexión segura (HTTPS).
+
+¿Podrías consultar con la Consejería si podemos tener un servidor propio en la red del centro y si la wifi del profesorado puede acceder a él? El programa y una guía de instalación paso a paso se preparan aparte.
+
+Gracias. Un saludo.</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-tic">Copiar el mensaje</button></p>
+    </div>
+  </div>
+  <div class="tarjeta sola nueva" id="mensaje-cau">
+    <div>
+      <h3><img src="/iconos/configuracion.svg" alt="">3. Al CAU de EducaMadrid: consulta sobre la red del centro <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: la dirección del centro. Cuándo: después de hablar con Coordinación TIC. Pide la respuesta por escrito.</p>
+<pre class="correo-tic" id="modelo-cau">Asunto: Consulta sobre la instalación de un servidor interno en la red del centro
+
+Desde el [nombre del centro], código de centro [código], queremos consultar si es posible instalar un servidor propio en la red del instituto para una aplicación interna de organización del centro (guardias, ausencias del profesorado, reserva de espacios y llaves, y avisos de material).
+
+La aplicación se instalaría en un ordenador del propio centro y se usaría solo desde dentro, conectándose a la wifi del centro. Su uso sería local: no necesita IP pública, no habría que abrir puertos hacia internet y los datos no saldrían del centro ni irían a ningún servicio externo. En una primera fase no trataría datos del alumnado.
+
+Les agradeceríamos que nos indicaran por escrito:
+1. Si podemos conectar un servidor propio a la red del centro.
+2. Si los dispositivos conectados a la wifi del profesorado pueden comunicarse con ese equipo o están aislados.
+3. Si nos pueden asignar una IP fija interna y, si es posible, un nombre interno para el servidor.
+4. Si hay algún cortafuegos que bloquee el puerto del servidor.
+5. Qué normas de seguridad debe cumplir el equipo (antivirus, actualizaciones, inventario).
+
+Quedamos a la espera de su respuesta.
+
+Atentamente,
+[Nombre y cargo]
+[Centro, localidad y fecha]</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-cau">Copiar el mensaje</button></p>
+    </div>
+  </div>
+  <div class="tarjeta sola nueva" id="mensaje-dpd">
+    <div>
+      <h3><img src="/iconos/documentos.svg" alt="">4. A la Delegación de Protección de Datos de la Consejería <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: la dirección del centro, que es la responsable del tratamiento. Cuándo: antes de usar datos reales.</p>
+<pre class="correo-tic" id="modelo-dpd">Asunto: Consulta sobre una aplicación interna de organización del centro
+
+Desde el [nombre del centro], código de centro [código], les consultamos sobre el uso de RumboAula, una aplicación interna para organizar el día a día del centro.
+
+Qué es: una herramienta de apoyo a la organización (guardias, ausencias del profesorado, reserva de espacios y llaves, avisos de material, mensajes internos y, en una fase posterior, convivencia). No sustituye a Raíces, que sigue siendo el registro oficial.
+
+Dónde se alojaría: en un ordenador del propio centro que haría de servidor, accesible solo desde la red y la wifi del instituto. Su uso sería local: los datos no saldrían del centro ni irían a ningún servicio externo, y cada centro tendría su propia instalación, sin datos compartidos.
+
+Qué datos trataría:
+- Fase 1 (piloto): solo datos del profesorado: nombre, cargo, correo del centro, horario de guardias, ausencias con un motivo genérico, reservas de espacios y préstamo de llaves.
+- Fase 2 (más adelante, solo si se autoriza): datos del alumnado: nombre, grupo, partes y medidas de convivencia, conductas positivas y contacto de la familia, importados de Raíces solo en lo imprescindible.
+
+Medidas previstas: acceso con usuario y clave según el perfil, claves guardadas cifradas, registro de accesos, copias de seguridad cifradas y plazos de conservación definidos.
+
+Les agradeceríamos que nos indicaran:
+1. Si es posible usar una aplicación de este tipo alojada en el propio centro.
+2. Qué documentación necesitan: registro de actividades de tratamiento, evaluación de impacto, información al personal y a las familias.
+3. Qué medidas de seguridad debemos cumplir conforme al Esquema Nacional de Seguridad.
+4. Si hay alguna limitación para tratar datos del alumnado fuera de Raíces y EducaMadrid.
+
+Podemos enviarles la ficha técnica de la aplicación. Puede verse una demostración con datos ficticios en https://rumboaula.vercel.app
+
+Atentamente,
+[Nombre y cargo]
+[Centro, localidad y fecha]</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-dpd">Copiar el mensaje</button></p>
+    </div>
+  </div>
+  <div class="tarjeta sola nueva" id="mensaje-claustro">
+    <div>
+      <h3><img src="/iconos/profesorado.svg" alt="">5. Al claustro: comienzo del piloto <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: la dirección o Jefatura de Estudios. Cuándo: cuando el piloto esté autorizado e instalado.</p>
+<pre class="correo-tic" id="modelo-claustro">Asunto: Empezamos a usar RumboAula en el centro
+
+Hola a todos:
+
+A partir del [fecha] empezamos a usar en el centro RumboAula, una aplicación interna para organizar el día a día: guardias y ausencias, reserva de espacios y llaves, avisos de material y mensajes entre el profesorado.
+
+Cómo entrar:
+- Conéctate a la wifi del profesorado del centro: la aplicación solo funciona dentro del instituto.
+- Abre en el navegador [dirección del servidor, por ejemplo https://rumboaula.local] y entra con tu nombre. La primera vez crearás tu clave.
+- Puedes instalarla en el móvil como una aplicación más.
+
+Su uso es local: los datos se guardan solo en el servidor del centro y no van a ningún servicio externo. En esta primera fase no se usan datos del alumnado.
+
+El manual de uso está en https://rumboaula.vercel.app/manual. Para cualquier duda, [persona de contacto].
+
+Un saludo.</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-claustro">Copiar el mensaje</button></p>
+    </div>
+  </div>
+  <div class="tarjeta sola nueva" id="mensaje-demo">
+    <div>
+      <h3><img src="/iconos/aviso.svg" alt="">6. A quien pruebe la demostración: no usar datos reales <span class="novedad">Nuevo</span></h3>
+      <p class="quien-envia">Lo envía: quien comparta la demostración con otros centros o compañeros. Cuándo: al enviar el enlace.</p>
+<pre class="correo-tic" id="modelo-demo">Asunto: RumboAula: solo para probar con datos ficticios
+
+Hola:
+
+Gracias por interesarte por RumboAula. Te recuerdo que la versión que tienes (https://rumboaula.vercel.app) es solo una demostración para probarla con datos ficticios.
+
+Por favor, no introduzcas datos reales de alumnado, familias ni profesorado. Esta versión guarda la información en el navegador de cada dispositivo y no está preparada ni autorizada para datos reales.
+
+Para usarla de verdad, cada centro tendría su propia instalación en un servidor del instituto, de uso local con la wifi del centro, y antes haría falta la autorización de la Delegación de Protección de Datos de la Consejería. En el manual lo explico: https://rumboaula.vercel.app/manual/#implantacion
+
+Cualquier duda o sugerencia, lo hablamos con gusto.
+
+Un saludo.</pre>
+      <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-demo">Copiar el mensaje</button></p>
     </div>
   </div>
 </section>
@@ -1220,6 +1393,14 @@ Gracias. Un saludo.</pre>
     const marcar = () => { const r = document.createRange(); r.selectNodeContents(txtTic); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btnTic.textContent = 'Texto seleccionado: cópialo'; };
     try { navigator.clipboard.writeText(txtTic.textContent).then(ok, marcar); } catch { marcar(); }
   });
+
+  // Copiar los mensajes modelo
+  document.querySelectorAll('.copiar-modelo').forEach(b => b.addEventListener('click', () => {
+    const t = document.getElementById(b.dataset.modelo), txt0 = 'Copiar el mensaje';
+    const ok = () => { b.textContent = 'Mensaje copiado'; setTimeout(() => b.textContent = txt0, 2000); };
+    const marcar = () => { const r = document.createRange(); r.selectNodeContents(t); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Texto seleccionado: cópialo'; };
+    try { navigator.clipboard.writeText(t.textContent).then(ok, marcar); } catch { marcar(); }
+  }));
 
   // Apartado activo en el menú
   const enlaces = [...document.querySelectorAll('.menu a')];
