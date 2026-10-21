@@ -305,7 +305,9 @@ const CARGOS = [
   { id: "conserjeria", label: "Conserjería",         perfiles: ["conserjeria"] },
 ];
 // Cargos de ejemplo (profesorado ficticio); el resto es Profesor/a
-const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Conserjería": { cargos: ["conserjeria"] } };
+const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Conserjería": { cargos: ["conserjeria"], noDocente: true } };
+// Personal no docente (Conserjería): tiene cuenta y clave, pero no está en la lista del profesorado
+const personalNoDocente = cuentas => Object.keys(cuentas || {}).filter(n => cuentas[n]?.noDocente).sort((a, b) => a.localeCompare(b, "es"));
 // Una persona puede tener varios cargos a la vez (p. ej. Profesor/a + Coordinación TIC)
 const cargosIds = cuenta => { const l = cuenta?.cargos?.length ? cuenta.cargos : [cuenta?.cargo || "profesor"];
   // Conserjería no es profesorado: solo entra a las llaves
@@ -353,7 +355,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
 
   function continuar() {
     const n = nombre.trim();
-    if (!profesores.includes(n)) { setError("Ese nombre no está en la lista del profesorado. Elígelo de la lista o pide a Administración que te añada."); return; }
+    if (!profesores.includes(n) && !cuentas[n]?.noDocente) { setError("Ese nombre no está en la lista del profesorado ni del personal del centro. Elígelo de la lista o pide a Administración que te añada."); return; }
     setNombre(n); setError(""); setClave(""); setClave2(""); setPaso("clave");
   }
   async function entrar() {
@@ -520,7 +522,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
                 <label style={etiqueta} htmlFor="gd-nombre">¿Quién eres?</label>
                 <input id="gd-nombre" type="text" placeholder="Tu nombre" list="lista-profesores" value={nombre} autoComplete="off"
                   onChange={e => { setNombre(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") continuar(); }} style={campo} />
-                <datalist id="lista-profesores">{profesores.map(p => <option key={p} value={p} />)}</datalist>
+                <datalist id="lista-profesores">{[...profesores, ...personalNoDocente(cuentas)].map(p => <option key={p} value={p} />)}</datalist>
                 <div style={{ fontSize: 14, marginTop: 6 }}>Escribe y elige tu nombre de la lista.</div>
               </div>
               {fallo}
@@ -3392,6 +3394,7 @@ const AYUDAS = {
     "Elige el espacio: laboratorio, aula de informática, sala de usos múltiples, salón de actos…",
     "Verás la semana con las horas libres y las reservadas. Usa ‹ › para cambiar de semana.",
     "Pulsa «+ Reservar» en una hora libre, indica el grupo y la actividad si quieres y pulsa «Confirmar reserva».",
+    "Para una clase fija, marca «Repetir cada semana» y elige hasta qué fecha: se reserva el mismo día y hora todas las semanas lectivas.",
     "Abajo tienes tus próximas reservas; puedes anularlas hasta que termine la hora. «Descargar PDF» saca la semana del espacio, por ejemplo para ponerla en la puerta."] },
   llaves: { titulo: "Llaves", pasos: [
     "La tabla muestra cada aula con llave especial, dónde se guarda (Conserjería o Dirección) y quién la tiene ahora.",
@@ -4962,7 +4965,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // GALVÁNGRAM - MENSAJERÍA RÁPIDA
 // ═══════════════════════════════════════════════════════════════════════════
-const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor" };
+const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave" };
 const ICONO_MENSAJE = { "Alumno enfermo": "alumno-enfermo", "Emergencia": "emergencia", "Urgencia en aula": "emergencia", "Falta material": "falta-material",
   "Alumno derivado": "alumno-derivado", "Cambio de guardia": "sustituto", "Falta un profesor": "profe-ausente", "Reunión importante": "eventos" };
 function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, esJefatura, profesores, horarios = {}, cursos = [], cuadrante = {}, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, C, inpStyle, selStyle, labelStyle }) {
@@ -6469,6 +6472,7 @@ function reservasEjemplo(profesores, cursos, sugerido) {
   const ts = new Date().toISOString();
   return l.map((r, k) => ({ id: 9000 + k, espacio: ESPACIOS_POR_DEFECTO.find(e => e.id === r.espacioId).nombre, anota: r.profesor, ts, ...r }));
 }
+const diaSemana = f => parseISO(f).toLocaleDateString("es-ES", { weekday: "long" });
 const diaCorto = f => { const t = parseISO(f).toLocaleDateString("es-ES", { weekday: "short", day: "numeric" }); return t.charAt(0).toUpperCase() + t.slice(1); };
 function pdfReservas(esp, dias, reservas) {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
@@ -6497,22 +6501,38 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
   const [diaMovil, setDiaMovil] = useState(() => dias.includes(hoy) ? hoy : dias[0]);
   const estrecho = useEstrecho();
   const [sel, setSel] = useState(null); // {fecha, hora}
-  const [form, setForm] = useState({ para: "", grupo: "", actividad: "" });
+  const finCurso = `${Number(inicioCurso(hoy).slice(0, 4)) + 1}-06-23`;
+  const [form, setForm] = useState({ para: "", grupo: "", actividad: "", repetir: false, hasta: finCurso });
   const [error, setError] = useState("");
+  const [hecho, setHecho] = useState("");
   const panel = useRef(null);
   const de = (f, h) => esp && reservas.find(r => r.espacioId === esp.id && r.fecha === f && r.hora === h);
   const cambiarSemana = n => { const l = isoLocal(sumarDias(lunes, n * 7)); setLunes(l); setDiaMovil(n === 0 ? hoy : l); setSel(null); };
-  const elegir = (f, h) => { setSel({ fecha: f, hora: h }); setError(""); setForm({ para: "", grupo: "", actividad: "" }); setTimeout(() => panel.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" }), 50); };
+  const elegir = (f, h) => { setSel({ fecha: f, hora: h }); setError(""); setHecho(""); setForm({ para: "", grupo: "", actividad: "", repetir: false, hasta: finCurso }); setTimeout(() => panel.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" }), 50); };
   const reservar = () => {
     const quien = gestion ? form.para : usuario;
     if (!quien) { setError("Elige para quién es la reserva."); return; }
     if (de(sel.fecha, sel.hora)) { setError("Esa hora ya está reservada."); return; }
     const otra = reservas.find(r => r.profesor === quien && r.fecha === sel.fecha && r.hora === sel.hora);
     if (otra) { setError(`${quien === usuario ? "Ya tienes" : `${quien} ya tiene`} reservado ${otra.espacio} a esa hora.`); return; }
-    setReservas(prev => [...prev, { id: Date.now(), espacioId: esp.id, espacio: esp.nombre, fecha: sel.fecha, hora: sel.hora, profesor: quien, grupo: form.grupo, actividad: form.actividad.trim(), anota: usuario, ts: new Date().toISOString() }]);
+    // Reserva de un día o, si se repite, el mismo día de la semana hasta la fecha elegida (solo días lectivos)
+    const fechas = [sel.fecha];
+    if (form.repetir) {
+      if (!form.hasta || form.hasta <= sel.fecha) { setError("Elige hasta qué fecha se repite."); return; }
+      for (let d = sumarDias(sel.fecha, 7); isoLocal(d) <= form.hasta && fechas.length < 45; d = sumarDias(d, 7)) if (esLectivo(d)) fechas.push(isoLocal(d));
+    }
+    const ocupada = f => reservas.some(r => r.fecha === f && r.hora === sel.hora && (r.espacioId === esp.id || r.profesor === quien));
+    const libres = fechas.filter(f => !ocupada(f)), saltadas = fechas.filter(ocupada);
+    const base = Date.now(), serie = form.repetir ? base : undefined, ts = new Date().toISOString();
+    setReservas(prev => [...prev, ...libres.map((f, i) => ({ id: base + i, espacioId: esp.id, espacio: esp.nombre, fecha: f, hora: sel.hora, profesor: quien, grupo: form.grupo, actividad: form.actividad.trim(), anota: usuario, ts, ...(serie ? { serie } : {}) }))]);
+    setHecho(form.repetir
+      ? `Reservado ${esp.nombre} ${libres.length} ${libres.length === 1 ? "semana" : "semanas"}, ${diaSemana(sel.fecha)} a ${sel.hora}.${saltadas.length ? ` No se ha podido reservar ${saltadas.map(f => fmtD(parseISO(f))).join(", ")} porque ya estaba ocupado.` : ""}`
+      : `Reservado ${esp.nombre} · ${diaCorto(sel.fecha)} · ${sel.hora}.`);
     setSel(null);
   };
   const anular = r => setReservas(prev => prev.filter(x => x.id !== r.id));
+  // Anula las semanas que quedan de una serie (las ya pasadas se conservan)
+  const anularSerie = serie => setReservas(prev => prev.filter(x => x.serie !== serie || horaTerminada(x.fecha, x.hora)));
   const puedeAnular = r => (gestion || r.profesor === usuario) && !horaTerminada(r.fecha, r.hora);
   const mias = reservas.filter(r => r.profesor === usuario && !horaTerminada(r.fecha, r.hora)).sort((a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.hora) - HORAS.indexOf(b.hora));
   const boton = (fondo, letra, borde) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: borde ? `2px solid ${borde}` : "none", background: fondo, color: letra, fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" });
@@ -6521,7 +6541,7 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
     const r = de(f, h), elegida = sel?.fecha === f && sel?.hora === h;
     if (r) return (
       <div data-reserva={r.id} style={{ background: r.profesor === usuario ? R.verdeCaminoClaro : R.azulClaro, borderLeft: `4px solid ${r.profesor === usuario ? R.verdeCamino : R.azul}`, padding: "6px 8px", fontSize: 13, color: R.noche, lineHeight: 1.35, textAlign: "left" }}>
-        <strong>{r.grupo || "Reservada"}</strong><div>{r.profesor}</div>{r.actividad && <div style={{ color: R.petroleo }}>{r.actividad}</div>}
+        <strong>{r.serie ? "🔁 " : ""}{r.grupo || "Reservada"}</strong><div>{r.profesor}</div>{r.actividad && <div style={{ color: R.petroleo }}>{r.actividad}</div>}
         {puedeAnular(r) && <button onClick={() => anular(r)} aria-label={`Anular la reserva de ${r.profesor} el ${diaCorto(f)} a ${h}`} style={{ marginTop: 4, minHeight: 32, padding: "0 8px", border: `1px solid ${R.turquesa}`, borderRadius: 4, background: "#fff", color: R.petroleo, fontSize: 13, cursor: "pointer" }}>Anular</button>}
       </div>
     );
@@ -6570,6 +6590,17 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
               <input id="gd-reserva-actividad" value={form.actividad} onChange={e => setForm(v => ({ ...v, actividad: e.target.value }))} placeholder="Por ejemplo, práctica de laboratorio" style={campo} />
             </label>
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44, fontSize: 15, fontWeight: 700, color: R.petroleo, cursor: "pointer" }}>
+              <input id="gd-reserva-repetir" type="checkbox" checked={form.repetir} onChange={e => setForm(v => ({ ...v, repetir: e.target.checked }))} style={{ width: 22, height: 22, accentColor: R.azul }} />
+              🔁 Repetir cada semana ({diaSemana(sel.fecha)} a {sel.hora})
+            </label>
+            {form.repetir && (
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: R.petroleo }}>hasta
+                <input id="gd-reserva-hasta" type="date" value={form.hasta} min={sel.fecha} onChange={e => setForm(v => ({ ...v, hasta: e.target.value }))} style={{ ...campo, width: "auto" }} />
+              </label>
+            )}
+          </div>
           {error && <div role="alert" style={{ color: R.noche, fontWeight: 700, borderLeft: `5px solid ${R.mostaza}`, paddingLeft: 8 }}>{error}</div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button onClick={reservar} style={boton(R.azul, "#fff")}>Confirmar reserva</button>
@@ -6577,6 +6608,7 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
           </div>
         </div>
       )}
+      {hecho && <div role="status" style={{ padding: "10px 14px", marginBottom: 12, background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
       {estrecho ? (
         <div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 8 }}>
@@ -6607,17 +6639,63 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
       <div style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, padding: 16, marginTop: 16 }}>
         <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 17, marginBottom: 8 }}>{gestion ? "Reservas de hoy" : "Mis próximas reservas"}</div>
         {(() => {
-          const l = gestion ? reservas.filter(r => r.fecha === hoy).sort((a, b) => HORAS.indexOf(a.hora) - HORAS.indexOf(b.hora)) : mias;
+          let l = gestion ? reservas.filter(r => r.fecha === hoy).sort((a, b) => HORAS.indexOf(a.hora) - HORAS.indexOf(b.hora)) : mias;
           if (!l.length) return <div style={{ color: R.petroleo }}>{gestion ? "Hoy no hay ningún espacio reservado." : "No tienes ninguna reserva pendiente."}</div>;
-          return l.map(r => (
+          // Las reservas que se repiten salen una sola vez, con todas sus semanas
+          const series = gestion ? [] : [...new Set(l.filter(r => r.serie).map(r => r.serie))].map(id => l.filter(r => r.serie === id));
+          if (!gestion) l = l.filter(r => !r.serie);
+          return [...series.map(g => (
+            <div key={`s-${g[0].serie}`} data-serie={g[0].serie} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${R.gris}`, fontSize: 15, color: R.noche }}>
+              <div><strong>🔁 {g[0].espacio}</strong> · cada {diaSemana(g[0].fecha)} · {conTramo(g[0].hora)}
+                <div style={{ fontSize: 14, color: R.petroleo }}>{[`${g.length} ${g.length === 1 ? "semana" : "semanas"}: del ${fmtD(parseISO(g[0].fecha))} al ${fmtD(parseISO(g[g.length - 1].fecha))}`, g[0].grupo, g[0].actividad].filter(Boolean).join(" · ")}</div></div>
+              <button onClick={() => anularSerie(g[0].serie)} style={boton("#fff", R.petroleo, R.turquesa)}>Anular la serie</button>
+            </div>
+          )), ...l.map(r => (
             <div key={r.id} data-mi-reserva={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${R.gris}`, fontSize: 15, color: R.noche }}>
               <div><strong>{r.espacio}</strong> · {diaCorto(r.fecha)} · {conTramo(r.hora)}<div style={{ fontSize: 14, color: R.petroleo }}>{[gestion ? r.profesor : "", r.grupo, r.actividad].filter(Boolean).join(" · ")}</div></div>
               {puedeAnular(r) && <button onClick={() => anular(r)} style={boton("#fff", R.petroleo, R.turquesa)}>Anular</button>}
             </div>
-          ));
+          ))];
         })()}
       </div>
     </div>
+  );
+}
+// Administración: cuentas de Conserjería, aparte del profesorado. Solo entran a Espacios (llaves y reservas)
+function PersonalConserjeria({ cuentas, setCuentas, profesores = [], C, inpStyle }) {
+  const [nuevo, setNuevo] = useState("");
+  const [error, setError] = useState("");
+  const lista = personalNoDocente(cuentas);
+  const anadir = () => {
+    const n = nuevo.trim(); if (!n) return;
+    if (profesores.includes(n) || cuentas[n]) { setError(`Ya hay una cuenta con el nombre «${n}».`); return; }
+    setCuentas(prev => ({ ...prev, [n]: { cargos: ["conserjeria"], noDocente: true } })); setNuevo(""); setError("");
+  };
+  return (
+    <Card>
+      <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="llave" tam={44} />Personal de Conserjería</h3>
+      <p style={{ marginTop: 0, fontSize: 14, color: C.gray }}>Cuentas aparte del profesorado: no salen en guardias, partes ni listas de profesores. Solo entran a <b>Espacios</b> (llaves y reservas). Puede ser una cuenta por persona o una para el puesto, por ejemplo «Conserjería».</p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <input id="gd-conserje-nuevo" value={nuevo} onChange={e => { setNuevo(e.target.value); setError(""); }} onKeyDown={e => { if (e.key === "Enter") anadir(); }} placeholder="Nombre de la cuenta (persona o puesto)" style={{ ...inpStyle, flex: "1 1 220px" }} />
+        <Btn onClick={anadir} disabled={!nuevo.trim()}>Añadir a Conserjería</Btn>
+      </div>
+      {error && <div role="alert" style={{ marginTop: 8, color: C.dark, fontWeight: 700, borderLeft: `5px solid ${R.mostaza}`, paddingLeft: 8 }}>{error}</div>}
+      <div style={{ marginTop: 12, display: "grid", gap: 1, background: R.turquesaClaro }}>
+        {lista.length === 0 && <div style={{ background: "#fff", padding: 12, color: C.gray }}>Todavía no hay ninguna cuenta de Conserjería.</div>}
+        {lista.map(n => (
+          <div key={n} data-conserje={n} style={{ background: "#fff", padding: "10px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Icono nombre="llave" tam={36} />
+              <div><div style={{ fontWeight: 700, color: C.dark }}>{n}</div><div style={{ fontSize: 13, color: cuentas[n]?.clave ? C.teal : C.gray }}>{cuentas[n]?.clave ? "Clave creada" : "Sin clave: la creará al entrar por primera vez"}</div></div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {cuentas[n]?.clave && <button onClick={() => { if (window.confirm(`¿Restablecer la clave de ${n}?`)) setCuentas(prev => ({ ...prev, [n]: { ...prev[n], clave: null } })); }} style={{ minHeight: 40, background: "#DDF0F4", color: C.blue, border: "none", borderRadius: 8, padding: "0 10px", cursor: "pointer", fontWeight: 600 }}>Restablecer clave</button>}
+              <button aria-label={`Eliminar la cuenta de ${n}`} onClick={() => { if (window.confirm(`¿Eliminar la cuenta de Conserjería «${n}»?`)) setCuentas(prev => { const c = { ...prev }; delete c[n]; return c; }); }} style={{ minHeight: 40, background: "#FDF1D9", color: C.dark, border: "none", borderRadius: 8, padding: "0 10px", cursor: "pointer", fontWeight: 600 }}>Eliminar</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 // Administración: espacios del centro, si se reservan, si tienen llave y dónde se guarda
@@ -7610,7 +7688,8 @@ function AppInterna() {
       const cobP = await sGet("coberturas_propias"); if (cobP) setCoberturasPropias(cobP);
       const hor = await sGet("horarios_clase"); if (hor) setHorarios(hor);
       const pg = await sGet("profesores_guardia"); if (pg) setProfesoresGuardia(pg);
-      const cu = await sGet("cuentas"); if (cu) setCuentas(cu);
+      // En la demostración siempre existe la cuenta de Conserjería, aunque se guardaran cuentas antes de que existiera
+      const cu = await sGet("cuentas"); if (cu) setCuentas(MODO_DEMO ? { "Conserjería": CUENTAS_DEMO["Conserjería"], ...cu } : cu);
       const fi = await sGet("firmas_guardia"); if (fi) setFirmas(fi);
       const li = await sGet("listas_guardia"); if (li) setListas(li);
       const avf = await sGet("avisos_familia"); if (avf) setAvisosFamilia(avf);
@@ -9097,7 +9176,7 @@ function AppInterna() {
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                       <div role="group" aria-label={`Cargos de ${p}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", maxWidth: 520 }}>
-                        {CARGOS.map(c => {
+                        {CARGOS.filter(c => c.id !== "conserjeria").map(c => {
                           const ids = cargosIds(cuenta); const on = ids.includes(c.id); const fijo = c.id === "profesor";
                           return (
                             <button key={c.id} disabled={fijo} aria-pressed={on} title={fijo ? "Todo el personal docente es profesor/a" : on ? "Quitar este cargo" : "Añadir este cargo"}
@@ -9124,6 +9203,7 @@ function AppInterna() {
                 );
               })}
             </Card>
+            <PersonalConserjeria cuentas={cuentas} setCuentas={setCuentas} profesores={profesores} C={C} inpStyle={inpStyle} />
           </div>
         )}
 
