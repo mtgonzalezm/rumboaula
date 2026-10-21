@@ -644,7 +644,7 @@ const ICONO_EMOJI = {
   "📊": "dashboard", "🏫": "por-curso", "👤": "por-alumno", "📋": "partes", "👨‍🎓": "partes", "🚻": "banos",
   "🔔": "alertas", "📤": "informe", "📄": "informe", "📈": "estadisticas", "🔄": "guardias", "💬": "mensajes",
   "📢": "profe-ausente", "🗂": "documentos", "📅": "horario", "👥": "grupos", "✍": "tareas", "⚙": "cargo-administracion",
-  "👨‍🏫": "profesorado", "🔑": "llave", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
+  "👨‍🏫": "profesorado", "🔑": "llave", "🖥": "ordenador", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
   "🔍": "buscar", "⏰": "hora", "📂": "tipo-parte", "🎯": "gravedad-campo", "⚖": "tipificacion", "📝": "descripcion",
 };
 const ICONO_TEXTO = [[/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
@@ -3390,6 +3390,20 @@ const AYUDAS = {
   ausencias_jef: { titulo: "Ausencias de profesores", pasos: [
     "Aquí llegan las ausencias que notifica el profesorado. Pulsa una para marcarla como leída.",
     "Si alguien llama por teléfono, pulsa «Registrar una ausencia comunicada por teléfono» y rellénala por él."] },
+  material_sesion: { titulo: "Sesión en el aula", pasos: [
+    "Elige el aula, el grupo, el día y la hora. Si el grupo ya ha estado en esa aula, sale colocado igual que la última vez (su plantilla).",
+    "La primera vez, pulsa «Por orden de lista» o toca cada puesto y elige quién se sienta. El plano se ve desde tu mesa: el puesto 01 queda a tu izquierda.",
+    "Si falta alguien hoy, toca su puesto y elige «Nadie (libre)».",
+    "Si algo está roto, toca el puesto, escríbelo y pulsa «Anotar incidencia»: verás quién lo usó antes y con qué profesor/a.",
+    "Pulsa «Guardar la sesión». Queda constancia de quién se ha sentado en cada puesto y contigo."] },
+  material_historial: { titulo: "Historial de puestos", pasos: [
+    "Elige el aula: el plano muestra la última sesión.",
+    "Toca un puesto para ver todos sus usos: día, hora, alumno/a, grupo y profesor/a, y sus incidencias.",
+    "Escribe el nombre de un alumno/a para ver dónde se ha sentado.",
+    "Abajo, todas las sesiones del aula, con su PDF."] },
+  material_incidencias: { titulo: "Incidencias del material", pasos: [
+    "Lo que se ha roto o falta en cada puesto, con quién se sentaba y quién lo usó antes.",
+    "Jefatura y Administración (Coordinación TIC) pulsan «Marcar resuelta» cuando se arregla."] },
   reservas: { titulo: "Reservas de espacios", pasos: [
     "Elige el espacio: laboratorio, aula de informática, sala de usos múltiples, salón de actos…",
     "Verás la semana con las horas libres y las reservadas. Usa ‹ › para cambiar de semana.",
@@ -6661,6 +6675,377 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
     </div>
   );
 }
+// ─── Material del centro: aulas con puestos (informática, laboratorios…) ───────
+// Aula: {id, nombre, funcion, espacioId, filas, izq, der, prefijo, oculta}
+//   Puestos numerados desde la izquierda del profesor/a hasta la derecha, fila completa (con el pasillo en medio), y así fila a fila.
+// Sesión: {id, aulaId, aula, fecha, hora, grupo, profesor, puestos: {PC01: alumnoId}, ts}
+// Incidencia: {id, aulaId, aula, puesto, texto, fecha, hora, anota, alumno, grupo, anterior: {alumno, grupo, fecha, hora, profesor}, estado, resuelta, ts}
+const FUNCIONES_MATERIAL = ["Informática", "Laboratorio", "Tecnología", "Música", "Otra"];
+const AULAS_MATERIAL_DEFECTO = [
+  { id: "m-info-1", nombre: "Aula de Informática 1", funcion: "Informática", espacioId: "informatica-1", filas: 5, izq: 3, der: 3, prefijo: "PC" },
+  { id: "m-info-2", nombre: "Aula de Informática 2", funcion: "Informática", espacioId: "informatica-2", filas: 4, izq: 4, der: 4, prefijo: "PC" },
+  { id: "m-lab", nombre: "Laboratorio de Ciencias", funcion: "Laboratorio", espacioId: "lab-ciencias", filas: 4, izq: 2, der: 2, prefijo: "Mesa " },
+];
+const listaAulasMaterial = l => (l?.length ? l : AULAS_MATERIAL_DEFECTO);
+const codigoPuesto = (a, n) => `${a.prefijo ?? "PC"}${String(n).padStart(2, "0")}`;
+// Filas del plano: [{izq: [códigos], der: [códigos]}]
+function filasAula(a) {
+  const f = [], porFila = a.izq + a.der;
+  for (let r = 0; r < a.filas; r++) {
+    const n0 = r * porFila;
+    f.push({ izq: Array.from({ length: a.izq }, (_, k) => codigoPuesto(a, n0 + k + 1)), der: Array.from({ length: a.der }, (_, k) => codigoPuesto(a, n0 + a.izq + k + 1)) });
+  }
+  return f;
+}
+const puestosAula = a => filasAula(a).flatMap(f => [...f.izq, ...f.der]);
+const nombreCorto = n => { const p = (n || "").split(" "); return p.length > 1 ? `${p[0]} ${p[1][0]}.` : n; };
+// Última vez que se usó un puesto antes de un momento dado
+function usoAnterior(sesiones, aulaId, puesto, antesDe, alumnos) {
+  const prev = sesiones.filter(x => x.aulaId === aulaId && x.puestos?.[puesto] && `${x.fecha}|${String(HORAS.indexOf(x.hora)).padStart(2, "0")}` < antesDe)
+    .sort((a, b) => `${b.fecha}${String(HORAS.indexOf(b.hora)).padStart(2, "0")}`.localeCompare(`${a.fecha}${String(HORAS.indexOf(a.hora)).padStart(2, "0")}`))[0];
+  if (!prev) return null;
+  const al = alumnos.find(a => a.id === prev.puestos[puesto]);
+  return { alumno: al?.nombre || "?", grupo: prev.grupo, fecha: prev.fecha, hora: prev.hora, profesor: prev.profesor };
+}
+function sesionesMaterialEjemplo(alumnos, profesores, sugerido) {
+  const l = [], hoy = new Date();
+  const grupos = [...new Set(alumnos.map(a => a.curso))].sort();
+  const plan = [["m-info-1", 0, -1, "2ª hora", 4], ["m-info-1", 1, -2, "4ª hora", 9], ["m-info-1", 0, -8, "2ª hora", 4], ["m-info-2", 2, -1, "5ª hora", 12], ["m-info-2", 3, -3, "1ª hora", 15], ["m-lab", 1, -2, "3ª hora", 3]];
+  plan.forEach(([aulaId, gi, dias, hora, pi], k) => {
+    let d = sumarDias(hoy, dias); while (!esLectivo(d)) d = sumarDias(d, -1);
+    const a = AULAS_MATERIAL_DEFECTO.find(x => x.id === aulaId), grupo = grupos[gi % grupos.length];
+    const del = alumnos.filter(x => x.curso === grupo).sort((x, y) => x.nombre.localeCompare(y.nombre, "es"));
+    const pu = {}; puestosAula(a).forEach((c, j) => { if (del[j]) pu[c] = del[j].id; });
+    l.push({ id: 7000 + k, aulaId, aula: a.nombre, fecha: isoLocal(d), hora, grupo, profesor: k === 0 && sugerido ? sugerido : profesores[pi % profesores.length], puestos: pu, ts: new Date(d).toISOString() });
+  });
+  return l;
+}
+function incidenciasMaterialEjemplo(sesiones, alumnos, profesores) {
+  const s = sesiones.find(x => x.aulaId === "m-info-1");
+  if (!s) return [];
+  const al = alumnos.find(a => a.id === s.puestos.PC05);
+  return [{ id: 7500, aulaId: "m-info-1", aula: s.aula, puesto: "PC05", texto: "Falta la tecla Ñ del teclado.", fecha: isoLocal(new Date()), hora: "1ª hora", anota: profesores[6 % profesores.length],
+    alumno: null, grupo: null, anterior: al ? { alumno: al.nombre, grupo: s.grupo, fecha: s.fecha, hora: s.hora, profesor: s.profesor } : null, estado: "abierta", ts: new Date().toISOString() }];
+}
+
+// Plano del aula visto desde la mesa del profesor/a: el puesto 01 queda a su izquierda
+function PlanoAula({ aula, puestos = {}, alumnos = [], elegido, onPuesto, incidencias = [] }) {
+  const porId = id => alumnos.find(a => a.id === id);
+  const conIncidencia = new Set(incidencias.filter(x => x.aulaId === aula.id && x.estado === "abierta").map(x => x.puesto));
+  // Los puestos se encogen en el móvil para que quepa la fila entera
+  const ancho = `clamp(44px, calc((100vw - 110px) / ${aula.izq + aula.der}), 74px)`;
+  const Puesto = ({ c }) => {
+    const al = porId(puestos[c]), sel = elegido === c, inc = conIncidencia.has(c);
+    return (
+      <button data-puesto={c} onClick={() => onPuesto?.(c)} aria-pressed={sel} aria-label={`${c}${al ? `: ${al.nombre}` : ": libre"}${inc ? ", con incidencia" : ""}`}
+        style={{ width: ancho, minHeight: 58, padding: "4px 3px", border: `2px ${al ? "solid" : "dashed"} ${sel ? R.azul : inc ? R.mostaza : al ? R.turquesa : R.turquesaClaro}`, borderRadius: 6,
+          background: sel ? R.azulClaro : inc ? R.crema : al ? "#fff" : R.gris, cursor: onPuesto ? "pointer" : "default", fontFamily: "inherit", color: R.noche, boxShadow: sel ? `0 0 0 2px ${R.azul}` : "none" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: R.petroleo, whiteSpace: "nowrap" }}>{inc ? "⚠️ " : <span className="gd-ico-puesto">🖥 </span>}{c.replace(" ", "")}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{al ? nombreCorto(al.nombre) : "—"}</div>
+      </button>
+    );
+  };
+  return (
+    <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+      <style>{`@media (max-width: 600px) { .gd-ico-puesto { display: none; } }`}</style>
+      <div data-plano={aula.id} style={{ display: "inline-grid", gap: 8, padding: "12px 8px", background: "#fff", border: `1px solid ${R.turquesaClaro}`, minWidth: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{ padding: "6px 18px", background: R.petroleo, color: "#fff", fontWeight: 700, fontSize: 14, borderRadius: 4 }}>Mesa del profesor/a</div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: R.petroleo }}><span>← Izquierda del profesor/a</span><span>Derecha →</span></div>
+        {filasAula(aula).map((f, r) => (
+          <div key={r} style={{ display: "flex", justifyContent: "safe center", gap: 6, alignItems: "stretch" }}>
+            {f.izq.map(c => <Puesto key={c} c={c} />)}
+            <div aria-hidden="true" style={{ width: 22, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: R.turquesa, writingMode: "vertical-rl" }}>{r === 0 ? "pasillo" : ""}</div>
+            {f.der.map(c => <Puesto key={c} c={c} />)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function pdfSesionMaterial(ses, aula, alumnos) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, `Puestos · ${aula.nombre}`, `${parseISO(ses.fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${conTramo(ses.hora)}`);
+  autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", columnStyles: { 0: { fontStyle: "bold", cellWidth: 48, fillColor: [238, 245, 248] } },
+    body: [["Grupo", ses.grupo || "-"], ["Profesor/a", ses.profesor], ["Alumnos/as", String(Object.keys(ses.puestos).length)]].map(r => r.map(sinEmoji)) });
+  y = doc.lastAutoTable.finalY + 6;
+  autoTable(doc, { ...estiloTabla, startY: y, head: [["Puesto", "Alumno/a", "Estado al terminar"]],
+    body: puestosAula(aula).filter(c => ses.puestos[c]).map(c => [c, alumnos.find(a => a.id === ses.puestos[c])?.nombre || "?", ""].map(sinEmoji)),
+    columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 60 } } });
+  firmasPDF(doc, doc.lastAutoTable.finalY + 4, [{ cargo: "El profesor/a", nombre: ses.profesor }]);
+  guardarPDF(doc, `puestos-${aula.id}-${ses.fecha}-${ses.hora.replace(/\W+/g, "")}.pdf`);
+}
+
+// Sesión en el aula: quién se sienta en cada puesto y con qué profesor/a
+function MaterialSesion({ aulas, sesiones = [], setSesiones, incidencias = [], setIncidencias, alumnos = [], cursos = [], profesores = [], usuario, gestion = false }) {
+  const lista = listaAulasMaterial(aulas).filter(a => !a.oculta);
+  const hoy = isoLocal(new Date());
+  const [aulaId, setAulaId] = useState(lista[0]?.id || "");
+  const aula = lista.find(a => a.id === aulaId) || lista[0];
+  const [grupo, setGrupo] = useState("");
+  const [fecha, setFecha] = useState(hoy);
+  const [hora, setHora] = useState(() => horaEnCurso() && horaEnCurso() !== "Recreo" ? horaEnCurso() : HORAS[0]);
+  const [profe, setProfe] = useState(usuario);
+  const [puestos, setPuestos] = useState({});
+  const [origen, setOrigen] = useState(""); // de dónde sale la colocación
+  const [elegido, setElegido] = useState(null);
+  const [texto, setTexto] = useState("");
+  const [hecho, setHecho] = useState("");
+  const delGrupo = alumnos.filter(a => a.curso === grupo).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  const existente = aula && sesiones.find(x => x.aulaId === aula.id && x.fecha === fecha && x.hora === hora);
+  // Al elegir aula y grupo: la sesión ya guardada, o la plantilla (la última vez de ese grupo en esa aula)
+  useEffect(() => {
+    if (!aula || !grupo) { setPuestos({}); setOrigen(""); return; }
+    if (existente && existente.grupo === grupo) { setPuestos(existente.puestos); setOrigen("Sesión ya guardada: puedes cambiarla."); return; }
+    const ult = sesiones.filter(x => x.aulaId === aula.id && x.grupo === grupo).sort((a, b) => `${b.fecha}${HORAS.indexOf(b.hora)}`.localeCompare(`${a.fecha}${HORAS.indexOf(a.hora)}`))[0];
+    if (ult) { const ids = new Set(alumnos.filter(a => a.curso === grupo).map(a => a.id)); setPuestos(Object.fromEntries(Object.entries(ult.puestos).filter(([, id]) => ids.has(id)))); setOrigen(`Plantilla del grupo: misma colocación que el ${fmtD(parseISO(ult.fecha))}.`); }
+    else { setPuestos({}); setOrigen("Primera vez de este grupo en esta aula: coloca al alumnado o pulsa «Por orden de lista»."); }
+    setElegido(null); setHecho("");
+  }, [aula?.id, grupo, fecha, hora]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!aula) return <div><TituloBloque titulo="Sesión en el aula" icono="ordenador" /><p>Administración aún no ha añadido aulas con puestos.</p></div>;
+  const sentado = id => Object.keys(puestos).find(c => puestos[c] === id);
+  const sinSitio = delGrupo.filter(a => !sentado(a.id));
+  const asignar = (c, id) => setPuestos(prev => { const n = Object.fromEntries(Object.entries(prev).filter(([k, v]) => v !== id && k !== c)); if (id) n[c] = id; return n; });
+  const porOrden = () => { const n = {}; puestosAula(aula).forEach((c, j) => { if (delGrupo[j]) n[c] = delGrupo[j].id; }); setPuestos(n); };
+  const guardar = () => {
+    const ses = { id: existente?.id || Date.now(), aulaId: aula.id, aula: aula.nombre, fecha, hora, grupo, profesor: gestion ? profe : usuario, puestos, ts: new Date().toISOString() };
+    setSesiones(prev => [...prev.filter(x => x.id !== ses.id), ses]);
+    setHecho(`Guardado: ${Object.keys(puestos).length} alumnos/as en ${aula.nombre}, ${diaCorto(fecha)} a ${hora}, con ${ses.profesor}.`);
+  };
+  const anotarIncidencia = () => {
+    if (!elegido || !texto.trim()) return;
+    const al = alumnos.find(a => a.id === puestos[elegido]);
+    const ant = usoAnterior(sesiones, aula.id, elegido, `${fecha}|${String(HORAS.indexOf(hora)).padStart(2, "0")}`, alumnos);
+    setIncidencias(prev => [{ id: Date.now(), aulaId: aula.id, aula: aula.nombre, puesto: elegido, texto: texto.trim(), fecha, hora, anota: usuario, alumno: al?.nombre || null, grupo: al ? grupo : null, anterior: ant, estado: "abierta", ts: new Date().toISOString() }, ...prev]);
+    setTexto(""); setHecho(`Incidencia anotada en ${elegido}.`);
+  };
+  const campo = { width: "100%", minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, color: R.noche, background: "#fff", fontFamily: "inherit", boxSizing: "border-box" };
+  const etq = { display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo };
+  const boton = (fondo, letra, borde) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: borde ? `2px solid ${borde}` : "none", background: fondo, color: letra, fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" });
+  const ant = elegido && usoAnterior(sesiones, aula.id, elegido, `${fecha}|${String(HORAS.indexOf(hora)).padStart(2, "0")}`, alumnos);
+  const abiertas = incidencias.filter(x => x.aulaId === aula.id && x.puesto === elegido && x.estado === "abierta");
+  return (
+    <div>
+      <TituloBloque titulo="Sesión en el aula" sub="Dónde se sienta cada alumno/a y con qué profesor/a, para cuidar el material" icono="ordenador" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, margin: "16px 0 12px" }}>
+        <label style={etq}>Aula
+          <select id="gd-mat-aula" value={aula.id} onChange={e => setAulaId(e.target.value)} style={campo}>
+            {lista.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          </select>
+        </label>
+        <label style={etq}>Grupo
+          <select id="gd-mat-grupo" value={grupo} onChange={e => setGrupo(e.target.value)} style={campo}>
+            <option value="">Elige el grupo…</option>
+            {cursos.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+        <label style={etq}>Día
+          <input id="gd-mat-fecha" type="date" value={fecha} max={hoy} onChange={e => setFecha(e.target.value || hoy)} style={campo} />
+        </label>
+        <label style={etq}>Hora
+          <select id="gd-mat-hora" value={hora} onChange={e => setHora(e.target.value)} style={campo}>
+            {HORAS.map(h => <option key={h} value={h}>{conTramo(h)}</option>)}
+          </select>
+        </label>
+        {gestion && (
+          <label style={etq}>Profesor/a
+            <select id="gd-mat-profe" value={profe} onChange={e => setProfe(e.target.value)} style={campo}>
+              <option value="">Elige…</option>
+              {[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+      {existente && existente.grupo !== grupo && <div role="alert" style={{ marginBottom: 10, padding: "8px 12px", borderLeft: `5px solid ${R.mostaza}`, background: R.crema, color: R.noche }}>A esa hora ya hay una sesión guardada en esta aula con {existente.grupo} ({existente.profesor}). Si guardas, se sustituye.</div>}
+      {!grupo ? <div style={{ padding: 16, background: R.azulClaro, color: R.petroleo }}>Elige el grupo para colocar al alumnado. La próxima vez, el grupo saldrá colocado igual.</div> : (<>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: 14, color: R.petroleo, flex: "1 1 260px" }}>{origen}</span>
+          <button onClick={porOrden} style={boton("#fff", R.petroleo, R.azul)}>Por orden de lista</button>
+          <button onClick={() => setPuestos({})} style={boton("#fff", R.petroleo, R.turquesa)}>Vaciar</button>
+        </div>
+        {hecho && <div role="status" style={{ padding: "10px 14px", marginBottom: 10, background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+        <PlanoAula aula={aula} puestos={puestos} alumnos={alumnos} elegido={elegido} onPuesto={c => { setElegido(c === elegido ? null : c); setTexto(""); }} incidencias={incidencias} />
+        {elegido && (
+          <div data-panel-puesto={elegido} style={{ marginTop: 10, padding: 14, background: R.azulClaro, borderLeft: `5px solid ${R.azul}`, display: "grid", gap: 10 }}>
+            <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 16 }}>🖥 Puesto {elegido}</div>
+            <label style={etq}>Quién se sienta aquí
+              <select id="gd-mat-alumno" value={puestos[elegido] || ""} onChange={e => asignar(elegido, e.target.value ? Number(e.target.value) : null)} style={campo}>
+                <option value="">Nadie (libre)</option>
+                {delGrupo.map(a => <option key={a.id} value={a.id}>{a.nombre}{sentado(a.id) && sentado(a.id) !== elegido ? ` (ahora en ${sentado(a.id)})` : ""}</option>)}
+              </select>
+            </label>
+            <div style={{ fontSize: 14, color: R.noche }}>{ant ? <>Último uso antes: <strong>{ant.alumno}</strong> ({ant.grupo}) · {fmtD(parseISO(ant.fecha))} · {ant.hora} · con {ant.profesor}</> : "No consta ningún uso anterior de este puesto."}</div>
+            {abiertas.map(x => <div key={x.id} style={{ fontSize: 14, color: R.noche, background: R.crema, padding: "6px 10px" }}>⚠️ Incidencia abierta: {x.texto} <span style={{ color: R.petroleo }}>({fmtD(parseISO(x.fecha))}, {x.anota})</span></div>)}
+            <label style={etq}>¿Algo roto o que falta en este puesto?
+              <input id="gd-mat-incidencia" value={texto} onChange={e => setTexto(e.target.value)} placeholder="Por ejemplo: el ratón no funciona" style={campo} />
+            </label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={anotarIncidencia} disabled={!texto.trim()} style={{ ...boton(texto.trim() ? R.mostaza : R.gris, R.noche), cursor: texto.trim() ? "pointer" : "not-allowed" }}>⚠️ Anotar incidencia</button>
+              <button onClick={() => setElegido(null)} style={boton("#fff", R.petroleo, R.turquesa)}>Cerrar</button>
+            </div>
+          </div>
+        )}
+        {sinSitio.length > 0 && (
+          <div style={{ marginTop: 10, fontSize: 14, color: R.petroleo }}><strong>Sin puesto ({sinSitio.length}):</strong> {sinSitio.map(a => a.nombre).join(", ")}. Si faltan hoy, déjalos así.</div>
+        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+          <button onClick={guardar} disabled={gestion && !profe} style={{ ...boton(R.azul, "#fff"), minHeight: 52, flex: "1 1 240px", fontSize: 17 }}>Guardar la sesión</button>
+          {existente && <button onClick={() => pdfSesionMaterial(existente, aula, alumnos)} style={boton("#fff", R.petroleo, R.azul)}>Descargar PDF</button>}
+        </div>
+      </>)}
+    </div>
+  );
+}
+
+// Historial: quién se ha sentado en cada puesto, y dónde se ha sentado cada alumno/a
+function MaterialHistorial({ aulas, sesiones = [], incidencias = [], alumnos = [] }) {
+  const lista = listaAulasMaterial(aulas).filter(a => !a.oculta);
+  const [aulaId, setAulaId] = useState(lista[0]?.id || "");
+  const aula = lista.find(a => a.id === aulaId) || lista[0];
+  const [puesto, setPuesto] = useState(null);
+  const [busca, setBusca] = useState("");
+  const orden = (a, b) => `${b.fecha}${String(HORAS.indexOf(b.hora)).padStart(2, "0")}`.localeCompare(`${a.fecha}${String(HORAS.indexOf(a.hora)).padStart(2, "0")}`);
+  if (!aula) return <div><TituloBloque titulo="Historial de puestos" icono="historial" /><p>No hay aulas con puestos.</p></div>;
+  const delAula = sesiones.filter(x => x.aulaId === aula.id).sort(orden);
+  const usos = puesto ? delAula.filter(x => x.puestos?.[puesto]) : [];
+  const alumnoBuscado = busca ? alumnos.filter(a => a.nombre.toLowerCase().includes(busca.toLowerCase())).slice(0, 8) : [];
+  const ultima = delAula[0];
+  const th = { textAlign: "left", padding: "8px 10px", background: R.gris, color: R.noche, fontSize: 14 };
+  const td = { padding: "8px 10px", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 14, color: R.noche };
+  return (
+    <div>
+      <TituloBloque titulo="Historial de puestos" sub="Quién se ha sentado en cada puesto, cuándo y con qué profesor/a" icono="historial" />
+      <label style={{ display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo, margin: "16px 0 10px", maxWidth: 420 }}>Aula
+        <select id="gd-hist-aula" value={aula.id} onChange={e => { setAulaId(e.target.value); setPuesto(null); }} style={{ minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, color: R.noche, background: "#fff", fontFamily: "inherit" }}>
+          {lista.map(a => <option key={a.id} value={a.id}>{a.nombre} · {a.funcion}</option>)}
+        </select>
+      </label>
+      <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>{ultima ? `El plano muestra la última sesión: ${ultima.grupo}, ${diaCorto(ultima.fecha)} a ${ultima.hora}, con ${ultima.profesor}. Toca un puesto para ver todos sus usos.` : "Todavía no hay ninguna sesión en esta aula."}</div>
+      <PlanoAula aula={aula} puestos={ultima?.puestos || {}} alumnos={alumnos} elegido={puesto} onPuesto={c => setPuesto(c === puesto ? null : c)} incidencias={incidencias} />
+      {puesto && (
+        <div data-usos={puesto} style={{ marginTop: 12, background: "#fff", border: `1px solid ${R.turquesaClaro}`, padding: 14 }}>
+          <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 16, marginBottom: 8 }}>🖥 {puesto} · {usos.length} {usos.length === 1 ? "uso" : "usos"}</div>
+          {incidencias.filter(x => x.aulaId === aula.id && x.puesto === puesto).map(x => (
+            <div key={x.id} style={{ fontSize: 14, marginBottom: 6, padding: "6px 10px", background: x.estado === "abierta" ? R.crema : R.gris }}>{x.estado === "abierta" ? "⚠️" : "✓"} {x.texto} · {fmtD(parseISO(x.fecha))} · anotada por {x.anota}{x.estado !== "abierta" ? " · resuelta" : ""}</div>
+          ))}
+          {usos.length === 0 ? <div style={{ color: R.petroleo }}>Nadie lo ha usado todavía.</div> : (
+            <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><th style={th}>Día</th><th style={th}>Hora</th><th style={th}>Alumno/a</th><th style={th}>Grupo</th><th style={th}>Profesor/a</th></tr></thead>
+              <tbody>{usos.map(x => <tr key={x.id}><td style={td}>{fmtD(parseISO(x.fecha))}</td><td style={td}>{x.hora}</td><td style={td}><strong>{alumnos.find(a => a.id === x.puestos[puesto])?.nombre || "?"}</strong></td><td style={td}>{x.grupo}</td><td style={td}>{x.profesor}</td></tr>)}</tbody>
+            </table></div>
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: 16, background: "#fff", border: `1px solid ${R.turquesaClaro}`, padding: 14 }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo }}>¿Dónde se ha sentado un alumno/a?
+          <input id="gd-hist-alumno" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Escribe su nombre…" style={{ minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, fontFamily: "inherit" }} />
+        </label>
+        {alumnoBuscado.map(al => {
+          const donde = sesiones.filter(x => Object.values(x.puestos || {}).includes(al.id)).sort(orden);
+          return (
+            <div key={al.id} data-alumno-usos={al.id} style={{ marginTop: 10 }}>
+              <div style={{ fontWeight: 700, color: R.noche }}>{al.nombre} — {al.curso}</div>
+              {donde.length === 0 ? <div style={{ fontSize: 14, color: R.petroleo }}>Sin sesiones registradas.</div> : donde.map(x => (
+                <div key={x.id} style={{ fontSize: 14, color: R.noche, padding: "4px 0", borderBottom: `1px solid ${R.gris}` }}>
+                  {fmtD(parseISO(x.fecha))} · {x.hora} · <strong>{x.aula} · {Object.keys(x.puestos).find(c => x.puestos[c] === al.id)}</strong> · con {x.profesor}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      {delAula.length > 0 && (
+        <div style={{ marginTop: 16, background: "#fff", border: `1px solid ${R.turquesaClaro}`, padding: 14 }}>
+          <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 16, marginBottom: 8 }}>Sesiones en {aula.nombre}</div>
+          <div style={{ overflowX: "auto" }}><table data-tabla="sesiones-material" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr><th style={th}>Día</th><th style={th}>Hora</th><th style={th}>Grupo</th><th style={th}>Profesor/a</th><th style={th}>Alumnos</th><th style={th}></th></tr></thead>
+            <tbody>{delAula.map(x => <tr key={x.id}><td style={td}>{fmtD(parseISO(x.fecha))}</td><td style={td}>{x.hora}</td><td style={td}>{x.grupo}</td><td style={td}>{x.profesor}</td><td style={td}>{Object.keys(x.puestos).length}</td>
+              <td style={td}><button onClick={() => pdfSesionMaterial(x, aula, alumnos)} style={{ minHeight: 36, padding: "0 10px", border: `1px solid ${R.azul}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer", fontWeight: 700 }}>PDF</button></td></tr>)}</tbody>
+          </table></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Incidencias del material: abiertas y resueltas. Las resuelve Jefatura o Administración (Coordinación TIC)
+function MaterialIncidencias({ incidencias = [], setIncidencias, usuario, puedeResolver = false }) {
+  const [ver, setVer] = useState("abierta");
+  const l = incidencias.filter(x => ver === "todas" || x.estado === ver).sort((a, b) => b.ts.localeCompare(a.ts));
+  const chip = (id, txt) => <button key={id} aria-pressed={ver === id} onClick={() => setVer(id)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: `2px solid ${ver === id ? R.azul : R.turquesaClaro}`, background: ver === id ? R.azulClaro : "#fff", color: R.petroleo, fontWeight: ver === id ? 700 : 400, cursor: "pointer", fontFamily: "inherit", fontSize: 15 }}>{txt}</button>;
+  return (
+    <div>
+      <TituloBloque titulo="Incidencias del material" sub="Lo que se ha roto o falta en cada puesto y quién lo usó" icono="alertas" />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0 10px" }}>
+        {chip("abierta", `Abiertas (${incidencias.filter(x => x.estado === "abierta").length})`)}{chip("resuelta", "Resueltas")}{chip("todas", "Todas")}
+      </div>
+      {l.length === 0 ? <div style={{ padding: 16, background: R.azulClaro, color: R.petroleo }}>No hay incidencias aquí.</div> : l.map(x => (
+        <div key={x.id} data-incidencia={x.id} style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderLeft: `5px solid ${x.estado === "abierta" ? R.mostaza : R.verde}`, padding: 14, marginBottom: 10, display: "flex", gap: 12, justifyContent: "space-between", flexWrap: "wrap" }}>
+          <div style={{ fontSize: 15, color: R.noche, flex: "1 1 280px" }}>
+            <div style={{ fontWeight: 800, color: R.petroleo }}>{x.estado === "abierta" ? "⚠️" : "✓"} {x.aula} · {x.puesto}</div>
+            <div style={{ margin: "4px 0" }}>{x.texto}</div>
+            <div style={{ fontSize: 14, color: R.petroleo }}>Anotada por {x.anota} · {fmtD(parseISO(x.fecha))} · {x.hora}</div>
+            {x.alumno && <div style={{ fontSize: 14 }}>En ese momento se sentaba: <strong>{x.alumno}</strong> ({x.grupo})</div>}
+            {x.anterior && <div style={{ fontSize: 14 }}>Uso anterior: <strong>{x.anterior.alumno}</strong> ({x.anterior.grupo}) · {fmtD(parseISO(x.anterior.fecha))} · {x.anterior.hora} · con {x.anterior.profesor}</div>}
+            {x.estado !== "abierta" && x.resuelta && <div style={{ fontSize: 14, color: R.verdeOscuro }}>Resuelta por {x.resuelta.por} el {fmtD(x.resuelta.ts)}</div>}
+          </div>
+          {puedeResolver && x.estado === "abierta" && (
+            <button onClick={() => setIncidencias(prev => prev.map(y => y.id === x.id ? { ...y, estado: "resuelta", resuelta: { por: usuario, ts: new Date().toISOString() } } : y))}
+              style={{ alignSelf: "center", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 6, background: R.verde, color: R.noche, fontWeight: 700, cursor: "pointer" }}>Marcar resuelta</button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Administración: aulas con puestos, su función y su plano (filas y puestos a cada lado del pasillo)
+function AulasMaterialCentro({ aulas, setAulas, espacios }) {
+  const lista = listaAulasMaterial(aulas);
+  const esp = listaEspacios(espacios).filter(e => !e.oculta);
+  const cambiar = (id, c) => setAulas(lista.map(a => a.id === id ? { ...a, ...c } : a));
+  const [ver, setVer] = useState(null);
+  const campo = { width: "100%", minHeight: 44, padding: "6px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
+  const num = (a, k, txt, max = 12) => (
+    <label style={{ display: "grid", gap: 2, fontSize: 13, color: R.petroleo }}>{txt}
+      <input type="number" min={1} max={max} aria-label={`${txt} de ${a.nombre}`} value={a[k]} onChange={e => cambiar(a.id, { [k]: Math.max(1, Math.min(max, Number(e.target.value) || 1)) })} style={{ ...campo, width: 74 }} />
+    </label>
+  );
+  const anadir = () => setAulas([...lista, { id: `m-${Date.now()}`, nombre: "Aula nueva", funcion: "Informática", espacioId: "", filas: 4, izq: 3, der: 3, prefijo: "PC" }]);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <TituloBloque titulo="Material del centro" sub="Aulas con puestos (informática, laboratorios…): su función y su plano" icono="ordenador" />
+      <div className="gd-material-admin" style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 10 }}>
+        {lista.map(a => (
+          <div key={a.id} data-aula-material={a.id} style={{ background: a.oculta ? R.gris : C.white, padding: 12, display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8 }}>
+              <input aria-label={`Nombre del aula ${a.nombre}`} value={a.nombre} onChange={e => cambiar(a.id, { nombre: e.target.value })} style={campo} />
+              <select aria-label={`Función de ${a.nombre}`} value={a.funcion} onChange={e => cambiar(a.id, { funcion: e.target.value })} style={campo}>{FUNCIONES_MATERIAL.map(f => <option key={f}>{f}</option>)}</select>
+              <select aria-label={`Espacio de ${a.nombre}`} value={a.espacioId || ""} onChange={e => cambiar(a.id, { espacioId: e.target.value })} style={campo}>
+                <option value="">Sin espacio asociado</option>{esp.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              {num(a, "filas", "Filas", 15)}{num(a, "izq", "Puestos a la izquierda del pasillo")}{num(a, "der", "A la derecha")}
+              <label style={{ display: "grid", gap: 2, fontSize: 13, color: R.petroleo }}>Nombre de los puestos
+                <input aria-label={`Prefijo de los puestos de ${a.nombre}`} value={a.prefijo} onChange={e => cambiar(a.id, { prefijo: e.target.value })} style={{ ...campo, width: 110 }} />
+              </label>
+              <span style={{ fontSize: 14, color: R.petroleo, minHeight: 44, display: "inline-flex", alignItems: "center" }}>{a.filas * (a.izq + a.der)} puestos: {codigoPuesto(a, 1)} … {codigoPuesto(a, a.filas * (a.izq + a.der))}</span>
+              <button type="button" onClick={() => setVer(ver === a.id ? null : a.id)} style={{ minHeight: 44, padding: "0 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>{ver === a.id ? "Ocultar plano" : "Ver plano"}</button>
+              <button type="button" onClick={() => cambiar(a.id, { oculta: !a.oculta })} style={{ minHeight: 44, padding: "0 12px", borderRadius: 6, border: `2px solid ${R.azul}`, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>{a.oculta ? "Mostrar" : "Ocultar"}</button>
+            </div>
+            {ver === a.id && <PlanoAula aula={a} />}
+          </div>
+        ))}
+        <button type="button" aria-label="Añadir aula con puestos" onClick={anadir} style={{ justifySelf: "start", minHeight: 44, padding: "0 16px", borderRadius: 6, border: "none", background: R.azul, color: "#fff", fontWeight: 700, cursor: "pointer" }}>+ Añadir aula</button>
+        <div style={{ fontSize: 14, color: R.petroleo }}>Los puestos se numeran desde la izquierda del profesor/a hasta su derecha, la fila completa con el pasillo en medio, y después la fila siguiente.</div>
+      </div>
+    </div>
+  );
+}
+
 // Administración: cuentas de Conserjería, aparte del profesorado. Solo entran a Espacios (llaves y reservas)
 function PersonalConserjeria({ cuentas, setCuentas, profesores = [], C, inpStyle }) {
   const [nuevo, setNuevo] = useState("");
@@ -7565,6 +7950,9 @@ function AppInterna() {
   const [espaciosCentro, setEspaciosCentro] = useState(null); // null = los de ejemplo
   const [prestamosLlaves, setPrestamosLlaves] = useState([]);
   const [reservasEspacios, setReservasEspacios] = useState([]);
+  const [aulasMaterial, setAulasMaterial] = useState(null); // null = las de ejemplo
+  const [sesionesMaterial, setSesionesMaterial] = useState([]);
+  const [incidenciasMaterial, setIncidenciasMaterial] = useState([]);
   fijarZonas(zonasCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
@@ -7700,6 +8088,9 @@ function AppInterna() {
       const es = await sGet("espacios_centro"); if (es) setEspaciosCentro(es);
       const pl = await sGet("llaves_prestamos"); if (pl) setPrestamosLlaves(pl);
       const rs = await sGet("reservas_espacios"); if (rs) setReservasEspacios(rs);
+      const am = await sGet("material_aulas"); if (am) setAulasMaterial(am);
+      const sm = await sGet("material_sesiones"); if (sm) setSesionesMaterial(sm);
+      const im = await sGet("material_incidencias"); if (im) setIncidenciasMaterial(im);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -7744,6 +8135,9 @@ function AppInterna() {
   useEffect(() => { if (!loading && zonasCentro) sSet("zonas_centro", zonasCentro); }, [zonasCentro, loading]);
   useEffect(() => { if (!loading && espaciosCentro) sSet("espacios_centro", espaciosCentro); }, [espaciosCentro, loading]);
   useEffect(() => { if (!loading) sSet("reservas_espacios", reservasEspacios); }, [reservasEspacios, loading]);
+  useEffect(() => { if (!loading && aulasMaterial) sSet("material_aulas", aulasMaterial); }, [aulasMaterial, loading]);
+  useEffect(() => { if (!loading) sSet("material_sesiones", sesionesMaterial); }, [sesionesMaterial, loading]);
+  useEffect(() => { if (!loading) sSet("material_incidencias", incidenciasMaterial); }, [incidenciasMaterial, loading]);
   useEffect(() => { if (!loading) sSet("llaves_prestamos", prestamosLlaves); }, [prestamosLlaves, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
@@ -7806,6 +8200,8 @@ function AppInterna() {
     setFirmas(ej.firmas); setListas([]);
     setPrestamosLlaves(prestamosEjemplo(DEMO_PROFESORES, ej.sugerido));
     setReservasEspacios(reservasEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort(), ej.sugerido));
+    const sm = sesionesMaterialEjemplo(conv.alumnos, DEMO_PROFESORES, ej.sugerido);
+    setSesionesMaterial(sm); setIncidenciasMaterial(incidenciasMaterialEjemplo(sm, conv.alumnos, DEMO_PROFESORES));
     if (ej.sugerido) { setUsuario(ej.sugerido); setUltimoProfe(ej.sugerido); }
     // Sin avisos emergentes: la pantalla de entrada muestra que los datos están cargados
   }
@@ -7998,6 +8394,12 @@ function AppInterna() {
           { id: "reservas", label: "📅 Reservas", color: R.azul },
           { id: "llaves",   label: "🔑 Llaves", color: R.mostaza },
         ]
+      : moduloProfesor === "material"
+      ? [
+          { id: "material_sesion",      label: "🖥 Sesión en el aula", color: R.azul },
+          { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
+          { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+        ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "jefatura"
     ? moduloJefatura === "alumnos"
@@ -8028,25 +8430,35 @@ function AppInterna() {
           { id: "reservas", label: "📅 Reservas", color: R.azul },
           { id: "llaves",   label: "🔑 Llaves", color: R.mostaza },
         ]
+      : moduloJefatura === "material"
+      ? [
+          { id: "material_sesion",      label: "🖥 Sesión en el aula", color: R.azul },
+          { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
+          { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+        ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "conserjeria"
     ? [
         { id: "llaves",   label: "🔑 Llaves", color: R.mostaza },
         { id: "reservas", label: "📅 Reservas", color: R.azul },
       ]
-    : [
-        // Admin no necesita tabs adicionales, solo usa los módulos
-      ];
+    : perfil.id === "admin" && moduloJefatura === "material"
+    ? [
+        { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+        { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
+      ]
+    : []; // El resto de Administración no tiene pestañas, solo módulos
 
   // Módulos de cada perfil (franja turquesa o menú lateral)
-  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : "mensajeria"); };
-  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : "mensajeria"); };
-  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : "admin_profesores"); };
+  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
+  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : id === "material" ? "material_incidencias" : "admin_profesores"); };
   const modulos = perfil.id === "profesor"
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
         { id: "guardias", label: "🔄 Guardias" },
         { id: "espacios", label: "🔑 Espacios" },
+        { id: "material", label: "🖥 Material del centro" },
         { id: "galvangramm", label: "💬 Galvángram" },
       ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
     : perfil.id === "jefatura"
@@ -8054,12 +8466,14 @@ function AppInterna() {
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
         { id: "guardias", label: "🔄 Guardias & Ausencias" },
         { id: "espacios", label: "🔑 Espacios" },
+        { id: "material", label: "🖥 Material del centro" },
         { id: "galvangramm", label: "💬 Galvángram" },
       ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
     : perfil.id === "admin"
     ? [
         { id: "alumnos",  label: "👥 Alumnos" },
         { id: "guardias", label: "👨‍🏫 Profesores" },
+        { id: "material", label: "🖥 Material del centro" },
       ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
     : perfil.id === "conserjeria"
     ? [{ id: "espacios", label: "🔑 Espacios", ir: () => setTab("llaves") }]
@@ -8094,6 +8508,8 @@ function AppInterna() {
       add(sinCubrir, sinCubrir === 1 ? "clase de hoy sin cubrir" : "clases de hoy sin cubrir", "guardias", "coordinacion", "hora-reloj");
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
       add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
+      const incMat = incidenciasMaterial.filter(x => x.estado === "abierta").length;
+      add(incMat, incMat === 1 ? "incidencia del material sin resolver" : "incidencias del material sin resolver", "material", "material_incidencias", "ordenador");
     } else if (perfil.id === "conserjeria") {
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
       add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
@@ -8160,6 +8576,7 @@ function AppInterna() {
           .gd-modulo { font-size: 16px; padding: 0 6px; gap: 6px; }
           .gd-modulos.cuatro { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
           .gd-modulos.cuatro .gd-modulo { min-height: 46px; border-bottom: 1px solid rgba(255,255,255,.7); }
+          .gd-modulos.cuatro .gd-modulo:last-child:nth-child(odd) { grid-column: 1 / -1; }
           .gd-contenido { padding: 16px 16px 32px !important; }
           .gd-rejilla-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
           .gd-bloque { padding: 16px !important; }
@@ -8902,6 +9319,13 @@ function AppInterna() {
         )}
 
         {/* ── Gestión Ausencias (Jefatura) ── */}
+        {tab === "material_sesion" && (
+          <MaterialSesion aulas={aulasMaterial} sesiones={sesionesMaterial} setSesiones={setSesionesMaterial} incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial}
+            alumnos={alumnos} cursos={cursos} profesores={profesores} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} />
+        )}
+        {tab === "material_historial" && <MaterialHistorial aulas={aulasMaterial} sesiones={sesionesMaterial} incidencias={incidenciasMaterial} alumnos={alumnos} />}
+        {tab === "material_incidencias" && <MaterialIncidencias incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial} usuario={usuario} puedeResolver={perfil.id !== "profesor"} />}
+
         {tab === "reservas" && (
           <Reservas espacios={espaciosCentro} reservas={reservasEspacios} setReservas={setReservasEspacios} profesores={profesores} cursos={cursos}
             usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} />
@@ -9126,6 +9550,7 @@ function AppInterna() {
         {tab === "admin_panel" && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
         {tab === "admin_panel" && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
         {tab === "admin_panel" && <EspaciosCentro espacios={espaciosCentro} setEspacios={setEspaciosCentro} />}
+        {tab === "admin_panel" && <AulasMaterialCentro aulas={aulasMaterial} setAulas={setAulasMaterial} espacios={espaciosCentro} />}
         {tab === "admin_panel" && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
