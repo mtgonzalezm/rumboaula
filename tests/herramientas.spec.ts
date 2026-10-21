@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import fs from 'fs'
-import { vigilarErrores, empezar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
+import { vigilarErrores, empezar, entrar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
 
 // ───────────────────────── PROFESORADO: partes ─────────────────────────
 test('Nuevo parte: se crea, aparece en Mis partes y en Jefatura, y el PDF se descarga', async ({ page }) => {
@@ -684,5 +684,41 @@ test('Conducta positiva: el profe la anota, la ve Jefatura en la ficha y se pued
   await pestaña(page, 'Conducta positiva')
   await page.locator(`[data-positiva="${mia.id}"]`).getByRole('button', { name: 'Borrar' }).click()
   expect((await leer(page, 'positivas')).some((x: { id: number }) => x.id === mia.id)).toBe(false)
+  expect(errores).toEqual([])
+})
+
+test('Llaves: el profe se la lleva y la devuelve, Conserjería anota por otro y lo ve todo', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Llaves')
+  const lab = page.locator('[data-llave="lab-ciencias"]')
+  await lab.getByRole('button', { name: 'Me la llevo' }).click()
+  await expect(lab).toContainText('Carmen López')
+  let p = (await leer(page, 'llaves_prestamos')).find((x: { llaveId: string, devolucion: string | null }) => x.llaveId === 'lab-ciencias' && !x.devolucion)
+  expect(p.profesor).toBe('Carmen López')
+  // Solo puede devolver las suyas
+  await expect(page.locator('[data-llave="informatica-1"]').getByRole('button')).toHaveCount(0)
+  await lab.getByRole('button', { name: 'La devuelvo' }).click()
+  await expect(lab).toContainText('Disponible')
+  await expect(page.locator('[data-tabla="movimientos"]')).toContainText('Laboratorio de Ciencias')
+  await salir(page)
+  // Conserjería: anota que se la lleva otro profesor y marca devuelta la que seguía fuera desde ayer
+  await entrar(page, 'Llaves de las aulas')
+  const campana = page.getByRole('button', { name: /^Advertencias/ })
+  await expect(campana.locator('.gd-globo')).toHaveText('1')
+  const salon = page.locator('[data-llave="salon-actos"]')
+  await salon.getByRole('combobox').selectOption('Laura Torres')
+  await salon.getByRole('button', { name: 'Se la lleva' }).click()
+  await expect(salon).toContainText('Laura Torres')
+  p = (await leer(page, 'llaves_prestamos')).find((x: { llaveId: string, devolucion: string | null }) => x.llaveId === 'salon-actos' && !x.devolucion)
+  expect(p.anotaSalida).toBe('Conserjería')
+  await page.locator('[data-llave="tecnologia"]').getByRole('button', { name: 'Devuelta' }).click()
+  await expect(campana.locator('.gd-globo')).toHaveCount(0)
+  await page.getByRole('button', { name: 'En Dirección' }).click()
+  await expect(page.locator('[data-llave]')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Descargar PDF' }).click()
+  await sinFalloEnPantalla(page)
   expect(errores).toEqual([])
 })

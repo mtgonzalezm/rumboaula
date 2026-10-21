@@ -289,8 +289,9 @@ const PERFILES = [
   { id: "profesor", label: "👨‍🏫 Profesor" },
   { id: "jefatura", label: "📊 Jefatura y Dirección" },
   { id: "admin",    label: "⚙️ Administración" },
+  { id: "conserjeria", label: "🔑 Conserjería" },
 ];
-const tabInicial = id => id === "jefatura" ? "dashboard" : id === "admin" ? "admin_panel" : "partes";
+const tabInicial = id => id === "jefatura" ? "dashboard" : id === "admin" ? "admin_panel" : id === "conserjeria" ? "llaves" : "partes";
 
 // ─── Cargos y acceso ─────────────────────────────────────────────────────────
 // Cada profesor tiene un cargo, y el cargo decide a qué perfiles puede entrar.
@@ -301,11 +302,15 @@ const CARGOS = [
   { id: "secretaria", label: "Secretaría",           perfiles: ["profesor", "admin"] },
   { id: "tic",        label: "Coordinación TIC",     perfiles: ["profesor", "admin"] },
   { id: "orientacion", label: "Orientación",         perfiles: ["profesor", "jefatura"] },
+  { id: "conserjeria", label: "Conserjería",         perfiles: ["conserjeria"] },
 ];
 // Cargos de ejemplo (profesorado ficticio); el resto es Profesor/a
-const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] } };
+const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Conserjería": { cargos: ["conserjeria"] } };
 // Una persona puede tener varios cargos a la vez (p. ej. Profesor/a + Coordinación TIC)
-const cargosIds = cuenta => { const l = cuenta?.cargos?.length ? cuenta.cargos : [cuenta?.cargo || "profesor"]; return ["profesor", ...l.filter(c => c !== "profesor" && CARGOS.some(x => x.id === c))]; };
+const cargosIds = cuenta => { const l = cuenta?.cargos?.length ? cuenta.cargos : [cuenta?.cargo || "profesor"];
+  // Conserjería no es profesorado: solo entra a las llaves
+  if (l.length && l.every(c => c === "conserjeria")) return ["conserjeria"];
+  return ["profesor", ...l.filter(c => c !== "profesor" && CARGOS.some(x => x.id === c))]; };
 const cargoDe = (cuentas, nombre) => {
   const ids = cargosIds(cuentas?.[nombre]); const lista = ids.map(id => CARGOS.find(c => c.id === id));
   return { id: ids[ids.length - 1], ids, label: lista.map(c => c.label).join(" · "), perfiles: [...new Set(lista.flatMap(c => c.perfiles))] };
@@ -379,6 +384,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
     { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
     { txt: "📊 Jefatura y Dirección", sub: "Ana Jiménez · convivencia, guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
     { txt: "⚙️ Administración", sub: "Elena Vega · alumnado, profesorado y centro", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
+    { txt: "🔑 Conserjería", sub: "Llaves de las aulas: quién las tiene", accion: () => onEntrar("Conserjería", PERFILES[3]) },
   ];
   const accesoDemo = MODO_DEMO ? (
     <div style={{ display: "grid", gap: 8 }}>
@@ -636,7 +642,7 @@ const ICONO_EMOJI = {
   "📊": "dashboard", "🏫": "por-curso", "👤": "por-alumno", "📋": "partes", "👨‍🎓": "partes", "🚻": "banos",
   "🔔": "alertas", "📤": "informe", "📄": "informe", "📈": "estadisticas", "🔄": "guardias", "💬": "mensajes",
   "📢": "profe-ausente", "🗂": "documentos", "📅": "horario", "👥": "grupos", "✍": "tareas", "⚙": "cargo-administracion",
-  "👨‍🏫": "profesorado", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
+  "👨‍🏫": "profesorado", "🔑": "llave", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
   "🔍": "buscar", "⏰": "hora", "📂": "tipo-parte", "🎯": "gravedad-campo", "⚖": "tipificacion", "📝": "descripcion",
 };
 const ICONO_TEXTO = [[/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
@@ -3382,6 +3388,12 @@ const AYUDAS = {
   ausencias_jef: { titulo: "Ausencias de profesores", pasos: [
     "Aquí llegan las ausencias que notifica el profesorado. Pulsa una para marcarla como leída.",
     "Si alguien llama por teléfono, pulsa «Registrar una ausencia comunicada por teléfono» y rellénala por él."] },
+  llaves: { titulo: "Llaves", pasos: [
+    "La tabla muestra cada aula con llave especial, dónde se guarda (Conserjería o Dirección) y quién la tiene ahora.",
+    "Profesorado: pulsa «Me la llevo» al recogerla y «La devuelvo» al dejarla.",
+    "Conserjería y Jefatura: elige quién se la lleva y pulsa «Se la lleva»; al devolverla, «Devuelta».",
+    "Abajo, quién coge y quién deja cada llave, con la hora. Elige otro día para ver su registro o descarga el PDF.",
+    "Si una llave sigue fuera al acabar la jornada, sale como «Sin devolver» y avisa en la campana."] },
   resumen_cob: { titulo: "Coberturas y ausencias", pasos: [
     "Elige un mes o «Todo el curso».",
     "Arriba, el reparto de coberturas: cuántas clases ha cubierto cada profesor/a y cuántas se asignó él mismo. Ayuda a que el reparto sea equilibrado.",
@@ -6265,6 +6277,209 @@ function ZonasCentro({ zonas, setZonas }) {
   );
 }
 
+// ─── Llaves de las aulas especiales ──────────────────────────────────────────
+// Llave: {id, nombre, edificio, custodia: "conserjeria" | "direccion", oculta}
+// Préstamo: {id, llaveId, llave, profesor, salida, devolucion, anotaSalida, anotaDevolucion}
+const LLAVES_POR_DEFECTO = [
+  { id: "lab-ciencias", nombre: "Laboratorio de Ciencias", edificio: "A", custodia: "conserjeria" },
+  { id: "informatica-1", nombre: "Aula de Informática 1", edificio: "A", custodia: "conserjeria" },
+  { id: "informatica-2", nombre: "Aula de Informática 2", edificio: "B", custodia: "conserjeria" },
+  { id: "musica", nombre: "Aula de Música", edificio: "B", custodia: "conserjeria" },
+  { id: "tecnologia", nombre: "Taller de Tecnología", edificio: "B", custodia: "conserjeria" },
+  { id: "plastica", nombre: "Aula de Plástica", edificio: "B", custodia: "conserjeria" },
+  { id: "gimnasio", nombre: "Gimnasio y material deportivo", edificio: "", custodia: "conserjeria" },
+  { id: "salon-actos", nombre: "Salón de actos", edificio: "A", custodia: "conserjeria" },
+  { id: "biblioteca", nombre: "Biblioteca", edificio: "A", custodia: "conserjeria" },
+  { id: "archivo", nombre: "Archivo", edificio: "A", custodia: "direccion" },
+  { id: "servidores", nombre: "Sala de servidores", edificio: "A", custodia: "direccion" },
+  { id: "examenes", nombre: "Armario de exámenes", edificio: "A", custodia: "direccion" },
+];
+const CUSTODIA = { conserjeria: "Conserjería", direccion: "Dirección" };
+const listaLlaves = llaves => (llaves?.length ? llaves : LLAVES_POR_DEFECTO);
+// Sin devolver: se la llevó otro día, o ya ha terminado la última hora de hoy
+const llaveSinDevolver = (p, ahora = new Date()) => !p.devolucion && (isoLocal(p.salida) < isoLocal(ahora) || horaTerminada(isoLocal(ahora), HORAS[HORAS.length - 1], ahora));
+function prestamosEjemplo(profesores, sugerido) {
+  const hoy = new Date(), ayer = sumarDias(hoy, -1);
+  while (!esLectivo(ayer)) ayer.setDate(ayer.getDate() - 1);
+  const a = (d, h, m) => { const x = new Date(d); x.setHours(h, m, 0, 0); return x.toISOString(); };
+  const p = i => profesores[i % profesores.length];
+  const l = [
+    { llaveId: "lab-ciencias", profesor: p(5), salida: a(hoy, 8, 22), devolucion: a(hoy, 10, 25) },
+    { llaveId: "informatica-1", profesor: p(9), salida: a(hoy, 9, 20), devolucion: null },
+    { llaveId: "gimnasio", profesor: p(13), salida: a(hoy, 8, 25), devolucion: null },
+    { llaveId: "musica", profesor: p(2), salida: a(hoy, 11, 40), devolucion: null, anotaSalida: "Conserjería" },
+    { llaveId: "archivo", profesor: p(1), salida: a(hoy, 10, 5), devolucion: a(hoy, 10, 30) },
+    { llaveId: "tecnologia", profesor: p(17), salida: a(ayer, 13, 30), devolucion: null },
+    { llaveId: "salon-actos", profesor: p(7), salida: a(ayer, 9, 15), devolucion: a(ayer, 11, 20) },
+  ];
+  if (sugerido) l.push({ llaveId: "informatica-2", profesor: sugerido, salida: a(hoy, 8, 28), devolucion: null });
+  return l.filter(x => x.profesor).map(x => ({ ...x, devolucion: x.devolucion && new Date(x.devolucion) <= hoy ? x.devolucion : null })).map((x, i) => ({ id: 8000 + i, llave: LLAVES_POR_DEFECTO.find(k => k.id === x.llaveId).nombre, anotaSalida: x.anotaSalida || x.profesor, anotaDevolucion: x.devolucion ? (x.anotaSalida || x.profesor) : null, ...x }))
+    .filter(x => new Date(x.salida) <= hoy);
+}
+function pdfLlaves(fecha, llaves, prestamos) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, "Registro de llaves", parseISO(fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  const fuera = id => prestamos.find(p => p.llaveId === id && !p.devolucion);
+  autoTable(doc, { ...estiloTabla, startY: y, head: [["Aula / llave", "Se guarda en", "Estado ahora"]],
+    body: llaves.map(k => { const f = fuera(k.id); return [k.nombre, CUSTODIA[k.custodia], f ? `La tiene ${f.profesor} desde ${fmtD(f.salida)} ${horaCorta(f.salida)}` : "Disponible"].map(sinEmoji); }) });
+  y = doc.lastAutoTable.finalY + 10;
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(...OSCURO); doc.text("Movimientos del día", 14, y);
+  const movs = movimientosLlaves(prestamos, fecha);
+  autoTable(doc, { ...estiloTabla, startY: y + 3, head: [["Hora", "Aula / llave", "Profesor/a", "Movimiento", "Anotado por"]],
+    body: movs.length ? movs.map(m => [horaCorta(m.ts), m.llave, m.profesor, m.tipo === "salida" ? "Se la lleva" : "La deja", m.anota || "-"].map(sinEmoji)) : [["-", "Sin movimientos", "", "", ""]] });
+  guardarPDF(doc, `llaves-${fecha}.pdf`);
+}
+// Cada préstamo da dos movimientos: cuando se la lleva y cuando la deja
+const movimientosLlaves = (prestamos, fecha) => prestamos.flatMap(p => [
+  { id: `${p.id}-s`, ts: p.salida, tipo: "salida", llave: p.llave, profesor: p.profesor, anota: p.anotaSalida },
+  ...(p.devolucion ? [{ id: `${p.id}-d`, ts: p.devolucion, tipo: "devolucion", llave: p.llave, profesor: p.profesor, anota: p.anotaDevolucion }] : []),
+]).filter(m => isoLocal(m.ts) === fecha).sort((a, b) => b.ts.localeCompare(a.ts));
+
+// gestion: Conserjería y Jefatura anotan por cualquier profesor/a; el profesorado, solo por sí mismo
+function Llaves({ llaves, prestamos = [], setPrestamos, profesores = [], usuario, gestion = false }) {
+  const lista = listaLlaves(llaves).filter(k => !k.oculta);
+  const hoy = isoLocal(new Date());
+  const [fecha, setFecha] = useState(hoy);
+  const [donde, setDonde] = useState(""); // "" = todas
+  const [quien, setQuien] = useState({}); // llaveId -> profesor elegido (gestión)
+  const fuera = id => prestamos.find(p => p.llaveId === id && !p.devolucion);
+  const sacar = (k, profesor) => {
+    if (!profesor || fuera(k.id)) return;
+    const ahora = new Date().toISOString();
+    setPrestamos(prev => [{ id: Date.now(), llaveId: k.id, llave: k.nombre, profesor, salida: ahora, devolucion: null, anotaSalida: usuario, anotaDevolucion: null }, ...prev]);
+    setQuien(q => ({ ...q, [k.id]: "" }));
+  };
+  const devolver = p => setPrestamos(prev => prev.map(x => x.id === p.id ? { ...x, devolucion: new Date().toISOString(), anotaDevolucion: usuario } : x));
+  const visibles = lista.filter(k => !donde || k.custodia === donde);
+  const nFuera = lista.filter(k => fuera(k.id)).length;
+  const nSinDev = prestamos.filter(p => llaveSinDevolver(p) && lista.some(k => k.id === p.llaveId)).length;
+  const movs = movimientosLlaves(prestamos, fecha);
+  const th = { textAlign: "left", padding: "10px 12px", background: R.azul, color: "#fff", fontSize: 15, whiteSpace: "nowrap" };
+  const td = { padding: "10px 12px", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.noche, verticalAlign: "middle" };
+  const boton = (fondo, letra, borde) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: borde ? `2px solid ${borde}` : "none", background: fondo, color: letra, fontWeight: 700, fontSize: 15, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" });
+  const chip = (id, txt) => <button key={id || "todas"} aria-pressed={donde === id} onClick={() => setDonde(id)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: `2px solid ${donde === id ? R.azul : R.turquesaClaro}`, background: donde === id ? R.azulClaro : "#fff", color: R.petroleo, fontWeight: donde === id ? 700 : 400, cursor: "pointer", fontFamily: "inherit", fontSize: 15 }}>{txt}</button>;
+  return (
+    <div>
+      <TituloBloque titulo="Llaves" sub="Quién tiene cada llave de las aulas y quién la coge o la deja" icono="llave" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: 10, margin: "16px 0 14px" }}>
+        {[["Fuera ahora", nFuera, R.mostaza], ["Disponibles", lista.length - nFuera, R.verde], ["Sin devolver", nSinDev, R.noche]].map(([t, v, col]) => (
+          <div key={t} data-total={t} style={{ background: C.white, padding: 12, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderTop: `4px solid ${col}` }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: R.noche }}>{v}</div>
+            <div style={{ fontSize: 14, color: R.petroleo }}>{t}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>{chip("", "Todas")}{chip("conserjeria", "En Conserjería")}{chip("direccion", "En Dirección")}</div>
+      <style>{`@media (max-width: 640px) {
+        .gd-tabla-llaves { min-width: 0 !important; }
+        .gd-tabla-llaves thead { display: none; }
+        .gd-tabla-llaves tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n c" "q q" "a a"; gap: 6px 10px; padding: 12px; border-bottom: 1px solid ${R.turquesaClaro}; }
+        .gd-tabla-llaves td { border: none !important; padding: 0 !important; }
+        .gd-tabla-llaves .gd-ll-n { grid-area: n; } .gd-tabla-llaves .gd-ll-c { grid-area: c; font-size: 13px !important; text-align: right; }
+        .gd-tabla-llaves .gd-ll-q { grid-area: q; } .gd-tabla-llaves .gd-ll-a { grid-area: a; }
+        .gd-tabla-llaves .gd-ll-a:empty { display: none; }
+      }`}</style>
+      <div style={{ overflowX: "auto", background: C.white, border: `1px solid ${R.turquesaClaro}`, marginBottom: 20 }}>
+        <table data-tabla="llaves" className="gd-tabla-llaves" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+          <thead><tr><th style={th}>Aula / llave</th><th style={th}>Se guarda en</th><th style={th}>Quién la tiene</th><th style={{ ...th, textAlign: "right" }}>Anotar</th></tr></thead>
+          <tbody>{visibles.map(k => {
+            const f = fuera(k.id), tarde = f && llaveSinDevolver(f), mia = f && f.profesor === usuario;
+            return (
+              <tr key={k.id} data-llave={k.id} style={{ background: f ? (tarde ? R.crema : "#FFFBF0") : C.white }}>
+                <td className="gd-ll-n" style={td}><strong>{k.nombre}</strong>{k.edificio ? <div style={{ fontSize: 13, color: R.petroleo }}>Edificio {k.edificio}</div> : null}</td>
+                <td className="gd-ll-c" style={td}>{CUSTODIA[k.custodia]}</td>
+                <td className="gd-ll-q" style={td}>{f
+                  ? <span><strong>{f.profesor}</strong><div style={{ fontSize: 13, color: tarde ? R.noche : R.petroleo, fontWeight: tarde ? 700 : 400 }}>{tarde ? "⚠️ Sin devolver · " : ""}desde {isoLocal(f.salida) === hoy ? `las ${horaCorta(f.salida)}` : `el ${fmtD(f.salida)} a las ${horaCorta(f.salida)}`}</div></span>
+                  : <span style={{ color: R.verdeOscuro, fontWeight: 700 }}>✓ Disponible</span>}</td>
+                <td className="gd-ll-a" style={{ ...td, textAlign: "right" }}>
+                  {f ? ((gestion || mia) && <button onClick={() => devolver(f)} style={boton(R.verde, R.noche)}>{mia && !gestion ? "La devuelvo" : "Devuelta"}</button>)
+                    : gestion ? (
+                      <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        <select aria-label={`Quién se lleva la llave de ${k.nombre}`} value={quien[k.id] || ""} onChange={e => setQuien(q => ({ ...q, [k.id]: e.target.value }))}
+                          style={{ minHeight: 44, maxWidth: 200, padding: "0 8px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 15, color: R.noche, background: "#fff", fontFamily: "inherit" }}>
+                          <option value="">¿Quién se la lleva?</option>
+                          {[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <button onClick={() => sacar(k, quien[k.id])} disabled={!quien[k.id]} style={{ ...boton(quien[k.id] ? R.azul : R.gris, quien[k.id] ? "#fff" : R.petroleo), cursor: quien[k.id] ? "pointer" : "not-allowed" }}>Se la lleva</button>
+                      </span>
+                    ) : <button onClick={() => sacar(k, usuario)} disabled={!usuario} style={boton(R.azul, "#fff")}>Me la llevo</button>}
+                </td>
+              </tr>
+            );
+          })}</tbody>
+        </table>
+      </div>
+      <div style={{ background: C.white, border: `1px solid ${R.turquesaClaro}`, padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+          <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 17 }}><Ic n="horario" tam={24} />Quién coge y quién deja</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <label style={{ display: "grid", gap: 2, fontSize: 14, color: R.petroleo, fontWeight: 700 }}>Día
+              <input id="gd-llaves-fecha" type="date" value={fecha} max={hoy} onChange={e => setFecha(e.target.value || hoy)} style={{ minHeight: 44, padding: "0 8px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 15, color: R.noche, fontFamily: "inherit" }} />
+            </label>
+            <button onClick={() => pdfLlaves(fecha, lista, prestamos)} style={boton(R.azul, "#fff")}>Descargar PDF</button>
+          </div>
+        </div>
+        {movs.length === 0 ? <div style={{ padding: 14, textAlign: "center", color: R.petroleo }}>Ningún movimiento este día.</div> : (
+          <div style={{ overflowX: "auto" }}>
+            <table data-tabla="movimientos" style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><th style={{ ...th, background: R.gris, color: R.noche }}>Hora</th><th style={{ ...th, background: R.gris, color: R.noche }}>Aula / llave</th><th style={{ ...th, background: R.gris, color: R.noche }}>Profesor/a</th><th style={{ ...th, background: R.gris, color: R.noche }}>Movimiento</th></tr></thead>
+              <tbody>{movs.map(m => (
+                <tr key={m.id}>
+                  <td style={td}>{horaCorta(m.ts)}</td><td style={td}>{m.llave}</td>
+                  <td style={td}>{m.profesor}{m.anota && m.anota !== m.profesor ? <div style={{ fontSize: 13, color: R.petroleo }}>Anotado por {m.anota}</div> : null}</td>
+                  <td style={td}>{m.tipo === "salida" ? <span style={{ background: R.crema, padding: "2px 10px", fontWeight: 700 }}>Se la lleva</span> : <span style={{ background: R.verdeCaminoClaro, color: R.verdeOscuro, padding: "2px 10px", fontWeight: 700 }}>La deja</span>}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+// Administración: qué llaves hay y dónde se guardan
+function LlavesCentro({ llaves, setLlaves }) {
+  const lista = listaLlaves(llaves);
+  const [nueva, setNueva] = useState({ nombre: "", edificio: "", custodia: "conserjeria" });
+  const cambiar = (id, cambios) => setLlaves(lista.map(k => k.id === id ? { ...k, ...cambios } : k));
+  const campo = { width: "100%", minHeight: 44, padding: "8px 12px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box" };
+  const boton = { minHeight: 44, padding: "0 14px", borderRadius: 6, border: `2px solid ${R.azul}`, background: C.white, color: R.petroleo, fontSize: 15, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
+  const anadir = () => {
+    const nombre = nueva.nombre.trim(); if (!nombre) return;
+    setLlaves([...lista, { id: `k-${Date.now()}`, nombre, edificio: nueva.edificio.trim(), custodia: nueva.custodia }]);
+    setNueva({ nombre: "", edificio: "", custodia: nueva.custodia });
+  };
+  const fila = { display: "grid", gridTemplateColumns: "minmax(0,1fr) 90px 150px auto", gap: 8, alignItems: "center" };
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <TituloBloque titulo="Llaves de las aulas" sub="Aulas con llave especial y dónde se guarda: en Conserjería o en Dirección" icono="llave" />
+      <div className="gd-llaves-admin" style={{ background: R.azulClaro, padding: 16, display: "grid", gap: 1 }}>
+        <style>{`@media (max-width: 600px) { .gd-llaves-admin .gd-fila-llave { grid-template-columns: 1fr 1fr !important; } .gd-llaves-admin .gd-fila-llave > :first-child { grid-column: 1 / -1; } }`}</style>
+        {lista.map(k => (
+          <div key={k.id} data-llave-admin={k.id} className="gd-fila-llave" style={{ ...fila, background: k.oculta ? R.gris : C.white, padding: "10px 12px" }}>
+            <input aria-label={`Nombre de la llave ${k.nombre}`} value={k.nombre} onChange={e => cambiar(k.id, { nombre: e.target.value })} style={{ ...campo, opacity: k.oculta ? .7 : 1 }} />
+            <input aria-label={`Edificio de ${k.nombre}`} value={k.edificio || ""} placeholder="Edif." onChange={e => cambiar(k.id, { edificio: e.target.value })} style={campo} />
+            <select aria-label={`Dónde se guarda ${k.nombre}`} value={k.custodia} onChange={e => cambiar(k.id, { custodia: e.target.value })} style={campo}>
+              {Object.entries(CUSTODIA).map(([id, t]) => <option key={id} value={id}>{t}</option>)}
+            </select>
+            <button type="button" onClick={() => cambiar(k.id, { oculta: !k.oculta })} style={boton}>{k.oculta ? "Mostrar" : "Ocultar"}</button>
+          </div>
+        ))}
+        <div className="gd-fila-llave" style={{ ...fila, background: C.white, padding: "10px 12px", marginTop: 10 }}>
+          <input id="gd-llave-nueva" aria-label="Nombre de la llave nueva" value={nueva.nombre} onChange={e => setNueva(v => ({ ...v, nombre: e.target.value }))} placeholder="Añadir: por ejemplo, Aula de Robótica" style={campo} />
+          <input aria-label="Edificio de la llave nueva" value={nueva.edificio} placeholder="Edif." onChange={e => setNueva(v => ({ ...v, edificio: e.target.value }))} style={campo} />
+          <select aria-label="Dónde se guarda la llave nueva" value={nueva.custodia} onChange={e => setNueva(v => ({ ...v, custodia: e.target.value }))} style={campo}>
+            {Object.entries(CUSTODIA).map(([id, t]) => <option key={id} value={id}>{t}</option>)}
+          </select>
+          <button type="button" aria-label="Añadir llave" onClick={anadir} disabled={!nueva.nombre.trim()} style={{ ...boton, background: nueva.nombre.trim() ? R.azul : R.gris, color: nueva.nombre.trim() ? "#fff" : R.petroleo, border: "none" }}>Añadir</button>
+        </div>
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>Las llaves no se borran: «Ocultar» la quita de la lista sin perder lo ya anotado.</div>
+      </div>
+    </div>
+  );
+}
+
 // Horario del centro (Administración): horas de inicio y fin de cada franja
 function HorarioCentro({ horario, setHorario }) {
   const campo = { minHeight: 48, padding: "8px 10px", borderRadius: 6, border: `3px solid ${R.turquesa}`, fontSize: 16, fontFamily: "inherit", color: R.noche, background: C.white, boxSizing: "border-box", width: "100%" };
@@ -7080,6 +7295,8 @@ function AppInterna() {
   const [horarioCentro, setHorarioCentro] = useState({});
   fijarHorario(horarioCentro);
   const [zonasCentro, setZonasCentro] = useState(null);
+  const [llavesCentro, setLlavesCentro] = useState(null); // null = las de ejemplo
+  const [prestamosLlaves, setPrestamosLlaves] = useState([]);
   fijarZonas(zonasCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
@@ -7211,6 +7428,8 @@ function AppInterna() {
       const dc = await sGet("datos_centro"); if (dc) setDatosCentro(dc);
       const hc = await sGet("horario_centro"); if (hc) setHorarioCentro(hc);
       const zc = await sGet("zonas_centro"); if (zc) setZonasCentro(zc);
+      const ll = await sGet("llaves_centro"); if (ll) setLlavesCentro(ll);
+      const pl = await sGet("llaves_prestamos"); if (pl) setPrestamosLlaves(pl);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -7218,7 +7437,7 @@ function AppInterna() {
           perfilesPermitidos(cuentasActuales, ses.usuario).some(p => p.id === ses.perfil.id)) {
         setUsuario(ses.usuario); setPerfil(ses.perfil);
         if ((pr || DEMO_PROFESORES).includes(ses.usuario)) setFProfesor(ses.usuario);
-        setTab(ses.perfil.id === "jefatura" ? "dashboard" : ses.perfil.id === "admin" ? "admin_panel" : "partes");
+        setTab(tabInicial(ses.perfil.id));
       }
       setLoading(false);
     }
@@ -7253,6 +7472,8 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("datos_centro", datosCentro); }, [datosCentro, loading]);
   useEffect(() => { if (!loading) sSet("horario_centro", horarioCentro); }, [horarioCentro, loading]);
   useEffect(() => { if (!loading && zonasCentro) sSet("zonas_centro", zonasCentro); }, [zonasCentro, loading]);
+  useEffect(() => { if (!loading && llavesCentro) sSet("llaves_centro", llavesCentro); }, [llavesCentro, loading]);
+  useEffect(() => { if (!loading) sSet("llaves_prestamos", prestamosLlaves); }, [prestamosLlaves, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
   useEffect(() => { if (identidadFija) { setFProfesor(usuario); setAusProfesor(usuario); } }, [usuario, identidadFija]);
@@ -7312,6 +7533,7 @@ function AppInterna() {
     setCuadrante(ej.cuadrante); setApoyosGuardia(ej.apoyos); setSustitutosGuardia(ej.sustitutos); setAusencias(ej.ausencias); setCoberturas(ej.coberturas); setCoberturasPropias(ej.propias);
     setHorarios(horarioEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort()));
     setFirmas(ej.firmas); setListas([]);
+    setPrestamosLlaves(prestamosEjemplo(DEMO_PROFESORES, ej.sugerido));
     if (ej.sugerido) { setUsuario(ej.sugerido); setUltimoProfe(ej.sugerido); }
     // Sin avisos emergentes: la pantalla de entrada muestra que los datos están cargados
   }
@@ -7498,6 +7720,7 @@ function AppInterna() {
           { id: "notif_ausencia", label: "📢 Notificar Ausencia", color: "#ec4899" },
           { id: "guardias_ver",   label: "📄 Ver Guardias", color: "#63CBA1" },
           { id: "mis_coberturas", label: "📋 Mis Coberturas", color: R.morado },
+          { id: "llaves",         label: "🔑 Llaves", color: R.mostaza },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "jefatura"
@@ -7522,6 +7745,7 @@ function AppInterna() {
           { id: "ausencias_jef", label: "📢 Ausencias de Profesores", color: "#63CBA1" },
           { id: "firmas_jef",    label: "✍️ Firmas y listas", color: "#06b6d4" },
           { id: "resumen_cob",   label: "📊 Coberturas y ausencias", color: R.morado },
+          { id: "llaves",        label: "🔑 Llaves", color: R.mostaza },
           { id: "estadisticas",  label: "📈 Estadísticas", color: "#2B647E" },
         ]
       : [] // Galvángram no tiene tabs adicionales
@@ -7550,8 +7774,10 @@ function AppInterna() {
         { id: "alumnos",  label: "👥 Alumnos" },
         { id: "guardias", label: "👨‍🏫 Profesores" },
       ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
+    : perfil.id === "conserjeria"
+    ? [{ id: "llaves", label: "🔑 Llaves", ir: () => setTab("llaves") }]
     : [];
-  const moduloActivo = perfil.id === "profesor" ? moduloProfesor : moduloJefatura;
+  const moduloActivo = perfil.id === "profesor" ? moduloProfesor : perfil.id === "conserjeria" ? "llaves" : moduloJefatura;
 
   // Advertencias pendientes: salen en el globito de la cabecera, de cada módulo y de cada pestaña
   const advertencias = (() => {
@@ -7567,6 +7793,8 @@ function AppInterna() {
       add(sinFirmar, sinFirmar === 1 ? "guardia de hoy sin firmar" : "guardias de hoy sin firmar", "guardias", "mi_guardia", "firmar");
       const porCubrir = Object.entries(coberturas).filter(([k, p]) => p === yo && k.startsWith(`${hoy}|`) && !horaEmpezada(hoy, k.split("|")[1])).length;
       add(porCubrir, porCubrir === 1 ? "clase que cubres hoy" : "clases que cubres hoy", "guardias", "mis_coberturas", "profe-ausente");
+      const misLlaves = prestamosLlaves.filter(p => p.profesor === yo && llaveSinDevolver(p)).length;
+      add(misLlaves, misLlaves === 1 ? "llave sin devolver" : "llaves sin devolver", "guardias", "llaves", "llave");
     } else if (perfil.id === "jefatura") {
       add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Galvángram" : "mensajes sin leer en Galvángram", "galvangramm", "mensajeria", "mensaje-sin-leer");
       add(alertasNoLeidas, alertasNoLeidas === 1 ? "alerta de convivencia sin leer" : "alertas de convivencia sin leer", "alumnos", "alertas", "alertas");
@@ -7575,6 +7803,11 @@ function AppInterna() {
       add(ausSinLeer, ausSinLeer === 1 ? "ausencia de profesorado sin revisar" : "ausencias de profesorado sin revisar", "guardias", "ausencias_jef", "profe-ausente");
       const sinCubrir = ausencias.filter(a => isoLocal(a.fecha) === hoy).reduce((n, a) => n + a.horas.filter(h => h !== "Recreo" && !horaTerminada(hoy, h) && !coberturas[claveCob(hoy, h, a.id)]).length, 0);
       add(sinCubrir, sinCubrir === 1 ? "clase de hoy sin cubrir" : "clases de hoy sin cubrir", "guardias", "coordinacion", "hora-reloj");
+      const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
+      add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "guardias", "llaves", "llave");
+    } else if (perfil.id === "conserjeria") {
+      const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
+      add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "llaves", "llaves", "llave");
     }
     return lista;
   })();
@@ -7582,6 +7815,7 @@ function AppInterna() {
   const globoTab = id => advertencias.filter(a => a.modulo === moduloActivo && a.tab === id).reduce((n, a) => n + a.n, 0);
   const irAdvertencia = a => {
     if (a.modulo === "galvangramm") { abrirMensajes(); return; }
+    if (perfil.id === "conserjeria") { setTab(a.tab); return; }
     if (perfil.id === "profesor") setModuloProfesor(a.modulo); else setModuloJefatura(a.modulo);
     setTab(a.tab);
   };
@@ -7659,7 +7893,7 @@ function AppInterna() {
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
           {perfil.id !== "admin" && <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />}
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
-            setTab(perfil.id === "jefatura" ? "dashboard" : perfil.id === "admin" ? "admin_panel" : "partes");
+            setTab(tabInicial(perfil.id));
             if (perfil.id === "profesor") setModuloProfesor("alumnos");
             if (perfil.id === "jefatura") setModuloJefatura("alumnos");
           }}><Icono nombre="inicio" tam={52} /></button>
@@ -8377,6 +8611,11 @@ function AppInterna() {
         )}
 
         {/* ── Gestión Ausencias (Jefatura) ── */}
+        {tab === "llaves" && (
+          <Llaves llaves={llavesCentro} prestamos={prestamosLlaves} setPrestamos={setPrestamosLlaves} profesores={profesores}
+            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} />
+        )}
+
         {tab === "resumen_cob" && (
           <ResumenGuardias profesores={profesores} ausencias={ausencias} coberturas={coberturas} propias={coberturasPropias} C={C} />
         )}
@@ -8590,6 +8829,7 @@ function AppInterna() {
         {tab === "admin_panel" && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
         {tab === "admin_panel" && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
         {tab === "admin_panel" && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
+        {tab === "admin_panel" && <LlavesCentro llaves={llavesCentro} setLlaves={setLlavesCentro} />}
         {tab === "admin_panel" && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
