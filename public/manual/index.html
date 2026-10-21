@@ -119,6 +119,11 @@ th { font-weight: 700; color: #fff; background: var(--azul); }
 td.si { color: var(--azul); font-weight: 700; }
 td.no { color: #6B7579; }
 
+/* Para el TIC */
+.correo-tic { background: var(--azul-claro); border: 1px dashed var(--azul); padding: 14px; white-space: pre-wrap; font: 15.5px/1.55 inherit; font-family: inherit; margin: 0 0 10px; overflow-x: auto; }
+.boton-descarga { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; background: var(--azul); color: #fff !important; font-weight: 700; text-decoration: none; border-radius: 6px; }
+.boton-descarga:focus-visible { outline: 3px solid var(--mostaza); outline-offset: 2px; }
+
 /* Instalación */
 .disp { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 12px; margin-top: 8px; }
 .disp > div { background: var(--azul-claro); padding: 14px; }
@@ -167,6 +172,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#jefatura">Jefatura</a>
     <a href="#administracion">Administración</a>
     <a href="#implantacion">Implantación</a>
+    <a href="#tic">Para el TIC</a>
     <a href="#ayuda">Ayuda y datos</a>
   </div>
 </nav>
@@ -884,17 +890,17 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Qué haría falta para pasar de la demostración a usar RumboAula de verdad en un instituto, con un ordenador del centro haciendo de servidor. Es una guía orientativa: los pasos legales hay que confirmarlos con la Delegación de Protección de Datos de la Consejería de Educación.</p>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/estado-general.svg" alt="">Dónde estamos ahora <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/estado-general.svg" alt="">Dónde estamos ahora</h3>
       <p>La versión actual es una <b>demostración completa</b>: todas las funciones se pueden probar, pero cada navegador guarda sus propios datos. Lo que hace una profesora en su móvil no lo ve Conserjería en su ordenador. Por eso solo lleva <b>datos ficticios</b>.</p>
       <p>Para usarla en un centro, todos tienen que compartir los mismos datos, y eso necesita un <b>servidor</b> y una <b>autorización</b>.</p>
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/configuracion.svg" alt="">La propuesta: un servidor en el propio centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/configuracion.svg" alt="">La propuesta: un servidor en el propio centro</h3>
       <p>Un ordenador del instituto guarda los datos y los demás (móviles y ordenadores del profesorado, Jefatura y Conserjería) se conectan a él por la red del centro.</p>
       <ul>
         <li><b>Privacidad:</b> los datos <b>no salen del centro</b>. No hay empresas externas ni servidores fuera. Es la opción que más facilita la aprobación.</li>
@@ -905,9 +911,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/lista-completa.svg" alt="">Qué se necesita <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/lista-completa.svg" alt="">Qué se necesita</h3>
       <div class="tabla">
         <table>
           <thead><tr><th scope="col">Qué</th><th scope="col">Para qué</th><th scope="col">Quién</th></tr></thead>
@@ -922,12 +928,13 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
           </tbody>
         </table>
       </div>
+      <p class="nota ok">El detalle técnico, las preguntas para la Consejería y un correo listo para enviar están en <a href="#tic">Para el TIC</a>.</p>
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/documentos.svg" alt="">Los pasos legales <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/documentos.svg" alt="">Los pasos legales</h3>
       <ol>
         <li><b>Aprobación del equipo directivo</b> y comunicación al claustro y al consejo escolar.</li>
         <li><b>Consulta a la Delegación de Protección de Datos</b> de la Consejería de Educación: qué se trata, para qué, quién lo ve, dónde se guarda y cuánto tiempo.</li>
@@ -938,9 +945,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/eventos.svg" alt="">Implantación por fases <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/eventos.svg" alt="">Implantación por fases</h3>
       <ol>
         <li><b>Fase 1 · Piloto sin datos del alumnado.</b> Espacios (reservas y llaves), Necesidades y avisos de material, guardias y ausencias del profesorado, y Galvángram. Solo hay datos del profesorado, mucho menos delicados, y el centro nota la mejora desde el primer día: se acaban la libreta de llaves y las hojas en la puerta.</li>
         <li><b>Fase 2 · Con datos del alumnado</b>, cuando haya autorización expresa: partes, medidas correctoras, conductas positivas, baños y puestos de las aulas de informática.</li>
@@ -949,9 +956,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
   </div>
 
-  <div class="tarjeta sola nueva">
+  <div class="tarjeta sola">
     <div>
-      <h3><img src="/iconos/como-se-usa.svg" alt="">Puesta en marcha, paso a paso <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">Puesta en marcha, paso a paso</h3>
       <ol>
         <li>Presentar la demostración y este plan al <b>equipo directivo</b>.</li>
         <li>Consultar con la <b>Consejería</b> el uso de la red y con la <b>Delegación de Protección de Datos</b> el tratamiento de los datos.</li>
@@ -961,6 +968,103 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Arrancar la <b>fase 1</b>, recoger opiniones durante unas semanas y ajustar antes de la fase 2.</li>
       </ol>
       <p class="nota ok">Ventajas para el centro: agilidad, todo en un solo sitio, coordinación al momento, cuidado del material y <b>menos papel</b>: mesas sin papeles y menos impacto ambiental.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ PARA EL TIC ═══════════ -->
+<section class="parte" id="tic">
+  <span class="etiqueta">Para Coordinación TIC · propuesta de piloto</span>
+  <div class="titulo"><h2>Para el TIC</h2><img src="/iconos/cargo-tic.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Qué hace falta para instalar RumboAula en el instituto con un ordenador del propio centro como servidor. Es una guía orientativa para valorarlo juntos con quien coordine las TIC.</p>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/documentos.svg" alt="">Descárgalo para enviarlo o imprimirlo <span class="novedad">Nuevo</span></h3>
+      <p>Todo este apartado, con el correo incluido, en un documento de 4 páginas.</p>
+      <p><a class="boton-descarga" href="RumboAula-propuesta-TIC.pdf" download>⬇️ Descargar el PDF para Coordinación TIC</a></p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">Qué queremos probar <span class="novedad">Nuevo</span></h3>
+      <p>Un <b>piloto sin datos del alumnado</b>: Espacios (reservas y llaves), Necesidades y avisos de material, guardias y ausencias del profesorado, y Galvángram. Solo usa datos del profesorado. Lo que lleva datos del alumnado queda para más adelante, con autorización.</p>
+      <p>Se puede ver funcionando, con datos ficticios, en <a href="https://rumboaula.vercel.app/">rumboaula.vercel.app</a>.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/configuracion.svg" alt="">Qué necesitamos <span class="novedad">Nuevo</span></h3>
+      <div class="tabla">
+        <table>
+          <thead><tr><th scope="col">Qué</th><th scope="col">Detalle orientativo</th><th scope="col">Para qué</th></tr></thead>
+          <tbody>
+            <tr><td><b>Un ordenador servidor</b></td><td>Un miniPC o un ordenador reutilizado: unos 4 núcleos, 8 GB de RAM y un disco SSD de 128 GB bastan para un centro. Linux o Windows.</td><td>Guardar los datos y que todos vean lo mismo</td></tr>
+            <tr><td><b>Conexión por cable</b> y una <b>IP fija</b> interna</td><td>Siempre la misma dirección, para que la app sepa dónde está</td><td>Que los móviles y ordenadores lo encuentren</td></tr>
+            <tr><td><b>Acceso desde la wifi del centro</b></td><td>Que un móvil conectado a la wifi del profesorado llegue a ese ordenador</td><td>Usar la app en el aula y en el pasillo</td></tr>
+            <tr><td><b>Conexión segura (HTTPS)</b></td><td>Un certificado para la dirección interna del servidor</td><td>Proteger las claves y poder instalar la app en el móvil</td></tr>
+            <tr><td><b>SAI</b></td><td>Un sistema de alimentación ininterrumpida pequeño</td><td>Que un corte de luz no lo apague de golpe</td></tr>
+            <tr><td><b>Disco para copias</b></td><td>Un disco externo o una carpeta de red, con copia automática cada noche</td><td>No perder nada si el ordenador falla</td></tr>
+            <tr><td><b>Un sitio seguro</b></td><td>El armario de comunicaciones o un despacho cerrado</td><td>Que nadie lo apague o lo manipule</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>No hace falta contratar nada fuera ni sacar datos del centro. El programa del servidor y una guía de instalación paso a paso se preparan aparte.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/mensajes.svg" alt="">Lo que hay que preguntar a la Consejería <span class="novedad">Nuevo</span></h3>
+      <p>La red de los institutos suele gestionarla la Consejería, así que antes de nada conviene consultar:</p>
+      <ul>
+        <li>¿Podemos tener un <b>servidor propio</b> conectado a la red del centro?</li>
+        <li>¿Los dispositivos conectados a la <b>wifi del profesorado</b> pueden comunicarse con un equipo de la red del centro, o están aislados?</li>
+        <li>¿Nos pueden asignar una <b>IP fija interna</b> y, si hace falta, un <b>nombre interno</b> para el servidor?</li>
+        <li>¿Hay alguna <b>norma de seguridad</b> (antivirus, actualizaciones, inventario) que deba cumplir ese equipo?</li>
+      </ul>
+      <p class="nota ok">La propuesta es que funcione <b>solo dentro del centro</b>: no hace falta abrir puertos hacia internet ni acceder desde casa.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/cargo-tic.svg" alt="">Qué le tocaría hacer a Coordinación TIC <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li>Preparar el ordenador y conectarlo a la red con su IP fija.</li>
+        <li>Instalar RumboAula siguiendo la guía, pensada para hacerse sin ser programador.</li>
+        <li>Poner el certificado para la conexión segura.</li>
+        <li>Activar las copias de seguridad y comprobarlas de vez en cuando.</li>
+        <li>Crear las cuentas iniciales de Administración; el resto del centro se configura desde la propia app.</li>
+        <li>Ser el contacto si algo falla y aplicar las actualizaciones.</li>
+      </ol>
+      <p class="nota ojo">No depende de TIC: la aprobación del equipo directivo, la consulta a la Delegación de Protección de Datos y la información al personal. Están en <a href="#implantacion">Implantación en el centro</a>.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Correo para enviar <span class="novedad">Nuevo</span></h3>
+      <p>Texto preparado para mandárselo a Coordinación TIC; retócalo a tu gusto.</p>
+<pre class="correo-tic" id="texto-correo-tic">Hola:
+
+Te escribo por RumboAula, una aplicación interna para organizar el día a día del centro: guardias y ausencias, reserva de espacios y llaves, avisos de material y mensajes entre el profesorado. Puedes verla con datos ficticios en https://rumboaula.vercel.app y el manual en https://rumboaula.vercel.app/manual
+
+Nos gustaría valorar un piloto sin datos del alumnado, con un ordenador del propio centro como servidor, accesible solo desde la red del instituto. Los datos no saldrían del centro.
+
+Para ello necesitaríamos:
+- Un ordenador o miniPC que haga de servidor (unos 8 GB de RAM y un SSD de 128 GB), con SAI y un disco para copias de seguridad.
+- Conectarlo por cable a la red del centro con una IP fija interna.
+- Que los móviles conectados a la wifi del profesorado puedan llegar a ese equipo.
+- Un certificado para la conexión segura (HTTPS).
+
+¿Podrías consultar con la Consejería si podemos tener un servidor propio en la red del centro y si la wifi del profesorado puede acceder a él? El programa y una guía de instalación paso a paso se preparan aparte.
+
+Gracias. Un saludo.</pre>
+      <p><button class="copiar" id="copiar-correo-tic" type="button">Copiar el texto del correo</button></p>
     </div>
   </div>
 </section>
@@ -1037,6 +1141,14 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     const ok = () => { btn.textContent = 'Copiado'; setTimeout(() => btn.textContent = 'Copiar', 1800); };
     const marcar = () => { const r = document.createRange(); r.selectNodeContents(correo); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(correo.textContent).then(ok, marcar); } catch { marcar(); }
+  });
+
+  // Copiar el correo para Coordinación TIC
+  const btnTic = document.getElementById('copiar-correo-tic'), txtTic = document.getElementById('texto-correo-tic');
+  if (btnTic) btnTic.addEventListener('click', () => {
+    const ok = () => { btnTic.textContent = 'Texto copiado'; setTimeout(() => btnTic.textContent = 'Copiar el texto del correo', 2000); };
+    const marcar = () => { const r = document.createRange(); r.selectNodeContents(txtTic); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btnTic.textContent = 'Texto seleccionado: cópialo'; };
+    try { navigator.clipboard.writeText(txtTic.textContent).then(ok, marcar); } catch { marcar(); }
   });
 
   // Apartado activo en el menú
