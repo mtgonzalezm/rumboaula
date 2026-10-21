@@ -651,6 +651,9 @@ test('Conducta positiva: el profe la anota, la ve Jefatura en la ficha y se pued
   await page.locator('#gd-pos-busca').fill('Diego Sánchez')
   await page.getByRole('button', { name: /Diego Sánchez Blanco/ }).click()
   await page.getByRole('button', { name: 'Ayuda a un compañero/a' }).click()
+  // Las ideas de frases rellenan el detalle, que luego se puede retocar
+  await page.locator('[data-frases]').getByRole('button').first().click()
+  await expect(page.locator('#gd-pos-detalle')).toHaveValue(/^Ha ayudado a un compañero/)
   await page.locator('#gd-pos-detalle').fill('Prueba automática: ha ayudado en el laboratorio.')
   await page.getByRole('button', { name: /Anotar/ }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Anotado' })).toContainText('Diego Sánchez Blanco')
