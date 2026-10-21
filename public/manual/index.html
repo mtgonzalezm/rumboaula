@@ -166,6 +166,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#tutoria">Tutoría</a>
     <a href="#jefatura">Jefatura</a>
     <a href="#administracion">Administración</a>
+    <a href="#implantacion">Implantación</a>
     <a href="#ayuda">Ayuda y datos</a>
   </div>
 </nav>
@@ -565,9 +566,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Módulo <span class="btn m">Material del centro</span>, dividido por aulas y por función (informática, laboratorio…). Cada alumno/a queda asociado a un puesto del aula, con el día, la hora y el profesor/a que estaba con el grupo, para saber quién cuida el material.</p>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/ordenador.svg" alt="">Sesión en el aula <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/ordenador.svg" alt="">Sesión en el aula</h3>
       <ol>
         <li>Elige el <b>aula</b>, el <b>grupo</b>, el <b>día</b> y la <b>hora</b>.</li>
         <li>El plano se ve desde tu mesa: el <b>PC01</b> queda a tu <b>izquierda</b> y la numeración sigue por la fila completa, con el pasillo en medio, hasta tu derecha; después, la fila siguiente.</li>
@@ -582,9 +583,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/historial.svg" alt="">Historial de puestos e incidencias <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/historial.svg" alt="">Historial de puestos e incidencias</h3>
       <ul>
         <li><span class="btn t">Historial de puestos</span>: toca un puesto para ver todos sus usos (día, hora, alumno/a, grupo y profesor/a) y sus incidencias.</li>
         <li>Escribe el nombre de un alumno/a para ver <b>dónde se ha sentado</b> en cada sesión.</li>
@@ -597,9 +598,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Necesidades y avisos <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Necesidades y avisos</h3>
       <p>Para avisar de cualquier cosa del material del centro, no solo de los puestos.</p>
       <ol>
         <li>En <span class="btn t">Necesidades y avisos</span>, elige <b>Algo roto o que no funciona</b> o <b>Material que hace falta</b>.</li>
@@ -831,9 +832,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/ordenador.svg" alt="">Aulas con puestos (Material del centro) <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/ordenador.svg" alt="">Aulas con puestos (Material del centro)</h3>
       <ul>
         <li>Para cada aula: <b>nombre</b>, <b>función</b> (Informática, Laboratorio, Tecnología…) y el <b>espacio</b> al que pertenece.</li>
         <li>Su plano: número de <b>filas</b> y de <b>puestos a cada lado del pasillo</b>, y cómo se llaman (PC, Mesa…). Pulsa <b>Ver plano</b> para comprobarlo.</li>
@@ -873,6 +874,94 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <figure>
       <button class="cap limitada" data-ampliar="img/admin-profesores.webp" aria-label="Ampliar: profesorado"><img src="img/admin-profesores.webp" alt="Gestión del profesorado con cargos" loading="lazy" width="1200" height="1380"></button>
     </figure>
+  </div>
+</section>
+
+<!-- ═══════════ IMPLANTACIÓN ═══════════ -->
+<section class="parte" id="implantacion">
+  <span class="etiqueta">Para el equipo directivo y Coordinación TIC</span>
+  <div class="titulo"><h2>Implantación en el centro</h2><img src="/iconos/edificio.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Qué haría falta para pasar de la demostración a usar RumboAula de verdad en un instituto, con un ordenador del centro haciendo de servidor. Es una guía orientativa: los pasos legales hay que confirmarlos con la Delegación de Protección de Datos de la Consejería de Educación.</p>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/estado-general.svg" alt="">Dónde estamos ahora <span class="novedad">Nuevo</span></h3>
+      <p>La versión actual es una <b>demostración completa</b>: todas las funciones se pueden probar, pero cada navegador guarda sus propios datos. Lo que hace una profesora en su móvil no lo ve Conserjería en su ordenador. Por eso solo lleva <b>datos ficticios</b>.</p>
+      <p>Para usarla en un centro, todos tienen que compartir los mismos datos, y eso necesita un <b>servidor</b> y una <b>autorización</b>.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/configuracion.svg" alt="">La propuesta: un servidor en el propio centro <span class="novedad">Nuevo</span></h3>
+      <p>Un ordenador del instituto guarda los datos y los demás (móviles y ordenadores del profesorado, Jefatura y Conserjería) se conectan a él por la red del centro.</p>
+      <ul>
+        <li><b>Privacidad:</b> los datos <b>no salen del centro</b>. No hay empresas externas ni servidores fuera. Es la opción que más facilita la aprobación.</li>
+        <li><b>Coste bajo:</b> basta un ordenador sencillo o un miniPC, incluso uno reutilizado.</li>
+        <li><b>Funciona dentro del instituto</b>, conectándose a la wifi del centro. Es suficiente para guardias, partes, llaves, reservas y material. Usarla desde casa exigiría más seguridad y permiso de la Consejería.</li>
+      </ul>
+      <p class="nota ok">Otra opción es un servidor en la nube con los datos en la Unión Europea. Es más cómoda de mantener, pero necesita un contrato con el proveedor y suele ser más difícil de autorizar.</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/lista-completa.svg" alt="">Qué se necesita <span class="novedad">Nuevo</span></h3>
+      <div class="tabla">
+        <table>
+          <thead><tr><th scope="col">Qué</th><th scope="col">Para qué</th><th scope="col">Quién</th></tr></thead>
+          <tbody>
+            <tr><td><b>Un ordenador servidor</b> (o miniPC) encendido todo el día</td><td>Guardar los datos y que todos vean lo mismo</td><td>Coordinación TIC</td></tr>
+            <tr><td><b>Un SAI</b> (alimentación ininterrumpida)</td><td>Que un corte de luz no lo apague de golpe</td><td>Secretaría</td></tr>
+            <tr><td><b>Copias de seguridad automáticas</b>, en un disco aparte</td><td>No perder nada si el ordenador se estropea</td><td>Coordinación TIC</td></tr>
+            <tr><td><b>Permiso para usar la red del centro</b></td><td>Que los móviles lleguen al servidor por la wifi. La red de los institutos suele estar gestionada por la Consejería</td><td>Dirección y Coordinación TIC</td></tr>
+            <tr><td><b>Conexión segura (HTTPS)</b> con un certificado</td><td>Proteger las claves y poder instalar la app en el móvil</td><td>Coordinación TIC</td></tr>
+            <tr><td><b>La parte del servidor de RumboAula</b></td><td>Datos compartidos, cuentas seguras y permisos. Está por programar; la app ya está preparada para ello</td><td>Desarrollo</td></tr>
+            <tr><td><b>Una persona responsable</b></td><td>Actualizaciones, cuentas y revisión de las copias</td><td>Coordinación TIC</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/documentos.svg" alt="">Los pasos legales <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li><b>Aprobación del equipo directivo</b> y comunicación al claustro y al consejo escolar.</li>
+        <li><b>Consulta a la Delegación de Protección de Datos</b> de la Consejería de Educación: qué se trata, para qué, quién lo ve, dónde se guarda y cuánto tiempo.</li>
+        <li>Lo que pida la Delegación, normalmente: <b>evaluación de impacto</b> (hay datos de menores y de convivencia), alta en el <b>registro de actividades de tratamiento</b> y las <b>medidas de seguridad</b> del Esquema Nacional de Seguridad.</li>
+        <li><b>Informar a las familias y al personal</b> de qué datos se usan y con qué fin.</li>
+      </ol>
+      <p class="nota ojo">Aunque los datos estén en el centro, estos pasos siguen siendo necesarios. Hay que preguntar también si la Consejería permite guardar datos del alumnado fuera de sus plataformas oficiales (Raíces y EducaMadrid).</p>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/eventos.svg" alt="">Implantación por fases <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li><b>Fase 1 · Piloto sin datos del alumnado.</b> Espacios (reservas y llaves), Necesidades y avisos de material, guardias y ausencias del profesorado, y Galvángram. Solo hay datos del profesorado, mucho menos delicados, y el centro nota la mejora desde el primer día: se acaban la libreta de llaves y las hojas en la puerta.</li>
+        <li><b>Fase 2 · Con datos del alumnado</b>, cuando haya autorización expresa: partes, medidas correctoras, conductas positivas, baños y puestos de las aulas de informática.</li>
+        <li><b>Fase 3 · Mejoras:</b> avisos al móvil con la app cerrada y, si la Consejería lo permite, entrar con la cuenta de EducaMadrid.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="tarjeta sola nueva">
+    <div>
+      <h3><img src="/iconos/como-se-usa.svg" alt="">Puesta en marcha, paso a paso <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li>Presentar la demostración y este plan al <b>equipo directivo</b>.</li>
+        <li>Consultar con la <b>Consejería</b> el uso de la red y con la <b>Delegación de Protección de Datos</b> el tratamiento de los datos.</li>
+        <li>Preparar el <b>servidor</b>, la conexión segura y las copias de seguridad.</li>
+        <li>En <b>Administración</b>: datos y horario del centro, zonas de guardia, espacios y llaves, aulas con puestos, profesorado con sus cargos y cuentas de Conserjería.</li>
+        <li><b>Una sesión corta de formación</b> para el claustro, con este manual; cada docente crea su clave la primera vez que entra.</li>
+        <li>Arrancar la <b>fase 1</b>, recoger opiniones durante unas semanas y ajustar antes de la fase 2.</li>
+      </ol>
+      <p class="nota ok">Ventajas para el centro: agilidad, todo en un solo sitio, coordinación al momento, cuidado del material y <b>menos papel</b>: mesas sin papeles y menos impacto ambiental.</p>
+    </div>
   </div>
 </section>
 
