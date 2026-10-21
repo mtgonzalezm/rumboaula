@@ -53,6 +53,17 @@ a { color: var(--azul); font-weight: 700; }
 .menu a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px; text-decoration: none; color: #fff; font-weight: 400; font-size: 16px; border-right: 1px solid rgba(255,255,255,.6); white-space: nowrap; }
 .menu a::before { content: ""; border-left: 8px solid var(--mostaza); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
 .menu a:hover, .menu a.activo { box-shadow: inset 0 -5px 0 var(--mostaza); }
+/* En pantallas anchas el menú pasa a dos líneas para que se vean todos los apartados */
+@media (min-width: 700px) {
+  .menu-in { flex-wrap: wrap; overflow: visible; }
+  .menu a { min-height: 46px; }
+  .parte { scroll-margin-top: 120px; }
+}
+/* En el móvil se desliza de lado: una sombra a la derecha avisa de que hay más */
+@media (max-width: 699px) {
+  .menu { position: sticky; }
+  .menu::after { content: "›"; position: absolute; right: 0; top: 0; bottom: 0; width: 34px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; font-weight: 700; background: linear-gradient(to right, transparent, var(--turquesa) 45%); pointer-events: none; }
+}
 
 /* Contenido */
 main { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
@@ -1156,8 +1167,14 @@ Gracias. Un saludo.</pre>
   const partes = enlaces.map(a => document.querySelector(a.getAttribute('href')));
   const marcarActivo = () => {
     let actual = 0;
-    partes.forEach((p, i) => { if (p && p.getBoundingClientRect().top < 140) actual = i; });
+    partes.forEach((p, i) => { if (p && p.getBoundingClientRect().top < 200) actual = i; });
     enlaces.forEach((a, i) => a.classList.toggle('activo', i === actual));
+    // En el móvil, el apartado actual se desliza a la vista dentro del menú
+    const menu = document.querySelector('.menu-in'), act = enlaces[actual];
+    if (menu && act && menu.scrollWidth > menu.clientWidth && actual !== marcarActivo.ultimo) {
+      marcarActivo.ultimo = actual;
+      menu.scrollLeft = Math.max(0, act.offsetLeft - menu.offsetLeft - 24);
+    }
   };
   addEventListener('scroll', marcarActivo, { passive: true }); marcarActivo();
 })();
