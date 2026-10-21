@@ -160,6 +160,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#partes">Partes</a>
     <a href="#medidas">Medidas correctoras</a>
     <a href="#guardias">Guardias</a>
+    <a href="#espacios">Espacios</a>
     <a href="#galvangram">Galvángram</a>
     <a href="#tutoria">Tutoría</a>
     <a href="#jefatura">Jefatura</a>
@@ -176,14 +177,15 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para todos</span>
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">RumboAula tiene tres módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b> y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="entrada">RumboAula tiene cuatro módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves) y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
   <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la relación diaria entre Dirección, Jefatura y profesorado y, en algunos casos, con las familias. No sustituye a Raíces: la complementa y da agilidad al día a día. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
     <div class="perfil"><img src="/iconos/cargo-profesor.svg" alt=""><h3>Profesor/a</h3><p>Pone partes y medidas en las faltas leves, anota conductas positivas, registra salidas al baño, ve sus guardias, notifica ausencias y envía avisos.</p></div>
     <div class="perfil"><img src="/iconos/tutor.svg" alt=""><h3>Tutor/a</h3><p>Lo mismo que el profesorado y, además, los partes de su grupo y el contacto de sus familias.</p></div>
     <div class="perfil"><img src="/iconos/cargo-jefatura.svg" alt=""><h3>Jefatura y Dirección</h3><p>Convivencia del centro, medidas correctoras, alertas, informes, cuadrante de guardias y cobertura de clases.</p></div>
-    <div class="perfil"><img src="/iconos/cargo-administracion.svg" alt=""><h3>Administración</h3><p>Datos, horario y zonas del centro, alumnado, profesorado, tutorías y cargos.</p></div>
+    <div class="perfil"><img src="/iconos/cargo-administracion.svg" alt=""><h3>Administración</h3><p>Datos, horario, zonas y espacios del centro, alumnado, profesorado, tutorías y cargos.</p></div>
+    <div class="perfil"><img src="/iconos/llave.svg" alt=""><h3>Conserjería</h3><p>Ve quién tiene cada llave y las reservas de los espacios, y anota quién coge y quién deja cada llave.</p></div>
   </div>
 
   <div class="tarjeta" style="margin-top:16px">
@@ -225,9 +227,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/alertas.svg" alt="">Campana de advertencias <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/alertas.svg" alt="">Campana de advertencias</h3>
       <p>Arriba a la derecha, junto a la casa, la <b>campana</b> lleva un <b>globito azul oscuro</b> con el número de cosas que tienes pendientes. Púlsala para ver la lista <b>«Tienes pendiente»</b> y toca una línea para ir directamente a esa pantalla.</p>
       <ul>
         <li><b>Profesorado</b>: mensajes sin leer, familias por avisar, guardias de hoy sin firmar y clases que cubres hoy.</li>
@@ -325,9 +327,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/saludo.svg" alt="">Anotar una conducta positiva <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/saludo.svg" alt="">Anotar una conducta positiva</h3>
       <p>Para reconocer también lo que el alumnado hace bien.</p>
       <ol>
         <li>En <span class="btn t">Conducta positiva</span>, busca al alumno o alumna por su nombre o su grupo.</li>
@@ -342,9 +344,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Comunicar una conducta positiva <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/mensaje-enviar.svg" alt="">Comunicar una conducta positiva</h3>
       <p>Tiene las <b>mismas vías que un parte</b>:</p>
       <ul>
         <li>Su <b>tutor/a</b> recibe un aviso automático en <b>Galvángram</b>.</li>
@@ -505,6 +507,54 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   </div>
 </section>
 
+<!-- ═══════════ ESPACIOS ═══════════ -->
+<section class="parte" id="espacios">
+  <span class="etiqueta">Profesorado, Jefatura y Conserjería</span>
+  <div class="titulo"><h2>Espacios: reservas y llaves</h2><img src="/iconos/llave.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Módulo <span class="btn m">Espacios</span>. Cada aula especial (laboratorios, aulas de informática, sala de usos múltiples, aula de Economía, salón de actos…) tiene dos secciones: <b>Reservas</b>, para reservarla por día y hora, y <b>Llaves</b>, para anotar quién se lleva su llave y quién la deja.</p>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/horario.svg" alt="">Reservar un espacio <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li>En <span class="btn t">Reservas</span>, elige el <b>espacio</b>. Verás la semana con las horas libres y las ya reservadas; con <b>‹ ›</b> cambias de semana. En el móvil se ve un día cada vez.</li>
+        <li>Pulsa <span class="btn g">+ Reservar</span> en una hora libre.</li>
+        <li>Indica el <b>grupo</b> y la <b>actividad</b>, si quieres, y pulsa <span class="btn p">Confirmar reserva</span>.</li>
+      </ol>
+      <p>La app no deja reservar dos veces la misma hora y te avisa si ya tienes otro espacio a esa hora. Tus reservas salen en verde. En <b>Mis próximas reservas</b> puedes <b>anularlas</b> hasta que termine la hora.</p>
+      <p><span class="btn p">Descargar PDF</span> saca la semana del espacio, por ejemplo para ponerla en la puerta.</p>
+      <p class="nota ok"><b>Jefatura y Conserjería</b> pueden reservar para cualquier profesor/a, anular cualquier reserva y ver las reservas de hoy.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/reservas.webp" aria-label="Ampliar: reservas de un espacio"><img src="img/reservas.webp" alt="Semana de reservas del laboratorio con una hora elegida para reservar" loading="lazy" width="1200" height="1028"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/llave.svg" alt="">Llaves: quién se la lleva y quién la deja <span class="novedad">Nuevo</span></h3>
+      <p>La tabla muestra cada espacio con llave, <b>dónde se guarda</b> (Conserjería o Dirección), <b>quién la tiene</b> y desde qué hora. Si el espacio está reservado en ese momento, también lo indica.</p>
+      <ul>
+        <li><b>Profesorado</b>: pulsa <span class="btn p">Me la llevo</span> al recogerla y <span class="btn v">La devuelvo</span> al dejarla.</li>
+        <li><b>Conserjería y Jefatura</b>: elige quién se la lleva y pulsa <b>Se la lleva</b>; al devolverla, <b>Devuelta</b>. Como en la libreta de papel.</li>
+        <li>Debajo, <b>Quién coge y quién deja</b>: cada movimiento con su hora. Elige otro día para verlo o descarga el PDF.</li>
+      </ul>
+      <p class="nota ojo">Si una llave sigue fuera al acabar la jornada, sale como <b>«Sin devolver»</b> y avisa en la campana de quien la tiene, de Jefatura y de Conserjería.</p>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/llaves.webp" aria-label="Ampliar: llaves"><img src="img/llaves.webp" alt="Tabla de llaves con quién tiene cada una y desde qué hora" loading="lazy" width="1200" height="1165"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta sola">
+    <div>
+      <h3><img src="/iconos/llave.svg" alt="">Perfil de Conserjería</h3>
+      <p>En la portada, <b>Conserjería</b> entra directamente a <b>Llaves</b> y <b>Reservas</b>, sin ver nada del alumnado. Así, desde el ordenador de conserjería se ve en todo momento quién tiene cada llave y qué espacios están reservados.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════ GALVÁNGRAM ═══════════ -->
 <section class="parte" id="galvangram">
   <span class="etiqueta">Todos</span>
@@ -652,9 +702,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </figure>
   </div>
 
-  <div class="tarjeta nueva">
+  <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/estadisticas.svg" alt="">Coberturas y ausencias <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/estadisticas.svg" alt="">Coberturas y ausencias</h3>
       <ol>
         <li>En <span class="btn t">Coberturas y ausencias</span>, elige un <b>mes</b> o <b>Todo el curso</b>.</li>
         <li><b>Reparto de coberturas</b>: cuántas clases ha cubierto cada profesor/a, con una barra para compararlo de un vistazo, cuántas se asignó él mismo y la fecha de la última.</li>
@@ -703,6 +753,21 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
     <figure>
       <button class="cap limitada" data-ampliar="img/admin-zonas.webp" aria-label="Ampliar: zonas de guardia"><img src="img/admin-zonas.webp" alt="Zonas de guardia por edificio con botones para ocultar" loading="lazy" width="1200" height="1200"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/llave.svg" alt="">Espacios del centro <span class="novedad">Nuevo</span></h3>
+      <ul>
+        <li>Lista de las aulas especiales y otros espacios con llave. Puedes cambiar el <b>nombre</b> y el <b>edificio</b>.</li>
+        <li>Elige si la llave se guarda en <b>Conserjería</b> o en <b>Dirección</b>.</li>
+        <li><b>Se reserva</b>: el espacio sale en Reservas. <b>Con llave</b>: sale en Llaves. El Archivo o el Armario de exámenes, por ejemplo, tienen llave pero no se reservan.</li>
+        <li>Añade los espacios que falten. No se borran: <b>Ocultar</b> los quita sin perder lo ya anotado.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/espacios-admin.webp" aria-label="Ampliar: espacios del centro"><img src="img/espacios-admin.webp" alt="Lista de espacios con edificio, dónde se guarda la llave y si se reservan" loading="lazy" width="1200" height="1359"></button>
     </figure>
   </div>
 

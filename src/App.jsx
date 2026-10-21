@@ -6408,9 +6408,9 @@ function Llaves({ espacios, prestamos = [], setPrestamos, reservas = [], profeso
                 <td className="gd-ll-a" style={{ ...td, textAlign: "right" }}>
                   {f ? ((gestion || mia) && <button onClick={() => devolver(f)} style={boton(R.verde, R.noche)}>{mia && !gestion ? "La devuelvo" : "Devuelta"}</button>)
                     : gestion ? (
-                      <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <span style={{ display: "inline-flex", gap: 6, flexWrap: "nowrap", justifyContent: "flex-end" }}>
                         <select aria-label={`Quién se lleva la llave de ${k.nombre}`} value={quien[k.id] || ""} onChange={e => setQuien(q => ({ ...q, [k.id]: e.target.value }))}
-                          style={{ minHeight: 44, maxWidth: 200, padding: "0 8px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 15, color: R.noche, background: "#fff", fontFamily: "inherit" }}>
+                          style={{ minHeight: 44, maxWidth: 190, minWidth: 0, flex: "1 1 auto", padding: "0 8px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 15, color: R.noche, background: "#fff", fontFamily: "inherit" }}>
                           <option value="">¿Quién se la lleva?</option>
                           {[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
