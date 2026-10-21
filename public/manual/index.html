@@ -177,6 +177,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">RumboAula tiene tres módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Guardias</b> y <b>Galvángram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la relación diaria entre Dirección, Jefatura y profesorado y, en algunos casos, con las familias. No sustituye a Raíces: la complementa y da agilidad al día a día. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
     <div class="perfil"><img src="/iconos/cargo-profesor.svg" alt=""><h3>Profesor/a</h3><p>Pone partes y medidas en las faltas leves, registra salidas al baño, ve sus guardias, notifica ausencias y envía avisos.</p></div>
@@ -185,9 +186,9 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <div class="perfil"><img src="/iconos/cargo-administracion.svg" alt=""><h3>Administración</h3><p>Datos, horario y zonas del centro, alumnado, profesorado, tutorías y cargos.</p></div>
   </div>
 
-  <div class="tarjeta nueva" style="margin-top:16px">
+  <div class="tarjeta" style="margin-top:16px">
     <div>
-      <h3><img src="/iconos/inicio.svg" alt="">Entrar <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/inicio.svg" alt="">Entrar</h3>
       <p>La portada tiene en el centro la tarjeta <b>Acceso</b>.</p>
       <ol>
         <li><b>En la demostración</b>, pulsa uno de los cuatro perfiles: <b>Profesor/a</b>, <b>Tutor/a de un grupo</b>, <b>Jefatura y Dirección</b> o <b>Administración</b>. Se cargan los datos de ejemplo y entras, sin nombre ni clave.</li>
@@ -382,11 +383,27 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Las <b>clases sin su profesor/a</b> y quién las cubre.</li>
         <li>Con los botones de horas puedes mirar cualquier otra hora del día.</li>
       </ul>
-      <p class="nota ok">Si Jefatura te asigna cubrir una clase, lo verás destacado con el aula y la tarea.</p>
+      <p class="nota ok">Si cubres una clase, porque te la has asignado o porque te la ha asignado Jefatura, lo verás destacado con el aula y la tarea.</p>
     </div>
     <figure>
       <button class="cap movil" data-ampliar="img/movil-ahora.webp" aria-label="Ampliar: vista Ahora en el móvil"><img src="img/movil-ahora.webp" alt="Vista Ahora en el móvil" loading="lazy" width="1082" height="2202"></button>
       <figcaption>«Ahora» en el móvil.</figcaption>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/profe-ausente.svg" alt="">Cubrir una clase: «Me la asigno» <span class="novedad">Nuevo</span></h3>
+      <ol>
+        <li>Si estás de guardia y hay una clase sin profesor que puedes cubrir, en <span class="btn t">Ahora</span> y en <span class="btn t">Mi Guardia Hoy</span> verás el botón morado <span class="btn p">✋ Me la asigno</span>.</li>
+        <li>Al pulsarlo, la clase pasa a verde, con el texto <b>«La cubres tú»</b>. Jefatura ve que <b>te la has asignado tú</b>.</li>
+        <li>Si cambias de idea, pulsa <span class="btn p">Soltarla</span> antes de que empiece la hora.</li>
+      </ol>
+      <p>Solo aparece si estás entre quienes pueden cubrirla sin dejar una zona vacía, si nadie la cubre todavía y si a esa hora no cubres ya otra clase.</p>
+      <p class="nota ojo">Jefatura puede cambiar quién la cubre en cualquier momento.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/me-la-asigno.webp" aria-label="Ampliar: me la asigno"><img src="img/me-la-asigno.webp" alt="Clase sin cubrir con el botón Me la asigno y la lista de candidatos" loading="lazy" width="1200" height="799"></button>
     </figure>
   </div>
 
@@ -408,17 +425,33 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 
   <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/profe-ausente.svg" alt="">Notificar una ausencia</h3>
+      <h3><img src="/iconos/profe-ausente.svg" alt="">Notificar una ausencia <span class="novedad">Nuevo</span></h3>
       <ol>
-        <li>En <span class="btn t">Notificar Ausencia</span>, elige la fecha y marca las horas.</li>
-        <li>Indica el <b>edificio</b>, el <b>aula</b> y la <b>asignatura</b>.</li>
-        <li>Deja la <b>tarea</b> y dónde está el material.</li>
-        <li>Pulsa <span class="btn p">Notificar Ausencia a Jefatura</span>.</li>
+        <li>En <span class="btn t">Notificar Ausencia</span>, elige la fecha y marca las horas, o pulsa <span class="btn p">Día completo</span>. Las horas en las que tienes clase llevan un punto.</li>
+        <li>Cada clase sale de tu horario con su <b>grupo</b>, <b>materia</b>, <b>aula</b> y <b>edificio</b>. Escribe una <b>consigna</b> para cada una o una <b>tarea general</b> para todas.</li>
+        <li>Si quieres, añade un enlace a los recursos y dónde está el material.</li>
+        <li>Pulsa <span class="btn p">Notificar Ausencia a Jefatura</span>. Jefatura de Estudios y Dirección reciben <b>un aviso automático</b> en Galvángram.</li>
       </ol>
+      <p>Debajo, en <b>Mis ausencias</b>, ves cada una como <b>Comunicada</b> (aún no ha empezado) o <b>Consolidada</b>, quién cubre cada clase y los botones <b>Modificar</b> y <b>Borrar</b>. Si la cambias o la borras, Jefatura recibe otro aviso y quien iba a cubrirte se entera.</p>
       <p class="nota ojo">Completa, no sustituye, el aviso oficial al centro.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/notificar-ausencia.webp" aria-label="Ampliar: notificar ausencia"><img src="img/notificar-ausencia.webp" alt="Formulario para notificar una ausencia" loading="lazy" width="1200" height="1122"></button>
+      <button class="cap limitada" data-ampliar="img/notificar-ausencia.webp" aria-label="Ampliar: notificar ausencia"><img src="img/notificar-ausencia.webp" alt="Formulario para notificar una ausencia con las clases del horario y una consigna por clase" loading="lazy" width="1200" height="1934"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta nueva">
+    <div>
+      <h3><img src="/iconos/historial.svg" alt="">Mis coberturas <span class="novedad">Nuevo</span></h3>
+      <ul>
+        <li>En <span class="btn t">Mis Coberturas</span> tienes el recuento de las clases que has cubierto <b>hoy</b>, <b>este mes</b> y <b>en el curso</b> (desde el 1 de septiembre).</li>
+        <li>Arriba, en verde, las <b>próximas</b> clases que te toca cubrir.</li>
+        <li>Debajo, la lista de las ya cubiertas, con el día, la hora, quién faltaba, el grupo, la materia y la consigna.</li>
+        <li>Cada una indica si <b>te la asignaste</b> tú o si te la <b>asignó Jefatura</b>.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap limitada" data-ampliar="img/mis-coberturas.webp" aria-label="Ampliar: mis coberturas"><img src="img/mis-coberturas.webp" alt="Mis coberturas con los totales y la lista de clases cubiertas" loading="lazy" width="1200" height="2246"></button>
     </figure>
   </div>
 </section>
@@ -532,10 +565,11 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li>Alguien de una zona con dos profes del mismo edificio.</li>
         <li>Alguien de una zona con dos profes de otro edificio.</li>
       </ol>
-      <p>Dentro de cada grupo, primero quien lleva menos clases cubiertas y guardias ese día. Pulsa <span class="btn p">Asignar</span> y el profe lo verá en su pantalla. Nunca deja una zona vacía.</p>
+      <p>Dentro de cada grupo va primero quien ha cubierto menos clases ese día; si empatan, quien ha cubierto menos <b>en el curso</b> y, después, quien tiene menos guardias. Pulsa <span class="btn p">Asignar</span> y el profe lo verá en su pantalla. Nunca deja una zona vacía.</p>
+      <p class="nota ok">El profesorado de guardia también puede asignarse una clase con <b>«Me la asigno»</b>. Lo verás como <b>«Cubre … · se la asignó»</b>, y con <span class="btn p">Cambiar</span> puedes dársela a otra persona.</p>
     </div>
     <figure>
-      <button class="cap limitada" data-ampliar="img/ahora-jefatura.webp" aria-label="Ampliar: cubrir clases"><img src="img/ahora-jefatura.webp" alt="Vista Ahora de Jefatura con clases sin profesor y candidatos" loading="lazy" width="1200" height="1560"></button>
+      <button class="cap limitada" data-ampliar="img/ahora-jefatura.webp" aria-label="Ampliar: cubrir clases"><img src="img/ahora-jefatura.webp" alt="Vista Ahora de Jefatura con una clase que se ha asignado una profesora de guardia" loading="lazy" width="1200" height="1826"></button>
     </figure>
   </div>
 
@@ -559,6 +593,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
       <h3><img src="/iconos/firmar.svg" alt="">Ausencias, firmas y listas</h3>
       <ul>
         <li><span class="btn t">Ausencias de Profesores</span>: las que notifica el profesorado. Si alguien llama, pulsa <b>Registrar una ausencia comunicada por teléfono</b>.</li>
+        <li><b>Aviso automático</b>: cuando un profesor registra, cambia o anula una ausencia, Jefatura y Dirección reciben un mensaje de <b>RumboAula</b> en Galvángram.</li>
         <li><span class="btn t">Parte del Día</span>: el estado de todas las zonas de hoy.</li>
         <li><span class="btn t">Firmas y listas</span>: quién ha firmado cada guardia y a qué hora, y las listas pasadas. <b>Descargar PDF</b> para archivarlo.</li>
       </ul>
@@ -578,7 +613,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 
   <div class="tarjeta nueva">
     <div>
-      <h3><img src="/iconos/edificio.svg" alt="">Datos y horario del centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/edificio.svg" alt="">Datos y horario del centro</h3>
       <p>En <span class="btn m">Alumnos</span>, arriba del todo. Los cambios se guardan solos.</p>
       <ul>
         <li><b>Datos del centro</b>: nombre y localidad. Salen en la portada, la cabecera, los PDF y los correos a las familias («Les escribimos desde el…»).</li>
@@ -593,7 +628,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 
   <div class="tarjeta nueva">
     <div>
-      <h3><img src="/iconos/guardias.svg" alt="">Zonas de guardia <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/guardias.svg" alt="">Zonas de guardia</h3>
       <ul>
         <li>Las zonas salen agrupadas por edificio. Cambia el <b>nombre</b> o el <b>edificio</b> de cualquiera.</li>
         <li><b>Añadir una zona</b>: nombre y edificio. Si el edificio es nuevo, aparece como grupo nuevo en el cuadrante.</li>

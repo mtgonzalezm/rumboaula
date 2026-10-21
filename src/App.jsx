@@ -3825,7 +3825,7 @@ function resumenAusencia(a, coberturas) {
   };
 }
 
-function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, horarios = {}, coberturas = {}, setCoberturas, setMensajes, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle }) {
+function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencias, setAusencias, cuentas = {}, horarios = {}, coberturas = {}, setCoberturas, setMensajes, ausProfesor, setAusProfesor, ausMotivo, setAusMotivo, ausFecha, setAusFecha, ausHoras, setAusHoras, ausTarea, setAusTarea, ausEnlace, setAusEnlace, ausUbicacion, setAusUbicacion, ausAula, setAusAula, ausAsignatura, setAusAsignatura, fProfesor, C, inpStyle, selStyle, labelStyle }) {
   const [enviado, setEnviado] = useState("");
   const [ausEdificio, setAusEdificio] = useState("");
   const [consignas, setConsignas] = useState({});      // consigna de cada hora
@@ -3885,6 +3885,18 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
     })), ...prev]);
   }
 
+  // Aviso por Galvángram a Jefatura de Estudios y Dirección cuando un profesor registra, cambia o anula su ausencia
+  function avisarJefatura(texto) {
+    if (modoJefatura || !setMensajes) return;
+    const destinos = profesores.filter(p => p !== ausProfesor && p !== usuario && cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"));
+    if (!destinos.length) return;
+    const base = Date.now() + 100, ts = new Date().toISOString();
+    setMensajes(prev => [...destinos.map((p, i) => ({
+      id: base + i, aviso: base + i, remitente: "RumboAula", destinatario: p, conCopia: [], leido: false, urgente: false, ts, lugar: null, texto,
+    })), ...prev]);
+  }
+  const resumenHoras = horas => horas.length === HORAS.length ? "todo el día" : horas.join(", ");
+
   function enviar() {
     const e = comprobar();
     setErrores(e);
@@ -3901,10 +3913,13 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
       const antes = ausencias.find(a => a.id === editando);
       if (antes) avisarCoberturasQuitadas(antes, antes.horas.filter(h => !ausHoras.includes(h)));
       setAusencias(prev => prev.map(a => a.id === editando ? { ...a, ...datos, modificada: new Date().toISOString() } : a));
-      setEnviado("Ausencia modificada. Jefatura verá los cambios.");
+      avisarJefatura(`${ausProfesor} ha modificado su ausencia del ${fmtD(parseISO(ausFecha))}: ahora falta a ${resumenHoras(ordenar(ausHoras))}.`);
+      setEnviado("Ausencia modificada. Jefatura ha recibido un aviso con los cambios.");
     } else {
       setAusencias(prev => [{ id: Date.now(), ...datos, ts: new Date().toISOString(), leida: false, ...(modoJefatura && ausProfesor !== usuario ? { registradaPor: usuario } : {}) }, ...prev]);
-      setEnviado("Ausencia notificada. Jefatura ha sido informada.");
+      const sinConsigna = !ausTarea.trim() && ordenar(ausHoras).some(h => h !== "Recreo" && !sesiones[h].consigna);
+      avisarJefatura(`Nueva ausencia: ${ausProfesor} faltará el ${fmtD(parseISO(ausFecha))} a ${resumenHoras(ordenar(ausHoras))} (${ausMotivo}).${sinConsigna ? " Alguna clase no tiene consigna." : ""}`);
+      setEnviado("Ausencia notificada. Jefatura ha recibido un aviso.");
     }
     limpiar();
     setTimeout(() => setEnviado(""), 4000);
@@ -3919,6 +3934,7 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
   }
   function borrar(a) {
     avisarCoberturasQuitadas(a, a.horas);
+    avisarJefatura(`${a.profesor} ha anulado su ausencia del ${fmtD(parseISO(isoLocal(a.fecha)))} (${resumenHoras(a.horas)}).`);
     setAusencias(prev => prev.filter(x => x.id !== a.id));
     if (editando === a.id) limpiar();
     setBorrando(null);
@@ -7868,7 +7884,7 @@ function AppInterna() {
           <NotificarAusencia
             usuario={usuario}
             profesores={profesores} ausencias={ausencias} setAusencias={setAusencias}
-            horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes}
+            horarios={horarios} coberturas={coberturas} setCoberturas={setCoberturas} setMensajes={setMensajes} cuentas={cuentas}
             ausProfesor={ausProfesor} setAusProfesor={setAusProfesor}
             ausMotivo={ausMotivo} setAusMotivo={setAusMotivo}
             ausFecha={ausFecha} setAusFecha={setAusFecha}
