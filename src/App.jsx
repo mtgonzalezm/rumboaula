@@ -3401,7 +3401,13 @@ const AYUDAS = {
     "Toca un puesto para ver todos sus usos: día, hora, alumno/a, grupo y profesor/a, y sus incidencias.",
     "Escribe el nombre de un alumno/a para ver dónde se ha sentado.",
     "Abajo, todas las sesiones del aula, con su PDF."] },
-  material_incidencias: { titulo: "Incidencias del material", pasos: [
+  material_avisos: { titulo: "Necesidades y avisos", pasos: [
+    "Elige si es algo roto o que no funciona, o material que hace falta.",
+    "Indica el tipo de material, dónde y qué pasa (y la cantidad, si es una necesidad). Marca «Urgente» si impide dar clase.",
+    "Pulsa «Enviar aviso»: llega por Galvángram a quien lo gestiona (Coordinación TIC, Secretaría o Jefatura; si es urgente, también a Dirección).",
+    "Abajo ves tus avisos y su estado. Cuando te contesten, te llega un mensaje y sale aquí la respuesta.",
+    "Jefatura y Administración ven todos, responden, los marcan «En curso» o «Resuelto» y pueden descargar la lista en PDF."] },
+  material_incidencias: { titulo: "Incidencias de puestos", pasos: [
     "Lo que se ha roto o falta en cada puesto, con quién se sentaba y quién lo usó antes.",
     "Jefatura y Administración (Coordinación TIC) pulsan «Marcar resuelta» cuando se arregla."] },
   reservas: { titulo: "Reservas de espacios", pasos: [
@@ -6779,7 +6785,7 @@ function pdfSesionMaterial(ses, aula, alumnos) {
 }
 
 // Sesión en el aula: quién se sienta en cada puesto y con qué profesor/a
-function MaterialSesion({ aulas, sesiones = [], setSesiones, incidencias = [], setIncidencias, alumnos = [], cursos = [], profesores = [], usuario, gestion = false }) {
+function MaterialSesion({ aulas, sesiones = [], setSesiones, incidencias = [], setIncidencias, alumnos = [], cursos = [], profesores = [], usuario, gestion = false, cuentas = {}, setMensajes }) {
   const lista = listaAulasMaterial(aulas).filter(a => !a.oculta);
   const hoy = isoLocal(new Date());
   const [aulaId, setAulaId] = useState(lista[0]?.id || "");
@@ -6819,7 +6825,10 @@ function MaterialSesion({ aulas, sesiones = [], setSesiones, incidencias = [], s
     const al = alumnos.find(a => a.id === puestos[elegido]);
     const ant = usoAnterior(sesiones, aula.id, elegido, `${fecha}|${String(HORAS.indexOf(hora)).padStart(2, "0")}`, alumnos);
     setIncidencias(prev => [{ id: Date.now(), aulaId: aula.id, aula: aula.nombre, puesto: elegido, texto: texto.trim(), fecha, hora, anota: usuario, alumno: al?.nombre || null, grupo: al ? grupo : null, anterior: ant, estado: "abierta", ts: new Date().toISOString() }, ...prev]);
-    setTexto(""); setHecho(`Incidencia anotada en ${elegido}.`);
+    // Avisa a Coordinación TIC (aulas de informática) o a Jefatura (el resto)
+    const destino = responsablesMaterial(cuentas, profesores, aula.funcion === "Informática" ? "tic" : "jefatura").filter(d => d !== usuario);
+    if (setMensajes && destino.length) setMensajes(prev => [...destino.map((d, k) => mensajeRumbo(d, `⚠️ Incidencia en ${aula.nombre}, puesto ${elegido}: ${texto.trim()}. Avisa ${usuario}. Lo tienes en Material del centro › Incidencias de puestos.`, k)), ...prev]);
+    setTexto(""); setHecho(`Incidencia anotada en ${elegido}.${destino.length ? ` Avisados: ${destino.join(", ")}.` : ""}`);
   };
   const campo = { width: "100%", minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, color: R.noche, background: "#fff", fontFamily: "inherit", boxSizing: "border-box" };
   const etq = { display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo };
@@ -6970,6 +6979,151 @@ function MaterialHistorial({ aulas, sesiones = [], incidencias = [], alumnos = [
   );
 }
 
+// ─── Necesidades y avisos de material ────────────────────────────────────────
+// Aviso: {id, tipo: "incidencia" | "necesidad", categoria, lugar, descripcion, cantidad, urgente, profesor, ts,
+//         estado: "pendiente" | "en_curso" | "resuelto", respuesta, respondido: {por, ts}, notificados, respuestaVista}
+const CATEGORIAS_MATERIAL = [
+  { id: "informatica", label: "Informática y audiovisuales", ejemplo: "ordenadores, proyectores, pizarras digitales, wifi", cargo: "tic" },
+  { id: "mobiliario", label: "Mobiliario y mantenimiento", ejemplo: "mesas, sillas, persianas, luz, calefacción", cargo: "secretaria" },
+  { id: "laboratorio", label: "Laboratorios y talleres", ejemplo: "reactivos, herramientas, material de prácticas", cargo: "jefatura" },
+  { id: "deportes", label: "Material deportivo", ejemplo: "balones, colchonetas, petos", cargo: "jefatura" },
+  { id: "papeleria", label: "Papelería y fotocopias", ejemplo: "folios, tóner, rotuladores de pizarra", cargo: "secretaria" },
+  { id: "otro", label: "Otro", ejemplo: "", cargo: "jefatura" },
+];
+const ESTADO_AVISO = { pendiente: { txt: "Pendiente", fondo: R.crema, borde: R.mostaza }, en_curso: { txt: "En curso", fondo: R.azulClaro, borde: R.azul }, resuelto: { txt: "Resuelto", fondo: R.verdeCaminoClaro, borde: R.verdeCamino } };
+const NOMBRE_CARGO = { tic: "Coordinación TIC", secretaria: "Secretaría", jefatura: "Jefatura de Estudios", direccion: "Dirección" };
+// Quién recibe el aviso: las personas con ese cargo; si no hay nadie, Jefatura de Estudios (y Dirección si es urgente)
+function responsablesMaterial(cuentas, profesores, cargo, urgente = false) {
+  const con = c => profesores.filter(p => cargosIds(cuentas[p]).includes(c));
+  let l = con(cargo);
+  if (!l.length) l = con("jefatura");
+  if (urgente) l = [...l, ...con("direccion")];
+  return [...new Set(l)];
+}
+const mensajeRumbo = (destinatario, texto, extra = 0) => ({ id: Date.now() + extra, aviso: Date.now() + extra, remitente: "RumboAula", destinatario, conCopia: [], leido: false, urgente: false, ts: new Date().toISOString(), lugar: null, texto });
+function avisosMaterialEjemplo(profesores, sugerido) {
+  const p = i => profesores[i % profesores.length], hace = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString(); };
+  return [
+    { id: 7600, tipo: "incidencia", categoria: "informatica", lugar: "2º ESO B", descripcion: "El proyector se apaga solo a los diez minutos.", cantidad: "", urgente: true, profesor: sugerido || p(3), ts: hace(1), estado: "en_curso", respuesta: "Lo revisamos mañana a primera hora.", respondido: { por: "Elena Vega", ts: hace(0) }, notificados: ["Elena Vega", "Luis García"], respuestaVista: false },
+    { id: 7601, tipo: "necesidad", categoria: "papeleria", lugar: "Departamento de Lengua", descripcion: "Rotuladores de pizarra blanca (azul y negro).", cantidad: "10", urgente: false, profesor: p(8), ts: hace(2), estado: "pendiente", respuesta: "", notificados: ["Ana Jiménez"] },
+    { id: 7602, tipo: "incidencia", categoria: "mobiliario", lugar: "Laboratorio de Ciencias", descripcion: "La persiana de la ventana del fondo no sube.", cantidad: "", urgente: false, profesor: p(11), ts: hace(4), estado: "resuelto", respuesta: "Arreglada por mantenimiento.", respondido: { por: "Ana Jiménez", ts: hace(2) }, notificados: ["Ana Jiménez"], respuestaVista: true },
+    { id: 7603, tipo: "necesidad", categoria: "deportes", lugar: "Gimnasio", descripcion: "Balones de voleibol: los que hay están pinchados.", cantidad: "6", urgente: false, profesor: p(13), ts: hace(3), estado: "pendiente", respuesta: "", notificados: ["Ana Jiménez"] },
+  ];
+}
+function pdfAvisosMaterial(lista, titulo) {
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  const y = cabeceraPDF(doc, "Necesidades e incidencias de material", titulo);
+  autoTable(doc, { ...estiloTabla, startY: y, head: [["Fecha", "Tipo", "Categoría", "Lugar", "Qué pasa / qué hace falta", "Cant.", "Quién avisa", "Estado"]],
+    body: lista.length ? lista.map(a => [fmtD(a.ts), a.tipo === "incidencia" ? "Incidencia" : "Necesidad", CATEGORIAS_MATERIAL.find(c => c.id === a.categoria)?.label || "-", a.lugar || "-", `${a.urgente ? "URGENTE. " : ""}${a.descripcion}${a.respuesta ? `\nRespuesta: ${a.respuesta}` : ""}`, a.cantidad || "-", a.profesor, ESTADO_AVISO[a.estado].txt].map(sinEmoji)) : [["-", "", "", "", "Nada en esta lista", "", "", ""]],
+    styles: { ...estiloTabla.styles, fontSize: 10 }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 24 }, 2: { cellWidth: 36 }, 3: { cellWidth: 34 }, 5: { cellWidth: 14 }, 6: { cellWidth: 32 }, 7: { cellWidth: 22 } } });
+  guardarPDF(doc, `necesidades-material-${isoLocal(new Date())}.pdf`);
+}
+function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], usuario, gestion = false, cuentas = {}, profesores = [], setMensajes }) {
+  const lugares = [...listaEspacios(espacios).filter(e => !e.oculta).map(e => e.nombre), ...cursos];
+  const vacio = { tipo: "incidencia", categoria: "informatica", lugar: "", descripcion: "", cantidad: "", urgente: false };
+  const [f, setF] = useState(vacio);
+  const [hecho, setHecho] = useState("");
+  const [ver, setVer] = useState("abiertos");
+  const [respuestas, setRespuestas] = useState({});
+  const cat = CATEGORIAS_MATERIAL.find(c => c.id === f.categoria);
+  const destino = responsablesMaterial(cuentas, profesores, cat.cargo, f.urgente);
+  // Al abrir la pantalla, las respuestas nuevas a mis avisos quedan vistas
+  useEffect(() => {
+    if (gestion || !avisos.some(a => a.profesor === usuario && a.respuesta && !a.respuestaVista)) return;
+    setAvisos(prev => prev.map(a => a.profesor === usuario && a.respuesta ? { ...a, respuestaVista: true } : a));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const enviar = () => {
+    if (!f.descripcion.trim() || !f.lugar.trim()) return;
+    const a = { id: Date.now(), ...f, lugar: f.lugar.trim(), descripcion: f.descripcion.trim(), profesor: usuario, ts: new Date().toISOString(), estado: "pendiente", respuesta: "", notificados: destino };
+    setAvisos(prev => [a, ...prev]);
+    const txt = `${f.urgente ? "🔴 URGENTE · " : ""}${f.tipo === "incidencia" ? "Incidencia" : "Necesidad"} de material (${cat.label}) en ${a.lugar}: ${a.descripcion}${a.cantidad ? ` (cantidad: ${a.cantidad})` : ""}. Avisa ${usuario}. Lo tienes en Material del centro › Necesidades y avisos.`;
+    if (setMensajes) setMensajes(prev => [...destino.filter(d => d !== usuario).map((d, k) => mensajeRumbo(d, txt, k)), ...prev]);
+    setHecho(`Enviado. Avisados: ${destino.length ? destino.join(", ") : "nadie con ese cargo; lo verá Jefatura en la lista"}.`);
+    setF({ ...vacio, categoria: f.categoria });
+    setTimeout(() => setHecho(""), 6000);
+  };
+  const cambiarEstado = (a, estado) => {
+    const respuesta = (respuestas[a.id] ?? a.respuesta ?? "").trim();
+    setAvisos(prev => prev.map(x => x.id === a.id ? { ...x, estado, respuesta, respondido: { por: usuario, ts: new Date().toISOString() }, respuestaVista: false } : x));
+    if (setMensajes && a.profesor !== usuario) setMensajes(prev => [mensajeRumbo(a.profesor, `Tu aviso de material (${a.lugar}: ${a.descripcion.slice(0, 60)}${a.descripcion.length > 60 ? "…" : ""}) está ${estado === "resuelto" ? "RESUELTO" : "en curso"}.${respuesta ? ` Respuesta de ${usuario}: «${respuesta}»` : ""}`), ...prev]);
+  };
+  const base = gestion ? avisos : avisos.filter(a => a.profesor === usuario);
+  const lista = base.filter(a => ver === "todos" || (ver === "abiertos" ? a.estado !== "resuelto" : a.estado === "resuelto"))
+    .sort((a, b) => (a.estado === "resuelto") - (b.estado === "resuelto") || b.urgente - a.urgente || b.ts.localeCompare(a.ts));
+  const campo = { width: "100%", minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, color: R.noche, background: "#fff", fontFamily: "inherit", boxSizing: "border-box" };
+  const etq = { display: "grid", gap: 4, fontSize: 14, fontWeight: 700, color: R.petroleo };
+  const chip = (activo, txt, onClick, extra = {}) => <button key={txt} aria-pressed={activo} onClick={onClick} style={{ minHeight: 44, padding: "0 14px", borderRadius: 22, border: `2px solid ${activo ? R.azul : R.turquesaClaro}`, background: activo ? R.azulClaro : "#fff", color: R.petroleo, fontWeight: activo ? 700 : 400, cursor: "pointer", fontFamily: "inherit", fontSize: 15, ...extra }}>{txt}</button>;
+  return (
+    <div>
+      <TituloBloque titulo="Necesidades y avisos" sub="Avisa de lo que se ha roto o de lo que hace falta; llega a quien lo gestiona" icono="mensaje-enviar" />
+      <div style={{ background: R.azulClaro, padding: 16, margin: "16px 0", display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {chip(f.tipo === "incidencia", "⚠️ Algo roto o que no funciona", () => setF(v => ({ ...v, tipo: "incidencia" })))}
+          {chip(f.tipo === "necesidad", "📦 Material que hace falta", () => setF(v => ({ ...v, tipo: "necesidad" })))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+          <label style={etq}>Tipo de material
+            <select id="gd-nec-categoria" value={f.categoria} onChange={e => setF(v => ({ ...v, categoria: e.target.value }))} style={campo}>
+              {CATEGORIAS_MATERIAL.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </label>
+          <label style={etq}>Dónde
+            <input id="gd-nec-lugar" list="gd-nec-lugares" value={f.lugar} onChange={e => setF(v => ({ ...v, lugar: e.target.value }))} placeholder="Aula, espacio o departamento" style={campo} />
+            <datalist id="gd-nec-lugares">{lugares.map(l => <option key={l} value={l} />)}</datalist>
+          </label>
+          {f.tipo === "necesidad" && (
+            <label style={etq}>Cantidad (opcional)
+              <input id="gd-nec-cantidad" value={f.cantidad} onChange={e => setF(v => ({ ...v, cantidad: e.target.value }))} placeholder="Por ejemplo, 10" style={campo} />
+            </label>
+          )}
+        </div>
+        {cat.ejemplo && <div style={{ fontSize: 13, color: R.petroleo, marginTop: -6 }}>{cat.label}: {cat.ejemplo}.</div>}
+        <label style={etq}>{f.tipo === "incidencia" ? "¿Qué pasa?" : "¿Qué hace falta?"}
+          <textarea id="gd-nec-descripcion" rows={2} value={f.descripcion} onChange={e => setF(v => ({ ...v, descripcion: e.target.value }))} placeholder={f.tipo === "incidencia" ? "Por ejemplo: el proyector no enciende" : "Por ejemplo: cables HDMI para el aula"} style={{ ...campo, padding: 10, resize: "vertical" }} />
+        </label>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44, fontSize: 15, fontWeight: 700, color: R.noche, cursor: "pointer" }}>
+          <input id="gd-nec-urgente" type="checkbox" checked={f.urgente} onChange={e => setF(v => ({ ...v, urgente: e.target.checked }))} style={{ width: 22, height: 22, accentColor: R.azul }} />
+          Urgente: impide dar clase
+        </label>
+        <div style={{ fontSize: 14, color: R.petroleo }}>Se avisará por Galvángram a: <strong>{destino.length ? destino.join(", ") : "nadie todavía"}</strong>
+          {" "}({profesores.some(p => cargosIds(cuentas[p]).includes(cat.cargo)) ? NOMBRE_CARGO[cat.cargo] : `Jefatura de Estudios, porque nadie tiene el cargo de ${NOMBRE_CARGO[cat.cargo]}`}{f.urgente ? " y Dirección" : ""}).</div>
+        <button onClick={enviar} disabled={!f.descripcion.trim() || !f.lugar.trim()} style={{ minHeight: 52, border: "none", borderRadius: 6, background: f.descripcion.trim() && f.lugar.trim() ? R.azul : R.gris, color: f.descripcion.trim() && f.lugar.trim() ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 17, cursor: f.descripcion.trim() && f.lugar.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Enviar aviso</button>
+        {hecho && <div role="status" style={{ padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <strong style={{ color: R.petroleo, fontSize: 17, marginRight: 6 }}>{gestion ? "Avisos del centro" : "Mis avisos"}</strong>
+        {chip(ver === "abiertos", `Abiertos (${base.filter(a => a.estado !== "resuelto").length})`, () => setVer("abiertos"))}
+        {chip(ver === "resueltos", "Resueltos", () => setVer("resueltos"))}
+        {chip(ver === "todos", "Todos", () => setVer("todos"))}
+        {gestion && <button onClick={() => pdfAvisosMaterial(lista, ver === "abiertos" ? "Abiertos" : ver === "resueltos" ? "Resueltos" : "Todos")} style={{ marginLeft: "auto", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Descargar PDF</button>}
+      </div>
+      {lista.length === 0 ? <div style={{ padding: 16, background: "#fff", border: `1px solid ${R.turquesaClaro}`, color: R.petroleo }}>No hay avisos en esta lista.</div> : lista.map(a => {
+        const e = ESTADO_AVISO[a.estado], c = CATEGORIAS_MATERIAL.find(x => x.id === a.categoria);
+        return (
+          <div key={a.id} data-aviso-material={a.id} style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderLeft: `5px solid ${e.borde}`, padding: 14, marginBottom: 10, display: "grid", gap: 6 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ background: a.tipo === "incidencia" ? R.crema : R.azulClaro, padding: "2px 10px", fontWeight: 700, fontSize: 14, color: R.noche }}>{a.tipo === "incidencia" ? "⚠️ Incidencia" : "📦 Necesidad"}</span>
+              {a.urgente && <span style={{ background: R.noche, color: "#fff", padding: "2px 10px", fontWeight: 700, fontSize: 14 }}>Urgente</span>}
+              <span style={{ background: e.fondo, border: `1px solid ${e.borde}`, padding: "1px 10px", fontWeight: 700, fontSize: 14, color: R.noche }}>{e.txt}</span>
+              <span style={{ fontSize: 14, color: R.petroleo }}>{c?.label} · {a.lugar}</span>
+            </div>
+            <div style={{ fontSize: 16, color: R.noche }}>{a.descripcion}{a.cantidad ? <strong> · Cantidad: {a.cantidad}</strong> : null}</div>
+            <div style={{ fontSize: 13, color: R.petroleo }}>{gestion ? `${a.profesor} · ` : ""}{fmtD(a.ts)} {horaCorta(a.ts)}{a.notificados?.length ? ` · Avisados: ${a.notificados.join(", ")}` : ""}</div>
+            {a.respuesta && <div style={{ fontSize: 15, background: R.gris, padding: "6px 10px", color: R.noche }}>💬 <strong>{a.respondido?.por}</strong>: {a.respuesta}</div>}
+            {gestion && a.estado !== "resuelto" && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <input aria-label={`Respuesta al aviso de ${a.profesor}`} value={respuestas[a.id] ?? a.respuesta ?? ""} onChange={ev => setRespuestas(r => ({ ...r, [a.id]: ev.target.value }))} placeholder="Respuesta (opcional): qué se va a hacer" style={{ ...campo, flex: "1 1 240px", width: "auto" }} />
+                {a.estado === "pendiente" && <button onClick={() => cambiarEstado(a, "en_curso")} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${R.azul}`, borderRadius: 6, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>En curso</button>}
+                <button onClick={() => cambiarEstado(a, "resuelto")} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 6, background: R.verde, color: R.noche, fontWeight: 700, cursor: "pointer" }}>Resuelto</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Incidencias del material: abiertas y resueltas. Las resuelve Jefatura o Administración (Coordinación TIC)
 function MaterialIncidencias({ incidencias = [], setIncidencias, usuario, puedeResolver = false }) {
   const [ver, setVer] = useState("abierta");
@@ -6977,7 +7131,7 @@ function MaterialIncidencias({ incidencias = [], setIncidencias, usuario, puedeR
   const chip = (id, txt) => <button key={id} aria-pressed={ver === id} onClick={() => setVer(id)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: `2px solid ${ver === id ? R.azul : R.turquesaClaro}`, background: ver === id ? R.azulClaro : "#fff", color: R.petroleo, fontWeight: ver === id ? 700 : 400, cursor: "pointer", fontFamily: "inherit", fontSize: 15 }}>{txt}</button>;
   return (
     <div>
-      <TituloBloque titulo="Incidencias del material" sub="Lo que se ha roto o falta en cada puesto y quién lo usó" icono="alertas" />
+      <TituloBloque titulo="Incidencias de puestos" sub="Lo que se ha roto o falta en cada puesto y quién lo usó" icono="alertas" />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0 10px" }}>
         {chip("abierta", `Abiertas (${incidencias.filter(x => x.estado === "abierta").length})`)}{chip("resuelta", "Resueltas")}{chip("todas", "Todas")}
       </div>
@@ -7953,6 +8107,7 @@ function AppInterna() {
   const [aulasMaterial, setAulasMaterial] = useState(null); // null = las de ejemplo
   const [sesionesMaterial, setSesionesMaterial] = useState([]);
   const [incidenciasMaterial, setIncidenciasMaterial] = useState([]);
+  const [avisosMaterial, setAvisosMaterial] = useState([]);
   fijarZonas(zonasCentro);
   const [correosCentro, setCorreosCentro] = useState(MODO_DEMO ? { jefatura: "jefatura@ejemplo.es", orientacion: "orientacion@ejemplo.es", direccion: "direccion@ejemplo.es" } : {}); // {jefatura, orientacion, direccion} // avisos a familias ya hechos: {id: {n, ts, por}}
   const [parteGrande, setParteGrande] = useState(false); // parte a pantalla completa
@@ -8091,6 +8246,7 @@ function AppInterna() {
       const am = await sGet("material_aulas"); if (am) setAulasMaterial(am);
       const sm = await sGet("material_sesiones"); if (sm) setSesionesMaterial(sm);
       const im = await sGet("material_incidencias"); if (im) setIncidenciasMaterial(im);
+      const av = await sGet("material_avisos"); if (av) setAvisosMaterial(av);
       const cuentasActuales = cu || CUENTAS_DEMO;
       const ses = leerSesion();
       // Solo se recupera la sesión si esa persona tiene clave y su cargo permite ese perfil
@@ -8138,6 +8294,7 @@ function AppInterna() {
   useEffect(() => { if (!loading && aulasMaterial) sSet("material_aulas", aulasMaterial); }, [aulasMaterial, loading]);
   useEffect(() => { if (!loading) sSet("material_sesiones", sesionesMaterial); }, [sesionesMaterial, loading]);
   useEffect(() => { if (!loading) sSet("material_incidencias", incidenciasMaterial); }, [incidenciasMaterial, loading]);
+  useEffect(() => { if (!loading) sSet("material_avisos", avisosMaterial); }, [avisosMaterial, loading]);
   useEffect(() => { if (!loading) sSet("llaves_prestamos", prestamosLlaves); }, [prestamosLlaves, loading]);
   // Cada profesor actúa siempre en su propio nombre
   const identidadFija = !!usuario && profesores.includes(usuario);
@@ -8202,6 +8359,7 @@ function AppInterna() {
     setReservasEspacios(reservasEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort(), ej.sugerido));
     const sm = sesionesMaterialEjemplo(conv.alumnos, DEMO_PROFESORES, ej.sugerido);
     setSesionesMaterial(sm); setIncidenciasMaterial(incidenciasMaterialEjemplo(sm, conv.alumnos, DEMO_PROFESORES));
+    setAvisosMaterial(avisosMaterialEjemplo(DEMO_PROFESORES, ej.sugerido));
     if (ej.sugerido) { setUsuario(ej.sugerido); setUltimoProfe(ej.sugerido); }
     // Sin avisos emergentes: la pantalla de entrada muestra que los datos están cargados
   }
@@ -8398,7 +8556,8 @@ function AppInterna() {
       ? [
           { id: "material_sesion",      label: "🖥 Sesión en el aula", color: R.azul },
           { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
-          { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+          { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
+          { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "jefatura"
@@ -8434,7 +8593,8 @@ function AppInterna() {
       ? [
           { id: "material_sesion",      label: "🖥 Sesión en el aula", color: R.azul },
           { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
-          { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+          { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
+          { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
         ]
       : [] // Galvángram no tiene tabs adicionales
     : perfil.id === "conserjeria"
@@ -8444,7 +8604,8 @@ function AppInterna() {
       ]
     : perfil.id === "admin" && moduloJefatura === "material"
     ? [
-        { id: "material_incidencias", label: "🔔 Incidencias", color: R.mostaza },
+        { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
+        { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
         { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
       ]
     : []; // El resto de Administración no tiene pestañas, solo módulos
@@ -8452,7 +8613,7 @@ function AppInterna() {
   // Módulos de cada perfil (franja turquesa o menú lateral)
   const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
   const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
-  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : id === "material" ? "material_incidencias" : "admin_profesores"); };
+  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : id === "material" ? "material_avisos" : "admin_profesores"); };
   const modulos = perfil.id === "profesor"
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
@@ -8496,6 +8657,8 @@ function AppInterna() {
       add(porCubrir, porCubrir === 1 ? "clase que cubres hoy" : "clases que cubres hoy", "guardias", "mis_coberturas", "profe-ausente");
       const misLlaves = prestamosLlaves.filter(p => p.profesor === yo && llaveSinDevolver(p)).length;
       add(misLlaves, misLlaves === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
+      const respMat = avisosMaterial.filter(a => a.profesor === yo && a.respuesta && !a.respuestaVista).length;
+      add(respMat, respMat === 1 ? "respuesta nueva a tus avisos de material" : "respuestas nuevas a tus avisos de material", "material", "material_avisos", "mensaje-recibido");
       const misReservas = reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy && !horaTerminada(hoy, r.hora)).length;
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
@@ -8509,7 +8672,9 @@ function AppInterna() {
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
       add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
       const incMat = incidenciasMaterial.filter(x => x.estado === "abierta").length;
-      add(incMat, incMat === 1 ? "incidencia del material sin resolver" : "incidencias del material sin resolver", "material", "material_incidencias", "ordenador");
+      add(incMat, incMat === 1 ? "incidencia de puesto sin resolver" : "incidencias de puestos sin resolver", "material", "material_incidencias", "ordenador");
+      const avPend = avisosMaterial.filter(a => a.estado === "pendiente").length;
+      add(avPend, avPend === 1 ? "aviso de material pendiente" : "avisos de material pendientes", "material", "material_avisos", "mensaje-enviar");
     } else if (perfil.id === "conserjeria") {
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
       add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
@@ -9321,7 +9486,12 @@ function AppInterna() {
         {/* ── Gestión Ausencias (Jefatura) ── */}
         {tab === "material_sesion" && (
           <MaterialSesion aulas={aulasMaterial} sesiones={sesionesMaterial} setSesiones={setSesionesMaterial} incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial}
-            alumnos={alumnos} cursos={cursos} profesores={profesores} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} />
+            alumnos={alumnos} cursos={cursos} profesores={profesores} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"}
+            cuentas={cuentas} setMensajes={setMensajes} />
+        )}
+        {tab === "material_avisos" && (
+          <NecesidadesMaterial avisos={avisosMaterial} setAvisos={setAvisosMaterial} espacios={espaciosCentro} cursos={cursos}
+            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} cuentas={cuentas} profesores={profesores} setMensajes={setMensajes} />
         )}
         {tab === "material_historial" && <MaterialHistorial aulas={aulasMaterial} sesiones={sesionesMaterial} incidencias={incidenciasMaterial} alumnos={alumnos} />}
         {tab === "material_incidencias" && <MaterialIncidencias incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial} usuario={usuario} puedeResolver={perfil.id !== "profesor"} />}
