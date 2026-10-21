@@ -7897,10 +7897,11 @@ const PREGUNTAS = [
   { id: "instalar", q: "¿Cómo instalo RumboAula en el móvil o en el ordenador para ver una demostración?", a: <GuiaInstalar /> },
   { id: "datos", q: "¿Dónde se guardan los datos?", a: <>
     <p>En esta <strong>versión de demostración</strong>, en el navegador del dispositivo que estás usando: no se envían a ningún sitio. Por eso todo lo que ves es ficticio y <strong>no deben introducirse datos reales</strong> de alumnado ni de familias.</p>
-    <p>Cuando se use en un centro, los datos estarán <strong>solo en un servidor del propio centro</strong> (o en los de EducaMadrid) y no saldrán de él.</p></> },
+    <p>Cuando se use en un centro, <strong>cada centro tendrá su propia RumboAula</strong>, instalada en un servidor del propio instituto. Su uso es <strong>local</strong>: los datos estarán <strong>solo en ese servidor</strong>, no irán a ningún espacio externo ni a la nube y no se compartirán con otros centros.</p></> },
   { id: "dispositivos", q: "¿La puedo usar en el móvil y en el ordenador?", a: <>
     <p>Sí: es la misma aplicación, con el mismo enlace, en cualquier navegador. Se adapta a la pantalla del móvil, la tableta o el ordenador.</p>
-    <p>En esta versión, cada dispositivo guarda sus propios datos: lo que hagas en el móvil no aparece en el ordenador. Cuando funcione con el servidor del centro, verás lo mismo en todos.</p></> },
+    <p>En esta versión, cada dispositivo guarda sus propios datos: lo que hagas en el móvil no aparece en el ordenador. Cuando funcione con el servidor del centro, verás lo mismo en todos.</p>
+    <p>En el centro, para usarla hay que estar <strong>conectado a la wifi o a la red del instituto</strong>: el servidor solo se ve desde dentro. La demostración, en cambio, funciona desde cualquier sitio con internet.</p></> },
   { id: "mensajes", q: "¿Por qué no le ha llegado mi mensaje a un compañero?", a: <>
     <p>Porque en esta versión los mensajes de Galvángram se quedan en el dispositivo donde se escriben. En la demostración, para ver cómo llega un aviso, pulsa «Salir» y entra como quien lo ha recibido en «Entrar como otro profe del claustro».</p>
     <p>Con el servidor del centro, el mensaje llegará al momento al móvil o al ordenador del compañero.</p></> },
