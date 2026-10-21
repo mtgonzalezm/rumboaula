@@ -447,7 +447,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const enlaceAcceso = { background: "none", border: "none", color: R.azul, cursor: "pointer", fontSize: 15, minHeight: 40, padding: 0, fontFamily: "inherit" };
   const fallo = error && <div role="alert" style={{ background: R.crema, color: R.noche, borderLeft: `6px solid ${R.mostaza}`, fontSize: 15, fontWeight: 600, padding: "8px 12px" }}>⚠️ {error}</div>;
   const menu = [
-    { txt: "¿Qué es?", corto: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("oficial") },
+    { txt: "¿Qué es?", corto: "¿Qué es?", icono: "como-se-usa", accion: () => abrirPreguntas("que-es") },
     { txt: "Manual de uso", corto: "Manual", icono: "deberes", href: "/manual/" },
     { txt: "Preguntas frecuentes", corto: "Preguntas", icono: "mensajes", accion: () => abrirPreguntas() },
     { txt: "Instalar la app", corto: "Instalar", icono: "importar", accion: () => abrirPreguntas("instalar") },
@@ -6402,7 +6402,53 @@ function GuiaInstalar() {
   );
 }
 
+// Raíces frente a RumboAula, para «¿Qué es RumboAula?»
+const COMPARA_RAICES = [
+  ["Qué es", "La plataforma oficial de gestión educativa de la Comunidad de Madrid.", "Una herramienta interna del centro para la comunicación y la coordinación del día a día."],
+  ["Para qué", "Notas y evaluación, matrícula, expediente y gestiones con la Administración.", "Convivencia, guardias, ausencias, coberturas y avisos entre Dirección, Jefatura y profesorado."],
+  ["Quién se relaciona", "El centro con la Administración y con las familias por la vía oficial.", "Dirección, Jefatura y profesorado entre sí, y con las familias en algunos casos (por ejemplo, el aviso por varios partes)."],
+  ["Ritmo", "Pensada para la gestión administrativa: completa, pero con más pasos y pantallas.", "Pensada para el aula y el pasillo: desde el móvil, en uno o dos toques."],
+  ["Validez", "Es el registro oficial.", "Es un apoyo interno: lo que tenga que constar oficialmente se sigue registrando en Raíces."],
+];
+const QueEsRumboAula = () => (
+  <>
+    <p><strong>RumboAula</strong> es una aplicación <strong>interna del centro</strong> para la relación diaria entre <strong>Dirección, Jefatura de Estudios y profesorado</strong> y, en algunos casos, con las <strong>familias</strong>. Permite resolver las gestiones del día a día <strong>en segundos y desde el móvil</strong>, incluso en mitad de una clase o de una guardia: poner un parte, ver a quién le toca cada zona, avisar de una ausencia, cubrir una clase o pedir ayuda a un compañero.</p>
+    <p><strong>Raíces es y seguirá siendo la plataforma oficial</strong> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula no la sustituye ni compite con ella: la <strong>complementa</strong>, dando agilidad a la gestión interna del centro.</p>
+    <div style={{ overflowX: "auto", margin: "10px 0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, lineHeight: 1.45 }}>
+        <thead>
+          <tr>
+            <th style={{ width: "18%" }}></th>
+            <th style={{ textAlign: "left", padding: "8px 10px", background: R.gris, color: R.noche }}>Raíces <span style={{ fontWeight: 400 }}>· oficial</span></th>
+            <th style={{ textAlign: "left", padding: "8px 10px", background: R.azul, color: "#fff" }}>RumboAula <span style={{ fontWeight: 400 }}>· interna</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {COMPARA_RAICES.map(([t, raices, rumbo]) => (
+            <tr key={t} style={{ borderBottom: `1px solid ${R.turquesaClaro}` }}>
+              <th scope="row" style={{ textAlign: "left", padding: "8px 6px", color: R.petroleo, verticalAlign: "top" }}>{t}</th>
+              <td style={{ padding: "8px 10px", verticalAlign: "top" }}>{raices}</td>
+              <td style={{ padding: "8px 10px", verticalAlign: "top", background: R.azulClaro }}>{rumbo}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p style={{ marginBottom: 4 }}><strong>Por qué es importante para el centro:</strong></p>
+    <ul style={{ margin: "0 0 8px", paddingLeft: 20 }}>
+      <li><strong>Agilidad:</strong> un parte en menos de un minuto y un aviso urgente a la guardia de tu zona con un toque.</li>
+      <li><strong>Guardias organizadas:</strong> quién está en cada zona, qué clases se quedan sin profesor, quién las cubre y qué tarea ha dejado quien falta.</li>
+      <li><strong>Coordinación entre Dirección, Jefatura y profesorado:</strong> partes, ausencias, coberturas y medidas correctoras al momento, sin papeles ni hojas sueltas.</li>
+      <li><strong>Familias, cuando hace falta:</strong> informe y correo preparados para avisar a la familia del alumnado con varios partes.</li>
+      <li><strong>Seguimiento:</strong> avisos del alumnado con varios partes y estadísticas de convivencia.</li>
+      <li><strong>Menos tiempo en trámites</strong> y más tiempo para el alumnado.</li>
+    </ul>
+    <p style={{ margin: 0 }}>En resumen: <strong>Raíces es el registro oficial; RumboAula es la herramienta ágil del día a día</strong> para la relación diaria entre Dirección, Jefatura, profesorado y familias.</p>
+  </>
+);
+
 const PREGUNTAS = [
+  { id: "que-es", q: "¿Qué es RumboAula y en qué se diferencia de Raíces?", a: <QueEsRumboAula /> },
   { id: "instalar", q: "¿Cómo instalo RumboAula en el móvil o en el ordenador para ver una demostración?", a: <GuiaInstalar /> },
   { id: "datos", q: "¿Dónde se guardan los datos?", a: <>
     <p>En esta <strong>versión de demostración</strong>, en el navegador del dispositivo que estás usando: no se envían a ningún sitio. Por eso todo lo que ves es ficticio y <strong>no deben introducirse datos reales</strong> de alumnado ni de familias.</p>
