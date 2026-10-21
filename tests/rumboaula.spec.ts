@@ -56,6 +56,7 @@ test.describe('Todas las pantallas se abren sin fallos', () => {
     ['Tutor/a', 'tutoría de'],
     ['Jefatura', 'Ana Jiménez · convivencia'],
     ['Administración', 'Elena Vega · alumnado'],
+    ['Conserjería', 'Llaves de las aulas'],
   ] as const) {
     test(perfil, async ({ page }) => {
       const errores = vigilarErrores(page)
