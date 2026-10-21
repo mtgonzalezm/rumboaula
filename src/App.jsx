@@ -1847,6 +1847,13 @@ function InformesGuardados({ informes, setInformes, partes, banos, tutores, C })
   );
 }
 
+// En la demostración, recordatorio justo donde es más fácil meter datos reales sin darse cuenta
+const AvisoSoloFicticios = ({ que = "" }) => MODO_DEMO ? (
+  <div role="note" data-aviso-ficticios style={{ margin: "0 0 14px", padding: "12px 14px", background: R.crema, borderLeft: `6px solid ${R.mostaza}`, color: R.noche, fontSize: 15, lineHeight: 1.5 }}>
+    <strong>⚠️ Solo datos ficticios.</strong> Esta es una versión de demostración: no importes ni escribas datos reales {que}. Para usar datos reales, cada centro necesita su propia instalación en un servidor del instituto y la autorización de la Delegación de Protección de Datos.
+  </div>
+) : null;
+
 function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
   const [avisoAlta, setAvisoAlta] = useState("");
   const [nuevoAlumno, setNuevoAlumno] = useState({ nombre: "", curso: "", tutor: "", email: "", telefono: "", nia: "" });
@@ -1913,6 +1920,7 @@ function AdminAlumnos({ alumnos, setAlumnos, inpStyle, C }) {
   return (
     <div>
       <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Alumnos" icono="grupos" /></div>
+      <AvisoSoloFicticios que="del alumnado ni de las familias" />
       <div style={{ background: C.white, borderRadius: 12, marginBottom: 14, display: "flex", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", borderBottom: `2px solid ${C.cream}` }}>
         <button style={stb(subTab === "importar")} onClick={() => setSubTab("importar")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="importar" tam={30} />Importar CSV/Excel</span></button>
         <button style={stb(subTab === "manual")}   onClick={() => setSubTab("manual")}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="anadir-manual" tam={30} />Añadir manual</span></button>
@@ -9752,6 +9760,7 @@ function AppInterna() {
         {tab === "admin_profesores" && (
           <div>
             <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Profesores" icono="perfil" /></div>
+            <AvisoSoloFicticios que="del profesorado (nombres, correos)" />
             <CorreosCentro C={C} />
             <Card>
               <h3 style={{ marginTop: 0, color: C.dark, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="anadir-profesor" tam={44} />Añadir profesor</h3>
