@@ -7830,16 +7830,24 @@ function GuiaInstalar() {
 
 // Raíces frente a RumboAula, para «¿Qué es RumboAula?»
 const COMPARA_RAICES = [
-  ["Qué es", "La plataforma oficial de gestión educativa de la Comunidad de Madrid.", "Una herramienta interna del centro para la comunicación y la coordinación del día a día."],
-  ["Para qué", "Notas y evaluación, matrícula, expediente y gestiones con la Administración.", "Convivencia, guardias, ausencias, coberturas y avisos entre Dirección, Jefatura y profesorado."],
-  ["Quién se relaciona", "El centro con la Administración y con las familias por la vía oficial.", "Dirección, Jefatura y profesorado entre sí, y con las familias en algunos casos (por ejemplo, el aviso por varios partes)."],
-  ["Ritmo", "Pensada para la gestión administrativa: completa, pero con más pasos y pantallas.", "Pensada para el aula y el pasillo: desde el móvil, en uno o dos toques."],
+  ["Qué es", "La plataforma oficial de gestión educativa de la Comunidad de Madrid.", "Una herramienta interna del centro para la organización y la coordinación del día a día."],
+  ["Para qué", "Notas y evaluación, matrícula, expediente y gestiones con la Administración.", "Convivencia, guardias y ausencias, reservas de espacios y llaves, material del centro y avisos internos."],
+  ["Quién la usa", "El centro, en su relación oficial con la Administración y con las familias.", "Dirección, Jefatura, profesorado y Conserjería entre sí, y con las familias en algunos casos (por ejemplo, el aviso por varios partes o una conducta positiva)."],
+  ["Ritmo", "Pensada para la gestión administrativa: completa, pero con más pasos y pantallas.", "Pensada para el aula, el pasillo y la conserjería: desde el móvil, en uno o dos toques."],
   ["Validez", "Es el registro oficial.", "Es un apoyo interno: lo que tenga que constar oficialmente se sigue registrando en Raíces."],
+];
+// Qué se puede hacer con RumboAula, módulo a módulo
+const FUNCIONES_RUMBO = [
+  ["partes", "Partes y convivencia", "Parte en menos de un minuto, medidas correctoras, conductas positivas y aviso a la familia, al tutor/a, a Jefatura y a Orientación."],
+  ["guardias", "Guardias y ausencias", "Quién está en cada zona, clases sin profesor y quién las cubre, ausencias con la tarea para el alumnado y reparto equilibrado de las coberturas."],
+  ["llave", "Espacios", "Reserva de laboratorios, aulas de informática, salón de actos y otros espacios, y quién tiene cada llave, junto con Conserjería."],
+  ["ordenador", "Material del centro", "Quién se sienta en cada puesto y con qué profesor/a, incidencias con el último uso, y necesidades y avisos que llegan a quien los gestiona."],
+  ["mensajes", "Galvángram y avisos", "Mensajes rápidos y avisos urgentes a la guardia de tu zona, y una campana con todo lo que tienes pendiente."],
 ];
 const QueEsRumboAula = () => (
   <>
-    <p><strong>RumboAula</strong> es una aplicación <strong>interna del centro</strong> para la relación diaria entre <strong>Dirección, Jefatura de Estudios y profesorado</strong> y, en algunos casos, con las <strong>familias</strong>. Permite resolver las gestiones del día a día <strong>en segundos y desde el móvil</strong>, incluso en mitad de una clase o de una guardia: poner un parte, ver a quién le toca cada zona, avisar de una ausencia, cubrir una clase o pedir ayuda a un compañero.</p>
-    <p><strong>Raíces es y seguirá siendo la plataforma oficial</strong> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula no la sustituye ni compite con ella: la <strong>complementa</strong>, dando agilidad a la gestión interna del centro.</p>
+    <p><strong>RumboAula</strong> es una aplicación <strong>interna del centro</strong> para la organización diaria entre <strong>Dirección, Jefatura de Estudios, profesorado y Conserjería</strong> y, en algunos casos, con las <strong>familias</strong>. Resuelve en segundos y desde el móvil lo que pasa cada día en el instituto: un parte, una guardia, una clase sin profesor, una reserva del laboratorio, una llave, un ordenador roto.</p>
+    <p><strong>Raíces es y seguirá siendo la plataforma oficial</strong> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula no la sustituye ni compite con ella: la <strong>complementa</strong> y se ocupa de la organización interna del día a día.</p>
     <div style={{ overflowX: "auto", margin: "10px 0" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, lineHeight: 1.45 }}>
         <thead>
@@ -7860,16 +7868,26 @@ const QueEsRumboAula = () => (
         </tbody>
       </table>
     </div>
+    <p style={{ marginBottom: 6 }}><strong>Qué puedes hacer con RumboAula:</strong></p>
+    <div data-funciones style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+      {FUNCIONES_RUMBO.map(([ico, t, txt]) => (
+        <div key={t} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: R.azulClaro, padding: "8px 10px" }}>
+          <Icono nombre={ico} tam={30} />
+          <div><strong style={{ color: R.petroleo }}>{t}</strong><div style={{ fontSize: 13 }}>{txt}</div></div>
+        </div>
+      ))}
+    </div>
     <p style={{ marginBottom: 4 }}><strong>Por qué es importante para el centro:</strong></p>
     <ul style={{ margin: "0 0 8px", paddingLeft: 20 }}>
-      <li><strong>Agilidad:</strong> un parte en menos de un minuto y un aviso urgente a la guardia de tu zona con un toque.</li>
-      <li><strong>Guardias organizadas:</strong> quién está en cada zona, qué clases se quedan sin profesor, quién las cubre y qué tarea ha dejado quien falta.</li>
-      <li><strong>Coordinación entre Dirección, Jefatura y profesorado:</strong> partes, ausencias, coberturas y medidas correctoras al momento, sin papeles ni hojas sueltas.</li>
-      <li><strong>Familias, cuando hace falta:</strong> informe y correo preparados para avisar a la familia del alumnado con varios partes.</li>
-      <li><strong>Seguimiento:</strong> avisos del alumnado con varios partes y estadísticas de convivencia.</li>
+      <li><strong>Agilidad:</strong> lo que antes llevaba varios pasos o un paseo hasta conserjería se hace desde el móvil, en uno o dos toques.</li>
+      <li><strong>Todo en un solo sitio:</strong> deja atrás la libreta de llaves, la hoja de reservas pegada en la puerta, el cuadrante de guardias en papel y la hoja de puestos del aula de informática.</li>
+      <li><strong>Coordinación al momento:</strong> partes, ausencias, coberturas, reservas e incidencias llegan a quien tiene que verlas, con aviso en Galvángram y en la campana.</li>
+      <li><strong>Responsabilidad y cuidado del material:</strong> queda constancia de quién tiene cada llave y de quién se sienta en cada puesto, y con qué profesor/a.</li>
+      <li><strong>Equilibrio y seguimiento:</strong> reparto justo de las coberturas, estadísticas de convivencia y avisos del alumnado con varios partes.</li>
+      <li><strong>Familias, cuando hace falta:</strong> informes y correos preparados, también para reconocer lo que el alumnado hace bien.</li>
       <li><strong>Menos tiempo en trámites</strong> y más tiempo para el alumnado.</li>
     </ul>
-    <p style={{ margin: 0 }}>En resumen: <strong>Raíces es el registro oficial; RumboAula es la herramienta ágil del día a día</strong> para la relación diaria entre Dirección, Jefatura, profesorado y familias.</p>
+    <p style={{ margin: 0 }}>En resumen: <strong>Raíces es el registro oficial; RumboAula es la herramienta ágil de la organización diaria</strong> del centro, para Dirección, Jefatura, profesorado, Conserjería y, cuando hace falta, las familias.</p>
   </>
 );
 
