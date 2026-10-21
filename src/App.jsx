@@ -2844,6 +2844,60 @@ function positivasEjemplo(alumnos, profesores) {
   });
   return l;
 }
+function textoPositiva(x) {
+  return `RECONOCIMIENTO DE CONDUCTA POSITIVA — ${CENTRO} (${CIUDAD})
+Ref.: POSITIVA-${x.id}
+
+Alumno/a: ${x.alumno}
+Curso: ${x.curso}
+Tutor/a del grupo: ${x.tutor || "-"}${x.tutorEmail ? ` (${x.tutorEmail})` : ""}
+Fecha: ${fmt(x.ts)}
+Profesor/a que lo anota: ${x.profesor}
+
+Conducta positiva: ${x.tipo}${x.detalle ? `\n\n${x.detalle}` : ""}
+
+Queremos compartir con ustedes este reconocimiento y animar a ${x.alumno.split(" ")[0]} a seguir así.
+Para cualquier aclaración pueden contactar con el tutor/a del grupo o con Jefatura de Estudios.`;
+}
+function pdfPositiva(x) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, "Reconocimiento de conducta positiva", `Ref. POSITIVA-${x.id}`);
+  autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", styles: { ...estiloTabla.styles, fontSize: 13 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 48, fillColor: [230, 246, 226] } },
+    body: [["Alumno/a", x.alumno], ["Curso", x.curso], ["Tutor/a del grupo", x.tutor || "-"], ["Fecha", fmt(x.ts)], ["Profesor/a", x.profesor], ["Conducta positiva", x.tipo]].map(([k, v]) => [k, sinEmoji(v)]) });
+  y = doc.lastAutoTable.finalY + 8;
+  const w = doc.internal.pageSize.getWidth();
+  if (x.detalle) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Qué ha hecho", 14, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    const l = doc.splitTextToSize(sinEmoji(x.detalle), w - 28); doc.text(l, 14, y + 6); y += 6 + l.length * 5 + 6;
+  }
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+  const cierre = doc.splitTextToSize(`Queremos compartir con la familia este reconocimiento y animar a ${x.alumno.split(" ")[0]} a seguir así.`, w - 28);
+  doc.text(cierre, 14, y); y += cierre.length * 5;
+  firmasPDF(doc, y, [{ cargo: "El profesor/a", nombre: x.profesor }, { cargo: "El tutor/a", nombre: x.tutor }, { cargo: "Recibí: la familia" }]);
+  guardarPDF(doc, `conducta-positiva-${nombreArchivo(x.alumno)}-${isoLocal(x.ts)}.pdf`);
+}
+// Las mismas vías que un parte: PDF, texto y correo a familia, tutor/a, Jefatura y Orientación
+function ComoComunicarPositiva({ x, C }) {
+  return (
+    <div data-comunicar style={{ marginTop: 14, textAlign: "left", border: `1px solid ${R.turquesaClaro}`, background: C.white }}>
+      <div style={{ background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.noche, padding: "10px 14px", fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="mensaje-enviar" tam={34} />Comunicarlo a la familia, al tutor/a, a Jefatura y a Orientación</div>
+      <div style={{ padding: "12px 14px 0", fontSize: 16, color: R.petroleo, lineHeight: 1.5 }}>
+        Elige abajo a quién se lo envías y pulsa «Abrir en mi correo». Para el contenido, <strong>descarga el PDF</strong> y adjúntalo, o <strong>copia el texto</strong> y pégalo en el correo.
+      </div>
+      <div style={{ padding: 14 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={() => pdfPositiva(x)} style={{ background: R.azul, color: "#fff", border: "none", borderRadius: 6, minHeight: 48, padding: "0 18px", cursor: "pointer", fontWeight: 700, fontSize: 17 }}>⬇️ Descargar PDF</button>
+          <CopyBtn getText={() => textoPositiva(x)} label="📋 Copiar texto" />
+        </div>
+        <ElegirDestinatarios key={x.id} alumno={{ nombre: x.alumno, email: x.email }} tutorNombre={x.tutor} tutorEmail={x.tutorEmail}
+          asunto={`Conducta positiva · ${x.alumno} (${x.curso})`} cuerpo={textoPositiva(x)} porDefecto={["familia", "tutor", "jefatura", "orientacion"]} C={C} />
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>La app no envía correos: se mandan desde tu correo del centro, que es el canal oficial.</div>
+      </div>
+    </div>
+  );
+}
 function PositivasAlumno({ lista, C }) {
   if (!lista.length) return null;
   const orden = [...lista].sort((a, b) => b.ts.localeCompare(a.ts));
@@ -2860,7 +2914,8 @@ function PositivasAlumno({ lista, C }) {
     </div>
   );
 }
-function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpStyle, labelStyle }) {
+function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, tutores = {}, setMensajes, C, inpStyle, labelStyle }) {
+  const [comunicar, setComunicar] = useState(null); // anotación cuyo aviso se está preparando
   const [busca, setBusca] = useState("");
   const [alumnoId, setAlumnoId] = useState(null);
   const [tipo, setTipo] = useState("");
@@ -2870,7 +2925,14 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpS
   const coinciden = busca && !al ? alumnos.filter(a => `${a.nombre} ${a.curso}`.toLowerCase().includes(busca.toLowerCase())).slice(0, 30) : [];
   const anotar = () => {
     if (!al || !tipo) return;
-    setPositivas(prev => [{ id: Date.now(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, tipo, detalle: detalle.trim(), profesor: usuario, ts: new Date().toISOString() }, ...prev]);
+    const tutor = tutores[al.curso]?.tutor || al.tutor || "";
+    const x = { id: Date.now(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, email: al.email || "", tutor, tutorEmail: tutores[al.curso]?.email || "",
+      tipo, detalle: detalle.trim(), profesor: usuario, ts: new Date().toISOString() };
+    setPositivas(prev => [x, ...prev]);
+    // El tutor/a se entera también dentro de la app, por Galvángram
+    if (tutor && tutor !== usuario && setMensajes) setMensajes(prev => [{ id: x.id + 1, aviso: x.id + 1, remitente: "RumboAula", destinatario: tutor, conCopia: [], leido: false, urgente: false, ts: x.ts, lugar: null,
+      texto: `⭐ ${usuario} ha anotado una conducta positiva de ${al.nombre} (${al.curso}): ${tipo}.${x.detalle ? ` «${x.detalle}»` : ""}` }, ...prev]);
+    setComunicar(x);
     setHecho(`Anotado: ${tipo} · ${al.nombre}`); setBusca(""); setAlumnoId(null); setTipo(""); setDetalle("");
     setTimeout(() => setHecho(""), 4000);
   };
@@ -2879,6 +2941,16 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpS
     <div>
       <TituloBloque titulo="Conducta positiva" sub="Anota también lo que el alumnado hace bien" icono="saludo" />
       {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+      {comunicar && (
+        <Card style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <strong style={{ color: R.petroleo, fontSize: 16 }}>⭐ {comunicar.tipo} · {comunicar.alumno} — {comunicar.curso}</strong>
+            <button onClick={() => setComunicar(null)} style={{ minHeight: 44, padding: "0 14px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer" }}>Cerrar</button>
+          </div>
+          {comunicar.tutor && comunicar.tutor !== usuario && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Su tutor/a, {comunicar.tutor}, ya lo ha recibido en Galvángram.</div>}
+          <ComoComunicarPositiva x={comunicar} C={C} />
+        </Card>
+      )}
       <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
         <label htmlFor="gd-pos-busca" style={labelStyle}><ConIcono texto="🔍 Alumno o alumna" tam={30} /></label>
         <input id="gd-pos-busca" value={busca} onChange={e => { setBusca(e.target.value); setAlumnoId(null); }} placeholder="Nombre o grupo…" style={{ ...inpStyle, marginBottom: 8 }} />
@@ -2924,7 +2996,11 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, C, inpS
         {mias.length === 0 ? <p style={{ color: R.petroleo, margin: 0 }}>Todavía no has anotado ninguna.</p> : mias.map(x => (
           <div key={x.id} data-positiva={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.noche }}>
             <div><strong>{x.alumno}</strong> — {x.curso}<div style={{ color: R.verdeOscuro, fontWeight: 700 }}>⭐ {x.tipo}</div>{x.detalle && <div style={{ color: C.gray, fontSize: 14 }}>{x.detalle}</div>}<div style={{ color: C.gray, fontSize: 13 }}>{fmtD(x.ts)}</div></div>
-            <button onClick={() => setPositivas(prev => prev.filter(y => y.id !== x.id))} aria-label={`Borrar la anotación de ${x.alumno}`} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer", flexShrink: 0 }}>Borrar</button>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button onClick={() => { const al2 = alumnos.find(a => a.id === x.alumnoId); setComunicar({ ...x, email: x.email || al2?.email || "", tutor: x.tutor || tutores[x.curso]?.tutor || al2?.tutor || "", tutorEmail: x.tutorEmail || tutores[x.curso]?.email || "" }); window.scrollTo(0, 0); }}
+                style={{ minHeight: 44, padding: "0 12px", border: `2px solid ${R.azul}`, borderRadius: 6, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>Comunicar</button>
+              <button onClick={() => { setPositivas(prev => prev.filter(y => y.id !== x.id)); if (comunicar?.id === x.id) setComunicar(null); }} aria-label={`Borrar la anotación de ${x.alumno}`} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer" }}>Borrar</button>
+            </div>
           </div>
         ))}
       </Card>
@@ -3251,8 +3327,9 @@ const AYUDAS = {
   positivas: { titulo: "Conducta positiva", pasos: [
     "Busca al alumno o alumna por su nombre o su grupo.",
     "Elige qué ha hecho bien. Te saldrán ideas de frases: toca una para usarla y retócala, o escribe la tuya.",
-    "Pulsa «Anotar». Lo verán su tutor/a y Jefatura, y saldrá en el informe para la familia.",
-    "Debajo tienes tus anotaciones; puedes borrar una si te has equivocado."] },
+    "Pulsa «Anotar». Su tutor/a recibe un aviso en Galvángram, lo ven Jefatura y el tutor/a en su ficha, y sale en el informe para la familia.",
+    "Después, como con un parte, puedes descargar el PDF o copiar el texto y enviarlo por correo a la familia, al tutor/a, a Jefatura y a Orientación.",
+    "Debajo tienes tus anotaciones: «Comunicar» para enviarla más tarde y «Borrar» si te has equivocado."] },
   mis_coberturas: { titulo: "Mis coberturas", pasos: [
     "Aquí están las clases que has cubierto: las de hoy, las del mes y las del curso, desde el 1 de septiembre.",
     "Arriba, las próximas clases que tienes que cubrir. Cada una dice si te la asignaste tú o Jefatura.",
@@ -7864,7 +7941,7 @@ function AppInterna() {
 
         {/* ── Baños (profesor) ── */}
         {tab === "positivas" && (
-          <ConductasPositivas alumnos={alumnos} positivas={positivas} setPositivas={setPositivas} usuario={fProfesor || usuario} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
+          <ConductasPositivas alumnos={alumnos} positivas={positivas} setPositivas={setPositivas} usuario={fProfesor || usuario} tutores={tutores} setMensajes={setMensajes} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
         )}
 
         {tab === "bano" && (
