@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { vigilarErrores, empezar, comoProfe, comoJefatura, salir, leer, pestaña } from './ayuda'
+import { vigilarErrores, empezar, comoProfe, comoJefatura, comoSecretaria, salir, leer, pestaña } from './ayuda'
 
 type Al = { id: number, nombre: string, curso: string }
 const comoOtroProfe = async (page: Page, nombre: string) => {
@@ -200,5 +200,30 @@ test('Jefatura de Estudios da de alta al profesorado en Organización', async ({
   await page.getByPlaceholder('Nombre completo del profesor').fill('Profesora De Prueba')
   await page.getByRole('button', { name: /^Añadir$/ }).click()
   expect(await leer(page, 'profesores')).toContain('Profesora De Prueba')
+  expect(errores).toEqual([])
+})
+
+test('Jefatura de Estudios y Dirección no tienen tutoría', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoJefatura(page)
+  // En los datos de ejemplo nadie de Jefatura es tutor/a, y no tiene el perfil Tutor/a
+  const tutoresEj = Object.values(await leer(page, 'tutores')).map((t: any) => t.tutor)
+  expect(tutoresEj).not.toContain('Ana Jiménez')
+  expect(tutoresEj).not.toContain('Luis García')
+  await page.getByRole('button', { name: /Cambiar de perfil|Jefatura/ }).first().click()
+  expect(await page.getByRole('option', { name: /Tutor\/a de/ }).count()).toBe(0)
+  await page.keyboard.press('Escape')
+  await salir(page)
+  // Secretaría no la ve en la lista de tutores
+  await comoSecretaria(page)
+  await page.getByRole('button', { name: /^Alumnos/ }).first().click()
+  const sel = page.getByLabel('Tutor/a de 2º ESO A', { exact: true })
+  await expect(sel.locator('option', { hasText: 'Ana Jiménez' })).toHaveCount(0)
+  await expect(sel.locator('option', { hasText: 'Luis García' })).toHaveCount(0)
+  // Si a un tutor/a se le da el cargo de Jefatura de Estudios, deja la tutoría
+  await page.getByRole('button', { name: /^Profesores/ }).first().click()
+  await page.getByRole('group', { name: 'Cargos de Laura Torres' }).getByRole('button', { name: /Jefatura de Estudios/ }).click()
+  expect((await leer(page, 'tutores'))['2º ESO A'].tutor).toBe('')
   expect(errores).toEqual([])
 })
