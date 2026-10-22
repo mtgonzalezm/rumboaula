@@ -7831,6 +7831,7 @@ function GuiaInstalar() {
         {Object.entries(PASOS).map(([id, v]) => <button key={id} role="tab" aria-selected={disp === id} onClick={() => setDisp(id)} style={tab(id)}>{v.titulo}</button>)}
       </div>
       <ol style={{ margin: "0 0 6px", paddingLeft: 20 }}>{PASOS[disp].pasos.map(t => <li key={t} style={{ marginBottom: 4 }}>{t}</li>)}</ol>
+      <p style={{ margin: "8px 0 0", color: C.gray, fontSize: 14 }}><strong>¿La instalaste antes y ves el icono antiguo?</strong> El móvil y el ordenador guardan el icono del día en que la instalaste. Quítala (mantén pulsado el icono y elige eliminar, o en el ordenador desinstálala desde el menú de la app) y vuelve a instalarla siguiendo estos pasos.</p>
       <p style={{ margin: "8px 0 0", color: C.gray, fontSize: 14 }}>Después, para la demostración: pulsa «Cargar los datos de ejemplo» y elige un perfil (Profesor/a, Tutor/a, Jefatura o Administración). Recuerda que en esta versión cada dispositivo tiene sus propios datos.</p>
     </div>
   );
