@@ -32,7 +32,7 @@ export const sinFalloEnPantalla = (page: Page) => expect(page.getByText('Algo ha
 
 // Lee un dato guardado por la app
 export const leer = (page: Page, clave: string) =>
-  page.evaluate(k => JSON.parse(localStorage.getItem('galvandesk:' + k) || 'null'), clave)
+  page.evaluate(k => JSON.parse(localStorage.getItem('rumboaula:' + k) || 'null'), clave)
 
 export async function pestaña(page: Page, nombre: string | RegExp) {
   await page.getByRole('button', typeof nombre === 'string' ? { name: nombre, exact: true } : { name: nombre }).first().click()
