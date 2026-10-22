@@ -862,3 +862,13 @@ test('Necesidades y avisos de material: el profe avisa, llega a Coordinación TI
   expect((await leer(page, 'mensajes')).some((m: { destinatario: string, texto: string }) => m.destinatario === 'Carmen López' && m.texto.includes('RESUELTO') && m.texto.includes('Cambiamos la lámpara'))).toBe(true)
   expect(errores).toEqual([])
 })
+
+test('Autoría: el enlace «Licencia» abre y muestra la pregunta de la licencia', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await expect(page.locator('[data-autoria]').first()).toContainText('© 2026 María Teresa González Muñoz')
+  await page.locator('[data-autoria] button').first().click()
+  await expect(page.locator('#faq-licencia')).toHaveAttribute('open', '')
+  await expect(page.locator('#faq-licencia')).toBeInViewport()
+  expect(errores).toEqual([])
+})

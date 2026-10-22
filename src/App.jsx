@@ -7960,6 +7960,18 @@ function PreguntasFrecuentes() {
     return () => window.removeEventListener("rumbo:faq", h);
   }, []);
   useEffect(() => { if (!abierto) return; const k = e => { if (e.key === "Escape") setAbierto(false); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [abierto]);
+  // Al abrir una pregunta concreta (por ejemplo «Licencia»), la ventana baja hasta ella
+  const [irA, setIrA] = useState(0);
+  useEffect(() => {
+    const h = ev => { if (ev.detail) setIrA(n => n + 1); };
+    window.addEventListener("rumbo:faq", h);
+    return () => window.removeEventListener("rumbo:faq", h);
+  }, []);
+  useEffect(() => {
+    if (!abierto || !desplegada || !irA) return;
+    const t = setTimeout(() => document.getElementById(`faq-${desplegada}`)?.scrollIntoView({ block: "start" }), 30);
+    return () => clearTimeout(t);
+  }, [abierto, irA]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!abierto) return null;
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="rumbo-faq-titulo" onClick={() => setAbierto(false)}
@@ -7975,7 +7987,7 @@ function PreguntasFrecuentes() {
             <span><strong style={{ fontSize: 15 }}>📘 Manual de uso</strong><br /><span style={{ fontSize: 14, color: C.gray }}>Paso a paso, por perfiles, con las pantallas reales. Se abre en otra pestaña.</span></span>
           </a>
           {PREGUNTAS.map(({ id, q, a }) => (
-            <details key={id} open={desplegada === id} onToggle={e => { if (e.currentTarget.open) setDesplegada(id); else if (desplegada === id) setDesplegada(""); }}
+            <details key={id} id={`faq-${id}`} open={desplegada === id} onToggle={e => { if (e.currentTarget.open) setDesplegada(id); else if (desplegada === id) setDesplegada(""); }}
               style={{ borderBottom: `1px solid ${C.light}`, padding: "10px 0" }}>
               <summary style={{ cursor: "pointer", fontWeight: 800, fontSize: 15, color: C.dark, listStyle: "revert" }}>{q}</summary>
               <div style={{ marginTop: 8 }}>{a}</div>
