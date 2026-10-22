@@ -293,14 +293,15 @@ const PERFILES = [
 ];
 const tabInicial = id => id === "jefatura" ? "dashboard" : id === "admin" ? "admin_panel" : id === "conserjeria" ? "llaves" : "partes";
 // Pantalla y módulo con los que se entra en un perfil (Coordinación TIC empieza en Material del centro)
-const inicioDe = p => p?.id === "admin" && !funcionesDe(p).secretaria ? { tab: "material_avisos", modulo: "material" }
+const inicioDe = p => p?.cargo === "tutor" ? { tab: "resumen_tutoria", modulo: "tutoria" }
+  : p?.id === "admin" && !funcionesDe(p).secretaria ? { tab: "material_avisos", modulo: "material" }
   : { tab: tabInicial(p?.id), modulo: p?.id === "admin" ? "centro" : "alumnos" };
 
 // ─── Cargos y acceso ─────────────────────────────────────────────────────────
 // Cada profesor tiene un cargo, y el cargo decide a qué perfiles puede entrar.
 const CARGOS = [
-  { id: "profesor",   label: "Profesor/a",           perfiles: ["profesor"], funciones: "Lo tiene todo el claustro, tenga o no otros cargos. Partes y conductas positivas, pasar lista y justificantes, hacer sus guardias, sus ausencias, reservar espacios y pedir llaves (cualquier profesor/a puede hacerlo), avisos de material y Rumbogram. Si es tutor/a de un grupo (se asigna en Alumnos › Tutorías), además los partes, la asistencia y las familias de su grupo." },
-  { id: "jefatura",   label: "Jefatura de Estudios", perfiles: ["profesor", "jefatura"], funciones: "Organiza las guardias de todo el profesorado (cuadrante, coordinación y coberturas), las ausencias y justificantes del profesorado, convivencia del centro (partes, medidas, alertas, asistencia y estadísticas) y la organización: horarios y aulas, horario de las franjas, zonas de guardia y la lista de espacios del centro (reservarlos y pedir las llaves lo puede hacer cualquier profesor/a)." },
+  { id: "profesor",   label: "Profesor/a",           perfiles: ["profesor"], funciones: "Lo tiene todo el claustro, tenga o no otros cargos. Partes y conductas positivas, pasar lista y justificantes, hacer sus guardias, sus ausencias, reservar espacios y pedir llaves (cualquier profesor/a puede hacerlo), avisos de material y Rumbogram. Si es tutor/a de un grupo (se asigna en Alumnos › Tutorías), tiene además el perfil Tutor/a, con el resumen, los partes, la asistencia y las familias de su grupo." },
+  { id: "jefatura",   label: "Jefatura de Estudios", perfiles: ["profesor", "jefatura"], funciones: "Organiza las guardias de todo el profesorado (cuadrante, coordinación y coberturas), las ausencias y justificantes del profesorado, convivencia del centro (partes, medidas, alertas, asistencia y estadísticas) y la organización: horarios y aulas, horario de las franjas, zonas de guardia, la lista de espacios del centro (reservarlos y pedir las llaves lo puede hacer cualquier profesor/a) y el alta del profesorado con sus cargos." },
   { id: "direccion",  label: "Dirección",            perfiles: ["profesor", "jefatura", "admin"], funciones: "Además de lo de Profesor/a, todo lo de Jefatura de Estudios, Secretaría y Coordinación TIC." },
   { id: "secretaria", label: "Secretaría",           perfiles: ["profesor", "admin"], funciones: "Las cuentas del centro: el material que hace falta y su coste, y el mantenimiento. También el profesorado, sus cargos y claves, el personal de Conserjería, el alumnado y las tutorías, y los datos del centro." },
   { id: "tic",        label: "Coordinación TIC",     perfiles: ["profesor", "admin"], funciones: "La tecnología del centro: averías informáticas y audiovisuales, incidencias de los puestos y aulas con ordenadores." },
@@ -344,6 +345,9 @@ function funcionesDe(perfil) {
   };
 }
 // El perfil (con su cargo) con el que entra una persona
+// Tutor/a: no es un cargo, se asigna en Alumnos › Tutorías; quien tiene un grupo entra también con este perfil
+const perfilTutor = grupos => ({ id: "profesor", key: "tutor-profesor", cargo: "tutor", label: `Tutor/a de ${grupos.join(", ")}` });
+const gruposDeTutor = (tutores, nombre) => Object.entries(tutores || {}).filter(([, t]) => t?.tutor === nombre).map(([c]) => c).sort();
 const perfilDe = (cuentas, nombre, id) => perfilesPermitidos(cuentas, nombre).find(p => p.id === id) || PERFILES.find(p => p.id === id);
 const MIN_CLAVE = 6;
 // Las claves nunca se guardan tal cual: solo su huella SHA-256 (requiere conexión segura HTTPS).
@@ -408,7 +412,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const entrarDemo = accion => { if (!ejemploListo) cargarEjemplo(); accion(); };
   const perfilesDemo = [
     { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y Rumbogram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
-    { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
+    { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, perfilTutor([tutora.curso])) },
     { txt: "📊 Jefatura de Estudios", sub: "Ana Jiménez · guardias, ausencias, convivencia, horarios y aulas", accion: () => onEntrar("Ana Jiménez", perfilDe(cuentas, "Ana Jiménez", "jefatura")) },
     { txt: "🗂 Secretaría", sub: "Beatriz Navarro · compras y material, profesorado, alumnado y centro", accion: () => onEntrar("Beatriz Navarro", perfilDe(cuentas, "Beatriz Navarro", "admin")) },
     { txt: "💻 Coordinación TIC", sub: "Elena Vega · averías informáticas y aulas con puestos", accion: () => onEntrar("Elena Vega", perfilDe(cuentas, "Elena Vega", "admin")) },
@@ -744,7 +748,7 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
     document.addEventListener("mousedown", cerrar); document.addEventListener("keydown", esc);
     return () => { document.removeEventListener("mousedown", cerrar); document.removeEventListener("keydown", esc); };
   }, [abierto]);
-  const igual = (p, q) => (p.key && q.key) ? p.key === q.key : p.id === q.id;
+  const igual = (p, q) => (p.key && q.key) ? p.key === q.key : (p.cargo === "tutor" || q.cargo === "tutor") ? p.cargo === q.cargo : p.id === q.id;
   const a = perfiles.find(p => igual(p, actual)) || perfiles.find(p => p.id === actual.id) || actual;
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -753,7 +757,7 @@ function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
         <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 13 }}>▼</span>
       </button>
       {abierto && (
-        <div role="listbox" style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", background: "#fff", borderRadius: 12, boxShadow: "0 12px 30px rgba(0,0,0,0.2)", padding: 6, zIndex: 300, minWidth: 240 }}>
+        <div role="listbox" style={{ position: "absolute", left: 0, maxWidth: "calc(100vw - 24px)", top: "calc(100% + 6px)", background: "#fff", borderRadius: 12, boxShadow: "0 12px 30px rgba(0,0,0,0.2)", padding: 6, zIndex: 300, minWidth: 240 }}>
           {cargos && <div style={{ padding: "6px 10px 8px", fontSize: 13, color: "#2B647E", borderBottom: "1px solid #eef2f4", marginBottom: 4, maxWidth: 280 }}>Tus cargos: <b style={{ color: "#2C4A52" }}>{cargos}</b></div>}
           {perfiles.map(p => (
             <button key={p.key || p.id} role="option" aria-selected={igual(p, a)} onClick={() => { setAbierto(false); onCambiar(p.key || p.id); }}
@@ -4008,7 +4012,8 @@ const AYUDAS = {
   admin_profesores: { titulo: "Profesorado", pasos: [
     "Añade a cada profesor con su nombre completo.",
     "Asígnale su cargo: decide a qué perfiles puede entrar.",
-    "Si alguien olvida su clave, pulsa «Restablecer clave» y la creará de nuevo al entrar."] },
+    "Si alguien olvida su clave, pulsa «Restablecer clave» y la creará de nuevo al entrar.",
+    "Pueden hacerlo Secretaría, Jefatura de Estudios (en Organización) y Dirección."] },
 };
 function AyudaPantalla({ id, C }) {
   const clave = PREFIJO + "ayuda:" + id;
@@ -5630,7 +5635,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // RUMBOGRAM - MENSAJERÍA RÁPIDA
 // ═══════════════════════════════════════════════════════════════════════════
-const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave", jefe_depto: "profesorado" };
+const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave", jefe_depto: "profesorado", tutor: "tutor" };
 const ICONO_MENSAJE = { "Alumno enfermo": "alumno-enfermo", "Emergencia": "emergencia", "Urgencia en aula": "emergencia", "Falta material": "falta-material",
   "Alumno derivado": "alumno-derivado", "Cambio de guardia": "sustituto", "Falta un profesor": "profe-ausente", "Reunión importante": "eventos" };
 function Rumbogram({ vistaInicial = "enviar", mensajes, setMensajes, usuario, esJefatura, profesores, horarios = {}, cursos = [], cuadrante = {}, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, C, inpStyle, selStyle, labelStyle }) {
@@ -9482,6 +9487,7 @@ function AppInterna() {
         setUsuario(ses.usuario); setPerfil(ses.perfil);
         if ((pr || DEMO_PROFESORES).includes(ses.usuario)) setFProfesor(ses.usuario);
         setTab(inicioDe(ses.perfil).tab); setModuloJefatura(inicioDe(ses.perfil).modulo);
+        if (ses.perfil.cargo === "tutor") setModuloProfesor("tutoria");
       }
       setLoading(false);
     }
@@ -9612,12 +9618,15 @@ function AppInterna() {
     // Sin avisos emergentes: la pantalla de entrada muestra que los datos están cargados
   }
 
+  // Perfiles de quien está dentro: los de sus cargos y, si tiene una tutoría, el de Tutor/a
+  const misGruposTutor = usuario ? gruposDeTutor(tutores, usuario) : [];
+  const misPerfiles = usuario ? [...perfilesPermitidos(cuentas, usuario), ...(misGruposTutor.length && cargoDe(cuentas, usuario).ids.includes("profesor") ? [perfilTutor(misGruposTutor)] : [])] : [];
   function cambiarPerfil(id) {
-    const p = perfilesPermitidos(cuentas, usuario).find(x => x.key === id || x.id === id);
+    const p = misPerfiles.find(x => x.key === id) || misPerfiles.find(x => x.id === id);
     if (!p || (p.key && p.key === perfil?.key)) return;
     guardarSesion({ usuario, perfil: p });
     setPerfil(p); setTab(inicioDe(p).tab);
-    setModuloProfesor("alumnos"); setModuloJefatura(inicioDe(p).modulo);
+    setModuloProfesor(p.cargo === "tutor" ? "tutoria" : "alumnos"); setModuloJefatura(inicioDe(p).modulo);
     setShowParte(null); setShowAlerta(null);
     window.scrollTo(0, 0);
   }
@@ -9771,6 +9780,7 @@ function AppInterna() {
         setUsuario(nombre); if (profesores.includes(nombre)) setFProfesor(nombre);
         if (p.id === "profesor" && !opciones.otro && nombre !== tutoraDemo?.nombre && !["Ana Jiménez", "Elena Vega", "Beatriz Navarro"].includes(nombre)) setUltimoProfe(nombre);
         guardarSesion({ usuario: nombre, perfil: p }); setPerfil(p); setTab(inicioDe(p).tab); setModuloJefatura(inicioDe(p).modulo);
+        setModuloProfesor(p.cargo === "tutor" ? "tutoria" : "alumnos");
       }} />
   );
 
@@ -9781,8 +9791,17 @@ function AppInterna() {
   const avisosPendientes = perfil.id === "profesor" && usuario ? alumnosParaAvisar({ partes, usuario, tutores, avisos: avisosFamilia }).lista.filter(x => x.pendiente).length : 0;
   // Número de la pestaña «Medidas»: las que hay que programar y las que tocan hoy
   const medidasHoy = medidas.filter(m => estadoMedida(m) === "sin_programar").length + medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
+  const esPerfilTutor = perfil.cargo === "tutor";
   const tabs = perfil.id === "profesor"
-    ? moduloProfesor === "alumnos"
+    ? esPerfilTutor && moduloProfesor === "tutoria"
+      ? [
+          { id: "resumen_tutoria",    label: "📑 Resumen de tutoría", color: R.azul },
+          { id: "mis_estadisticas",   label: "📈 Partes y familias", color: "#06b6d4" },
+          { id: "asistencia_tutoria", label: "✅ Asistencia del grupo", color: R.azul },
+          { id: "notas_aula",         label: "🗒 Notas de aula", color: R.azul },
+          { id: "compromisos",        label: "🤝 Compromisos", color: R.azul },
+        ]
+    : moduloProfesor === "alumnos"
       ? [
           { id: "partes",      label: "📋 Nuevo Parte", color: "#06b6d4" },
           { id: "parte_expres", label: "⚡ Parte exprés", color: R.azul },
@@ -9854,6 +9873,7 @@ function AppInterna() {
           { id: "horarios_aulas", label: "🗓 Horarios y aulas", color: R.azul },
           { id: "horario_zonas",  label: "⚙️ Horario y zonas", color: "#2B647E" },
           { id: "espacios_centro", label: "🔑 Espacios del centro", color: R.mostaza },
+          { id: "admin_profesores", label: "👨‍🏫 Profesorado", color: R.azul },
         ]
       : moduloJefatura === "espacios"
       ? [
@@ -9887,7 +9907,12 @@ function AppInterna() {
   const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : "mensajeria"); };
   const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
   const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
-  const modulos = perfil.id === "profesor"
+  const modulos = perfil.id === "profesor" && esPerfilTutor
+    ? [
+        { id: "tutoria", label: "🏫 Mi tutoría" },
+        { id: "rumbochat", label: "💬 Rumbogram" },
+      ].map(m => ({ ...m, ir: () => { setModuloProfesor(m.id); setTab(m.id === "tutoria" ? "resumen_tutoria" : "mensajeria"); } }))
+    : perfil.id === "profesor"
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
         { id: "asistencia", label: "✅ Asistencia" },
@@ -9977,6 +10002,11 @@ function AppInterna() {
     const nNov = novedadesEspacios.filter(n => n.ts > (vistasNovedades[usuario] || "") && n.por !== usuario && n.por !== (fProfesor || usuario)).length;
     if (nNov) advertencias.push({ id: "espacios-novedades", n: nNov, txt: nNov === 1 ? "cambio en las reservas de espacios" : "cambios en las reservas de espacios", modulo: "espacios", tab: "reservas", icono: "horario" });
   }
+  if (esPerfilTutor) {
+    const deTutoria = ["resumen_tutoria", "mis_estadisticas", "asistencia_tutoria", "notas_aula", "compromisos"];
+    const solo = advertencias.filter(a => a.modulo === "rumbochat" || deTutoria.includes(a.tab)).map(a => a.modulo === "rumbochat" ? a : { ...a, modulo: "tutoria" });
+    advertencias.splice(0, advertencias.length, ...solo);
+  }
   const globoModulo = id => advertencias.filter(a => a.modulo === id).reduce((n, a) => n + a.n, 0);
   const globoTab = id => advertencias.filter(a => a.modulo === moduloActivo && a.tab === id).reduce((n, a) => n + a.n, 0);
   const irAdvertencia = a => {
@@ -10059,7 +10089,7 @@ function AppInterna() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
-          {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
+          {misPerfiles.length > 1 && <SelectorPerfil perfiles={misPerfiles} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
           <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
             setTab(inicioDe(perfil).tab);
@@ -11069,7 +11099,7 @@ function AppInterna() {
         {tab === "horario_zonas" && fx.guardias && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
 
         {/* ── Admin Profesores ── */}
-        {tab === "admin_profesores" && fx.secretaria && (
+        {tab === "admin_profesores" && (fx.secretaria || fx.guardias) && (
           <div>
             <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Profesores" icono="perfil" /></div>
             <AvisoSoloFicticios que="del profesorado (nombres, correos)" />
@@ -11129,8 +11159,10 @@ function AppInterna() {
                             <button key={c.id} disabled={fijo} aria-pressed={on} title={fijo ? "Todo el personal docente es profesor/a" : on ? "Quitar este cargo" : "Añadir este cargo"}
                               onClick={() => {
                                 const nuevos = on ? ids.filter(x => x !== c.id) : [...ids, c.id];
-                                if (p === usuario && !nuevos.some(id => CARGOS.find(x => x.id === id).perfiles.includes("admin")) &&
-                                    !window.confirm("Vas a quitarte el acceso a Secretaría. ¿Continuar?")) return;
+                                // Quien está dentro no se quita sin querer el acceso al perfil con el que trabaja
+                                const conserva = nuevos.some(id => CARGOS.find(x => x.id === id).perfiles.includes(perfil.id));
+                                if (p === usuario && perfil.id !== "profesor" && !conserva &&
+                                    !window.confirm(`Vas a quitarte el acceso a ${perfil.id === "admin" ? "Secretaría" : "Jefatura"}. ¿Continuar?`)) return;
                                 setCuentas(prev => ({ ...prev, [p]: { ...(prev[p] || {}), cargos: nuevos, cargo: undefined } }));
                               }}
                               style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px 3px 4px", borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: fijo ? "default" : "pointer",
