@@ -589,10 +589,19 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         maskImage: REFLEJO, WebkitMaskImage: REFLEJO, maskComposite: "intersect", WebkitMaskComposite: "source-in" }}>
         <img src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 78%", display: "block", opacity: .4, transform: "scaleY(-1)" }} />
       </div>
+      <PieAutoria />
       </div>
     </div>
   );
 }
+// Autoría y licencia (texto completo en el archivo LICENSE del repositorio)
+const AUTORA = "María Teresa González Muñoz";
+const PieAutoria = ({ claro = false }) => (
+  <div data-autoria style={{ fontSize: 13, lineHeight: 1.5, color: claro ? "rgba(255,255,255,.9)" : R.petroleo, textAlign: "center", padding: "10px 16px" }}>
+    © 2026 {AUTORA} · RumboAula · Uso educativo libre y sin fines comerciales ·{" "}
+    <button type="button" onClick={() => abrirPreguntas("licencia")} style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", textDecoration: "underline", cursor: "pointer" }}>Licencia</button>
+  </div>
+);
 const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
   <div role="note" style={compacto
     ? { background: R.mostaza, color: R.noche, fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px" }
@@ -7929,6 +7938,15 @@ const PREGUNTAS = [
       <li>Los avisos al móvil no llevan nombres ni datos personales.</li>
     </ul>
     <p>Antes de usarla con datos reales, se someterá a la <strong>aprobación del equipo directivo y de la Delegación de Protección de Datos de la Consejería de Educación de la Comunidad de Madrid</strong>. Mientras tanto, es una versión de demostración con datos ficticios.</p></> },
+  { id: "licencia", q: "¿Quién es la autora y qué licencia tiene?", a: <>
+    <p>RumboAula es una obra de <strong>{AUTORA}</strong> (© 2026).</p>
+    <p><strong>Uso educativo libre y sin fines comerciales:</strong> cualquier centro educativo o Administración pública puede usarla y adaptarla gratis, citando a la autora. No se puede vender ni usar con fines comerciales sin su permiso.</p>
+    <ul style={{ margin: "0 0 8px", paddingLeft: 20 }}>
+      <li>El programa se distribuye con la licencia <strong>PolyForm Noncommercial 1.0.0</strong>.</li>
+      <li>El manual de uso, con la licencia <strong>Creative Commons Reconocimiento-NoComercial-CompartirIgual 4.0</strong> (CC BY-NC-SA 4.0).</li>
+      <li>Los dibujos de los iconos son de Font Awesome Free (CC BY 4.0).</li>
+    </ul>
+    <p>El texto completo está en el archivo LICENSE del repositorio: <a href="https://github.com/mtgonzalezm/rumboaula" target="_blank" rel="noopener noreferrer">github.com/mtgonzalezm/rumboaula</a>.</p></> },
   { id: "fallos", q: "¿Qué hago si algo falla?", a: <p>Pulsa «⚠️ Informar de un problema» (abajo a la izquierda) y cuenta qué ha pasado: se envía por correo a la responsable con la pantalla, tu perfil, la hora y el error técnico. Si una pantalla se rompe, la propia app te ofrecerá avisar.</p> },
   { id: "oficial", q: "¿Es una herramienta oficial?", a: <p>Es un <strong>prototipo</strong> creado por una profesora para mejorar la convivencia y la organización de las guardias. Todavía no está aprobado para datos reales: antes de usarlo en el centro tienen que darle el visto bueno el equipo directivo y la Delegación de Protección de Datos de la Consejería de Educación.</p> },
 ];
@@ -9832,6 +9850,7 @@ function AppInterna() {
           </div>
         )}
 
+        <footer className="no-print" style={{ marginTop: 32, borderTop: `1px solid ${R.turquesaClaro}` }}><PieAutoria /></footer>
       </div>
       </div>
 
