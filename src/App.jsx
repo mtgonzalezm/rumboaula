@@ -36,6 +36,23 @@ const R = {
   // Del camino de la portada: morado para cubrir clases y verde para «la cubres tú»
   morado: "#8A4ECC", moradoClaro: "#F1E9FA", verdeCamino: "#5ABE4C", verdeCaminoClaro: "#E6F6E2", verdeOscuro: "#2E7D23",
 };
+// Importancia de los avisos y mensajes: color + icono, siempre con texto legible encima.
+// No se mezcla con la gravedad de los partes (leve verde, grave mostaza, muy grave azul).
+const NIVEL = {
+  urgente:     { label: "Urgente",     color: "#C24848", texto: "#fff",    claro: "#F8E4E4", icono: "nivel-urgente",     desc: "Requiere actuación inmediata" },
+  importante:  { label: "Importante",  color: "#E88A57", texto: "#16333F", claro: "#FCEBDF", icono: "nivel-importante",  desc: "Requiere atención" },
+  pendiente:   { label: "Pendiente",   color: "#EFCA72", texto: "#16333F", claro: "#FDF4DF", icono: "nivel-pendiente",   desc: "Requiere seguimiento" },
+  informativo: { label: "Informativo", color: "#4675BA", texto: "#fff",    claro: "#E6EEF8", icono: "nivel-informativo", desc: "Información general" },
+  resuelto:    { label: "Resuelto",    color: "#438B78", texto: "#16333F", claro: "#E3F1EC", icono: "nivel-resuelto",    desc: "Ya está hecho" },
+};
+const ORDEN_NIVEL = ["urgente", "importante", "pendiente", "informativo"];
+// Qué nivel tiene cada aviso de la campana
+function nivelAviso(a) {
+  if (a.urgente || /sin cubrir/.test(a.txt)) return "urgente";
+  if (/familia|alerta|absentismo|ausencias? de profesorado|medida/.test(a.txt)) return "importante";
+  if (/sin firmar|llave|compromiso|pendiente|sin resolver/.test(a.txt)) return "pendiente";
+  return "informativo";
+}
 // Gravedad de menos a más intensa, con colores de Raíces
 const COLOR_GRAVEDAD = { leve: R.verde, grave: R.mostaza, muy_grave: R.azul };
 const TITULO = `"Montserrat", "Segoe UI", system-ui, sans-serif`;
@@ -5611,8 +5628,8 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
       return (
         <div role="alertdialog" aria-modal="true" aria-labelledby="aviso-urgente-titulo" style={{ position: "fixed", inset: 0, zIndex: 2200, background: "rgba(127,29,29,.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div style={{ background: "#fff", borderRadius: 16, width: "min(520px, 100%)", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.4)" }}>
-            <div style={{ background: "#275D8C", color: "#fff", padding: "16px 20px" }}>
-              <div id="aviso-urgente-titulo" style={{ fontSize: 22, fontWeight: 900 }}>🚨 AVISO URGENTE</div>
+            <div style={{ background: NIVEL.urgente.color, color: NIVEL.urgente.texto, padding: "16px 20px" }}>
+              <div id="aviso-urgente-titulo" style={{ fontSize: 22, fontWeight: 900, display: "flex", alignItems: "center", gap: 10 }}><Icono nombre="nivel-urgente" tam={36} style={{ boxShadow: "0 0 0 2px #fff" }} />AVISO URGENTE</div>
               <div style={{ fontSize: 14, opacity: .9 }}>De {u.remitente} · {hora(u.ts)}{urgentes.length > 1 ? ` · ${urgentes.length - 1} aviso(s) más esperando` : ""}</div>
             </div>
             <div style={{ padding: 20 }}>
@@ -8151,7 +8168,7 @@ const CATEGORIAS_MATERIAL = [
   { id: "papeleria", label: "Papelería y fotocopias", ejemplo: "folios, tóner, rotuladores de pizarra" },
   { id: "otro", label: "Otro", ejemplo: "" },
 ];
-const ESTADO_AVISO = { pendiente: { txt: "Pendiente", fondo: R.crema, borde: R.mostaza }, en_curso: { txt: "En curso", fondo: R.azulClaro, borde: R.azul }, resuelto: { txt: "Resuelto", fondo: R.verdeCaminoClaro, borde: R.verdeCamino } };
+const ESTADO_AVISO = { pendiente: { txt: "Pendiente", fondo: NIVEL.pendiente.claro, borde: NIVEL.pendiente.color, icono: NIVEL.pendiente.icono }, en_curso: { txt: "En curso", fondo: NIVEL.informativo.claro, borde: NIVEL.informativo.color, icono: NIVEL.informativo.icono }, resuelto: { txt: "Resuelto", fondo: NIVEL.resuelto.claro, borde: NIVEL.resuelto.color, icono: NIVEL.resuelto.icono } };
 const NOMBRE_CARGO = { tic: "Coordinación TIC", secretaria: "Secretaría", jefatura: "Jefatura de Estudios", direccion: "Dirección" };
 // Quién gestiona cada aviso: las averías informáticas, Coordinación TIC; el material que hace falta
 // y el resto de averías y mantenimiento, Secretaría (lleva las cuentas del centro)
@@ -8275,8 +8292,8 @@ function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], us
           <div key={a.id} data-aviso-material={a.id} style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderLeft: `5px solid ${e.borde}`, padding: 14, marginBottom: 10, display: "grid", gap: 6 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ background: a.tipo === "incidencia" ? R.crema : R.azulClaro, padding: "2px 10px", fontWeight: 700, fontSize: 14, color: R.noche }}>{a.tipo === "incidencia" ? "⚠️ Incidencia" : "📦 Necesidad"}</span>
-              {a.urgente && <span style={{ background: R.noche, color: "#fff", padding: "2px 10px", fontWeight: 700, fontSize: 14 }}>Urgente</span>}
-              <span style={{ background: e.fondo, border: `1px solid ${e.borde}`, padding: "1px 10px", fontWeight: 700, fontSize: 14, color: R.noche }}>{e.txt}</span>
+              {a.urgente && a.estado !== "resuelto" && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: NIVEL.urgente.color, color: NIVEL.urgente.texto, padding: "2px 10px 2px 3px", borderRadius: 12, fontWeight: 700, fontSize: 14 }}><Icono nombre="nivel-urgente" tam={20} />Urgente</span>}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: e.fondo, border: `1px solid ${e.borde}`, padding: "1px 10px 1px 3px", borderRadius: 12, fontWeight: 700, fontSize: 14, color: R.noche }}><Icono nombre={e.icono} tam={20} />{e.txt}</span>
               <span style={{ fontSize: 14, color: R.petroleo }}>{c?.label} · {a.lugar}</span>
             </div>
             <div style={{ fontSize: 16, color: R.noche }}>{a.descripcion}{a.cantidad ? <strong> · Cantidad: {a.cantidad}</strong> : null}</div>
@@ -8908,8 +8925,8 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 // ════════════════════════════════════════════════════════════════════════════
 // GLOBITOS DE ADVERTENCIAS: número en azul noche en módulos, pestañas y cabecera
 // ════════════════════════════════════════════════════════════════════════════
-const Globito = ({ n, flota = false }) => n > 0
-  ? <span className={"gd-globo" + (flota ? " flota" : "")} aria-hidden="true">{n > 99 ? "99+" : n}</span>
+const Globito = ({ n, flota = false, urgente = false }) => n > 0
+  ? <span className={"gd-globo" + (flota ? " flota" : "") + (urgente ? " urgente" : "")} aria-hidden="true">{n > 99 ? "99+" : n}</span>
   : null;
 // Para lectores de pantalla: el número va como descripción del botón, sin cambiar su nombre
 const avisosTxt = n => n > 0 ? (n === 1 ? "1 aviso" : `${n} avisos`) : undefined;
@@ -8938,21 +8955,29 @@ function PanelAdvertencias({ lista, onIr }) {
     <div ref={ref} style={{ position: "relative" }}>
       <button className="gd-redondo" style={{ position: "relative" }} onClick={abrir} aria-expanded={abierto}
         aria-label={total ? `Advertencias: ${total}` : "Advertencias: ninguna"} title="Advertencias">
-        <Icono nombre="alertas" tam={52} /><Globito n={total} flota />
+        <Icono nombre="alertas" tam={52} /><Globito n={total} flota urgente={lista.some(a => nivelAviso(a) === "urgente")} />
       </button>
       {abierto && (
         <div role="dialog" aria-label="Advertencias" style={{ position: "fixed", right: pos.right, top: pos.top, zIndex: 150, width: pos.width, maxHeight: `calc(100vh - ${pos.top + 12}px)`, overflowY: "auto", background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `4px solid ${R.noche}`, boxShadow: "0 12px 32px rgba(22,51,63,.18)", borderRadius: 8, padding: 8 }}>
           <div style={{ fontFamily: TITULO, fontSize: 17, color: R.petroleo, padding: "6px 8px 8px" }}>Tienes pendiente</div>
           {lista.length === 0
             ? <div style={{ padding: "8px 8px 12px", color: R.noche, fontSize: 15 }}>✅ Nada pendiente. Todo al día.</div>
-            : lista.map(a => (
-              <button key={a.id} onClick={() => { setAbierto(false); onIr(a); }}
-                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 48, padding: "6px 8px", border: "none", borderTop: `1px solid ${R.gris}`, background: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, color: R.noche }}>
-                <Icono nombre={a.icono} tam={32} />
-                <span style={{ flex: 1 }}><strong>{a.n}</strong> {a.txt}</span>
-                <span aria-hidden="true" style={{ color: R.petroleo, fontSize: 18 }}>›</span>
-              </button>
-            ))}
+            : [...lista].sort((x, y) => ORDEN_NIVEL.indexOf(nivelAviso(x)) - ORDEN_NIVEL.indexOf(nivelAviso(y))).map(a => {
+              const nv = NIVEL[nivelAviso(a)];
+              return (
+                <button key={a.id} data-nivel={nivelAviso(a)} onClick={() => { setAbierto(false); onIr(a); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 52, padding: "6px 8px", border: "none", borderTop: `1px solid ${R.gris}`, borderLeft: `6px solid ${nv.color}`, background: nivelAviso(a) === "urgente" ? nv.claro : "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, color: R.noche }}>
+                  <Icono nombre={nv.icono} tam={30} />
+                  <span style={{ flex: 1 }}><strong>{a.n}</strong> {a.txt}<span style={{ display: "block", fontSize: 12, color: R.petroleo, fontWeight: 700 }}>{nv.label}</span></span>
+                  <span aria-hidden="true" style={{ color: R.petroleo, fontSize: 18 }}>›</span>
+                </button>
+              );
+            })}
+          {lista.length > 0 && (
+            <div aria-hidden="true" style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", padding: "8px 8px 4px", borderTop: `1px solid ${R.gris}`, fontSize: 12, color: R.petroleo }}>
+              {ORDEN_NIVEL.map(k => <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icono nombre={NIVEL[k].icono} tam={16} />{NIVEL[k].label}</span>)}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -9775,6 +9800,7 @@ function AppInterna() {
     setVistaGalv({ v: "historial", k: Date.now() });
   }
   const sinLeerMios = mensajes.filter(m => m.destinatario === usuario && !m.leido).length;
+  const urgentesSinLeer = mensajes.some(m => m.destinatario === usuario && !m.leido && m.urgente);
 
   const profeDemo = usuario || ultimoProfe;
   const tutoraDemo = (() => { const t = Object.entries(tutores).filter(([, v]) => v?.tutor && profesores.includes(v.tutor) && v.tutor !== profeDemo && !["Ana Jiménez", "Elena Vega", "Beatriz Navarro"].includes(v.tutor)).sort(([a], [b]) => a.localeCompare(b))[0]; return t ? { nombre: t[1].tutor, curso: t[0] } : null; })();
@@ -9953,7 +9979,7 @@ function AppInterna() {
   // Advertencias pendientes: salen en el globito de la cabecera, de cada módulo y de cada pestaña
   const advertencias = (() => {
     const hoy = isoLocal(), lista = [];
-    const add = (n, txt, modulo, tabId, icono) => { if (n > 0) lista.push({ id: `${modulo}-${tabId}`, n, txt, modulo, tab: tabId, icono }); };
+    const add = (n, txt, modulo, tabId, icono) => { if (n > 0) lista.push({ id: `${modulo}-${tabId}`, n, txt, modulo, tab: tabId, icono, ...(tabId === "mensajeria" && urgentesSinLeer ? { urgente: true } : {}) }); };
     const equipoHoy = { profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias };
     if (perfil.id === "profesor") {
       const yo = fProfesor || usuario;
@@ -10048,7 +10074,8 @@ function AppInterna() {
         .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
         .gd-tab:hover { background: rgba(255,255,255,.6); }
         .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
-        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: #3576C0; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
+        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${NIVEL.informativo.color}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
+        .gd-globo.urgente { background: ${NIVEL.urgente.color}; }
         .gd-globo.flota { position: absolute; top: -2px; right: -4px; margin: 0; border: 2px solid #fff; height: 24px; min-width: 24px; border-radius: 12px; }
         @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
@@ -10117,7 +10144,7 @@ function AppInterna() {
           {modulos.map((m, i) => (
             <button key={m.id} className={"gd-modulo" + (moduloActivo === m.id ? " activo" : "")} style={{ order: 2 * i }} aria-description={avisosTxt(globoModulo(m.id))}
               onClick={m.ir}>
-              {sinEmoji1(m.label)}<Globito n={globoModulo(m.id)} />
+              {sinEmoji1(m.label)}<Globito n={globoModulo(m.id)} urgente={advertencias.some(a => a.modulo === m.id && nivelAviso(a) === "urgente")} />
             </button>
           ))}
         </div>
@@ -10127,7 +10154,7 @@ function AppInterna() {
         <div className="gd-tabs" style={{ order: 2 * Math.max(0, modulos.findIndex(m => m.id === moduloActivo)) + 1 }}>
           {tabs.map(t => (
             <button key={t.id} className={"gd-tab" + (tab === t.id ? " activo" : "")} onClick={() => setTab(t.id)} aria-description={avisosTxt(globoTab(t.id))}>
-              {sinEmoji1(t.label)}<Globito n={globoTab(t.id)} />
+              {sinEmoji1(t.label)}<Globito n={globoTab(t.id)} urgente={advertencias.some(a => a.modulo === moduloActivo && a.tab === t.id && nivelAviso(a) === "urgente")} />
             </button>
           ))}
         </div>
