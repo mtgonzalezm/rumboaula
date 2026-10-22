@@ -299,12 +299,12 @@ const inicioDe = p => p?.id === "admin" && !funcionesDe(p).secretaria ? { tab: "
 // ─── Cargos y acceso ─────────────────────────────────────────────────────────
 // Cada profesor tiene un cargo, y el cargo decide a qué perfiles puede entrar.
 const CARGOS = [
-  { id: "profesor",   label: "Profesor/a",           perfiles: ["profesor"], funciones: "Partes (también el parte leve exprés) y conductas positivas, notas de aula y compromisos de convivencia, pasar lista y justificantes, sus guardias y ausencias, reservar espacios y pedir llaves (cualquier profesor/a puede hacerlo), avisos de material y RumboChat. Si es tutor/a de un grupo (se asigna en Alumnos › Tutorías), además los partes, la asistencia y las familias de su grupo, el resumen de tutoría de cada alumno y la alerta temprana." },
-  { id: "jefatura",   label: "Jefatura de Estudios", perfiles: ["profesor", "jefatura"], funciones: "Guardias (cuadrante, coordinación y coberturas), ausencias y justificantes del profesorado, convivencia del centro (partes, medidas, alertas, asistencia y estadísticas) y la organización: horarios y aulas, horario de las franjas, zonas de guardia y la lista de espacios del centro (reservarlos y pedir las llaves lo puede hacer cualquier profesor/a)." },
-  { id: "direccion",  label: "Dirección",            perfiles: ["profesor", "jefatura", "admin"], funciones: "Todo lo de Jefatura de Estudios, Secretaría y Coordinación TIC." },
+  { id: "profesor",   label: "Profesor/a",           perfiles: ["profesor"], funciones: "Lo tiene todo el claustro, tenga o no otros cargos. Partes (también el parte leve exprés) y conductas positivas, notas de aula y compromisos de convivencia, pasar lista y justificantes, hacer sus guardias, sus ausencias, reservar espacios y pedir llaves (cualquier profesor/a puede hacerlo), avisos de material y RumboChat. Si es tutor/a de un grupo (se asigna en Alumnos › Tutorías), además los partes, la asistencia y las familias de su grupo, el resumen de tutoría de cada alumno y la alerta temprana." },
+  { id: "jefatura",   label: "Jefatura de Estudios", perfiles: ["profesor", "jefatura"], funciones: "Organiza las guardias de todo el profesorado (cuadrante, coordinación y coberturas), las ausencias y justificantes del profesorado, convivencia del centro (partes, medidas, alertas, asistencia y estadísticas) y la organización: horarios y aulas, horario de las franjas, zonas de guardia y la lista de espacios del centro (reservarlos y pedir las llaves lo puede hacer cualquier profesor/a)." },
+  { id: "direccion",  label: "Dirección",            perfiles: ["profesor", "jefatura", "admin"], funciones: "Además de lo de Profesor/a, todo lo de Jefatura de Estudios, Secretaría y Coordinación TIC." },
   { id: "secretaria", label: "Secretaría",           perfiles: ["profesor", "admin"], funciones: "Las cuentas del centro: el material que hace falta y su coste, y el mantenimiento. También el profesorado, sus cargos y claves, el personal de Conserjería, el alumnado y las tutorías, y los datos del centro." },
   { id: "tic",        label: "Coordinación TIC",     perfiles: ["profesor", "admin"], funciones: "La tecnología del centro: averías informáticas y audiovisuales, incidencias de los puestos y aulas con ordenadores." },
-  { id: "orientacion", label: "Orientación",         perfiles: ["profesor", "jefatura"], funciones: "Convivencia y orientación del alumnado: partes, medidas, mediación y compromisos, alertas, asistencia y estadísticas, sin las guardias." },
+  { id: "orientacion", label: "Orientación",         perfiles: ["profesor", "jefatura"], funciones: "Convivencia y orientación del alumnado: partes, medidas, mediación y compromisos, alertas, asistencia y estadísticas. Hace sus guardias como el resto del profesorado, pero no las organiza: eso es de Jefatura de Estudios." },
   { id: "jefe_depto", label: "Jefatura de departamento", perfiles: ["profesor"], funciones: "De momento, lo mismo que el profesorado." },
   { id: "conserjeria", label: "Conserjería",         perfiles: ["conserjeria"], funciones: "Entrega y recogida de llaves y consulta de las reservas de los espacios. Sus cuentas van aparte del profesorado." },
 ];
@@ -331,7 +331,7 @@ const perfilesPermitidos = (cuentas, nombre) => cargoDe(cuentas, nombre).ids.fla
 // Qué lleva cada cargo dentro de su perfil:
 // Secretaría: profesorado y cuentas, alumnado, datos del centro y material que hace falta.
 // Coordinación TIC: averías informáticas y aulas con puestos.
-// Jefatura de Estudios: guardias, cuadrante, zonas y horario, partes y convivencia. Orientación: convivencia.
+// Jefatura de Estudios: organiza guardias, cuadrante, zonas y horario, partes y convivencia. Orientación: convivencia (hace guardias, no las organiza).
 // Dirección: todo. (Las sesiones antiguas sin cargo se tratan como antes: Secretaría y TIC o Jefatura completas.)
 function funcionesDe(perfil) {
   const c = perfil?.cargo, dir = c === "direccion" || (!c && perfil?.id === "admin");
@@ -11058,7 +11058,7 @@ function AppInterna() {
             <Card style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "12px 20px", background: C.cream, borderBottom: `1px solid #CDE9ED`, fontWeight: 600, fontSize: 14, color: C.dark, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="profesorado" tam={30} />{profesores.length} profesor(es)</div>
               <div style={{ padding: "10px 20px", fontSize: 14, color: C.gray, borderBottom: `1px solid ${C.cream}` }}>
-                Marca todos los cargos de cada persona: puede tener varios (por ejemplo, Profesor/a + Jefatura de departamento + Coordinación TIC). Quien tiene varios cargos cambia de perfil desde el botón de arriba a la derecha.
+                Todo el personal docente es <b>Profesor/a</b> (pone partes, hace sus guardias…) y los demás cargos se suman a eso. Marca todos los cargos de cada persona: puede tener varios (por ejemplo, Profesor/a + Jefatura de departamento + Coordinación TIC). Quien tiene varios cargos cambia de perfil desde el botón de arriba a la derecha.
                 <details data-cargos-funciones style={{ marginTop: 8 }}>
                   <summary style={{ cursor: "pointer", fontWeight: 700, color: R.petroleo }}>Qué puede hacer cada cargo</summary>
                   <div style={{ display: "grid", gap: 1, background: R.turquesaClaro, marginTop: 8 }}>
