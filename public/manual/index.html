@@ -130,6 +130,17 @@ th { font-weight: 700; color: #fff; background: var(--azul); }
 td.si { color: var(--azul); font-weight: 700; }
 td.no { color: #6B7579; }
 
+/* Lista de lo necesario */
+.lista-necesario { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; margin: 6px 0 4px; }
+.grupo-check { background: var(--azul-claro); padding: 12px 14px; }
+.grupo-check:last-child { grid-column: 1 / -1; }
+.grupo-check:last-child ul.check { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); column-gap: 24px; }
+.grupo-check h4 { margin: 0 0 8px; font-size: 17px; color: var(--petroleo); display: flex; align-items: center; gap: 8px; }
+.grupo-check h4 img { width: 30px; height: 30px; }
+.tarjeta ul.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.tarjeta ul.check li { padding-left: 30px; position: relative; }
+.tarjeta ul.check li::before { content: ""; position: absolute; left: 0; top: 3px; width: 18px; height: 18px; border: 2px solid var(--azul); border-radius: 3px; background: #fff; }
+
 /* Para el TIC y mensajes modelo */
 .quien-envia { font-size: 15px; color: var(--azul); font-weight: 700; }
 code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: var(--azul-claro); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
@@ -904,6 +915,44 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="linea" aria-hidden="true"></div>
   <p class="entrada">Qué haría falta para pasar de la demostración a usar RumboAula de verdad en un instituto, con un ordenador del centro haciendo de servidor. Es una guía orientativa: los pasos legales hay que confirmarlos con la Delegación de Protección de Datos de la Consejería de Educación.</p>
 
+  <div class="tarjeta sola nueva" id="lista-necesario">
+    <div>
+      <h3><img src="/iconos/lista-completa.svg" alt="">Qué se necesita para instalarla en el centro <span class="novedad">Nuevo</span></h3>
+      <p>Todo en una lista, para ir marcando. Recuerda: es una <b>instalación propia del centro</b>, de <b>uso local</b> y conectada a la <b>wifi del centro</b>.</p>
+      <div class="lista-necesario">
+        <div class="grupo-check">
+          <h4><img src="/iconos/configuracion.svg" alt="">Equipo</h4>
+          <ul class="check"><li>Un ordenador o miniPC que haga de servidor (orientativo: 4 núcleos, 8 GB de RAM y un SSD de 128 GB), mejor con Linux.</li><li>Un SAI, para que un corte de luz no lo apague de golpe.</li><li>Un disco externo o una carpeta de red para las copias de seguridad.</li><li>Un sitio seguro: el armario de comunicaciones o un despacho cerrado.</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/mensajes.svg" alt="">Red del centro</h4>
+          <ul class="check"><li>Conexión por cable a la red del instituto.</li><li>Una IP fija interna y, si se puede, un nombre sencillo como rumboaula.local.</li><li>Que la wifi del profesorado llegue al servidor (sin aislamiento ni cortafuegos que lo bloqueen).</li><li>Un certificado para la conexión segura (HTTPS).</li><li>Salida a internet al menos durante la instalación (o llevarlo en un pendrive).</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/importar.svg" alt="">Programa</h4>
+          <ul class="check"><li>La parte del servidor de RumboAula. Todavía está por programar: es la fase 1.</li><li>Git y Docker instalados en el servidor.</li><li>Copias de seguridad automáticas cada noche, cifradas.</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/documentos.svg" alt="">Permisos</h4>
+          <ul class="check"><li>Autorización del equipo directivo.</li><li>Respuesta por escrito de la Consejería (CAU de EducaMadrid) sobre el uso de la red.</li><li>Consulta a la Delegación de Protección de Datos de la Consejería.</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/lista-completa.svg" alt="">Documentos</h4>
+          <ul class="check"><li>Ficha técnica de una página: qué datos, dónde se guardan y quién accede.</li><li>Aviso de privacidad para el profesorado.</li><li>Evaluación de impacto sencilla, si la pide la Delegación de Protección de Datos.</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/profesorado.svg" alt="">Personas</h4>
+          <ul class="check"><li>Una persona responsable de Coordinación TIC para instalarla y mantenerla.</li><li>Una persona de contacto para las dudas del profesorado.</li><li>Una persona de Administración para configurar el centro desde la app.</li></ul>
+        </div>
+        <div class="grupo-check">
+          <h4><img src="/iconos/edificio.svg" alt="">Datos para configurar el centro</h4>
+          <ul class="check"><li>Nombre, localidad y logotipo del centro, y el horario de las clases.</li><li>Zonas de guardia y cuadrante.</li><li>Espacios con llave y aulas con puestos.</li><li>Profesorado con sus cargos y su correo del centro, y las cuentas de Conserjería.</li></ul>
+        </div>
+      </div>
+      <p class="nota ok">El detalle técnico está en <a href="#tic">Para el TIC</a> y los mensajes para pedir cada permiso, en <a href="#mensajes">Mensajes para enviar</a>.</p>
+    </div>
+  </div>
+
   <div class="tarjeta sola">
     <div>
       <h3><img src="/iconos/estado-general.svg" alt="">Dónde estamos ahora</h3>
@@ -1005,7 +1054,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para Coordinación TIC · propuesta de piloto</span>
   <div class="titulo"><h2>Para el TIC</h2><img src="/iconos/cargo-tic.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">Qué hace falta para instalar RumboAula en el instituto con un ordenador del propio centro como servidor. Es una guía orientativa para valorarlo juntos con quien coordine las TIC.</p>
+  <p class="entrada">Qué hace falta para instalar RumboAula en el instituto con un ordenador del propio centro como servidor. Es una guía orientativa para valorarlo juntos con quien coordine las TIC. La lista completa de lo necesario está en <a href="#lista-necesario">Implantación en el centro</a>.</p>
 
   <div class="tarjeta sola">
     <div>
@@ -1163,9 +1212,9 @@ Gracias. Un saludo.</pre>
     </div>
   </div>
 
-  <div class="tarjeta sola nueva" id="mensaje-equipo">
+  <div class="tarjeta sola" id="mensaje-equipo">
     <div>
-      <h3><img src="/iconos/cargo-direccion.svg" alt="">1. Al equipo directivo: propuesta de piloto <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/cargo-direccion.svg" alt="">1. Al equipo directivo: propuesta de piloto</h3>
       <p class="quien-envia">Lo envía: la persona que propone RumboAula. Cuándo: lo primero de todo.</p>
 <pre class="correo-tic" id="modelo-equipo">Asunto: Propuesta de piloto de RumboAula en el centro
 
@@ -1188,9 +1237,9 @@ Un saludo.</pre>
       <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-equipo">Copiar el mensaje</button></p>
     </div>
   </div>
-  <div class="tarjeta sola nueva" id="mensaje-tic">
+  <div class="tarjeta sola" id="mensaje-tic">
     <div>
-      <h3><img src="/iconos/cargo-tic.svg" alt="">2. A Coordinación TIC <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/cargo-tic.svg" alt="">2. A Coordinación TIC</h3>
       <p class="quien-envia">Lo envía: la persona que propone RumboAula o la dirección. Cuándo: con el visto bueno del equipo directivo.</p>
 <pre class="correo-tic" id="modelo-tic">Hola:
 
@@ -1210,9 +1259,9 @@ Gracias. Un saludo.</pre>
       <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-tic">Copiar el mensaje</button></p>
     </div>
   </div>
-  <div class="tarjeta sola nueva" id="mensaje-cau">
+  <div class="tarjeta sola" id="mensaje-cau">
     <div>
-      <h3><img src="/iconos/configuracion.svg" alt="">3. Al CAU de EducaMadrid: consulta sobre la red del centro <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/configuracion.svg" alt="">3. Al CAU de EducaMadrid: consulta sobre la red del centro</h3>
       <p class="quien-envia">Lo envía: la dirección del centro. Cuándo: después de hablar con Coordinación TIC. Pide la respuesta por escrito.</p>
 <pre class="correo-tic" id="modelo-cau">Asunto: Consulta sobre la instalación de un servidor interno en la red del centro
 
@@ -1235,9 +1284,9 @@ Atentamente,
       <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-cau">Copiar el mensaje</button></p>
     </div>
   </div>
-  <div class="tarjeta sola nueva" id="mensaje-dpd">
+  <div class="tarjeta sola" id="mensaje-dpd">
     <div>
-      <h3><img src="/iconos/documentos.svg" alt="">4. A la Delegación de Protección de Datos de la Consejería <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/documentos.svg" alt="">4. A la Delegación de Protección de Datos de la Consejería</h3>
       <p class="quien-envia">Lo envía: la dirección del centro, que es la responsable del tratamiento. Cuándo: antes de usar datos reales.</p>
 <pre class="correo-tic" id="modelo-dpd">Asunto: Consulta sobre una aplicación interna de organización del centro
 
@@ -1267,9 +1316,9 @@ Atentamente,
       <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-dpd">Copiar el mensaje</button></p>
     </div>
   </div>
-  <div class="tarjeta sola nueva" id="mensaje-claustro">
+  <div class="tarjeta sola" id="mensaje-claustro">
     <div>
-      <h3><img src="/iconos/profesorado.svg" alt="">5. Al claustro: comienzo del piloto <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/profesorado.svg" alt="">5. Al claustro: comienzo del piloto</h3>
       <p class="quien-envia">Lo envía: la dirección o Jefatura de Estudios. Cuándo: cuando el piloto esté autorizado e instalado.</p>
 <pre class="correo-tic" id="modelo-claustro">Asunto: Empezamos a usar RumboAula en el centro
 
@@ -1290,9 +1339,9 @@ Un saludo.</pre>
       <p><button class="copiar copiar-modelo" type="button" data-modelo="modelo-claustro">Copiar el mensaje</button></p>
     </div>
   </div>
-  <div class="tarjeta sola nueva" id="mensaje-demo">
+  <div class="tarjeta sola" id="mensaje-demo">
     <div>
-      <h3><img src="/iconos/aviso.svg" alt="">6. A quien pruebe la demostración: no usar datos reales <span class="novedad">Nuevo</span></h3>
+      <h3><img src="/iconos/aviso.svg" alt="">6. A quien pruebe la demostración: no usar datos reales</h3>
       <p class="quien-envia">Lo envía: quien comparta la demostración con otros centros o compañeros. Cuándo: al enviar el enlace.</p>
 <pre class="correo-tic" id="modelo-demo">Asunto: RumboAula: solo para probar con datos ficticios
 
