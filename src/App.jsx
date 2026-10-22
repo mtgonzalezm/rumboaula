@@ -11040,6 +11040,18 @@ function AppInterna() {
 
         {/* ── Admin Alumnos ── */}
         {/* Secretaría: datos del centro y espacios */}
+        {tab === "admin_panel" && fx.secretaria && (
+          <div data-accesos-secretaria style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 18 }}>
+            {[["Alumnos", "admin_alumnos", "alumnos", "grupos", "Dar de alta al alumnado (importar de Raíces o uno a uno) y asignar las tutorías"],
+              ["Profesores", "admin_profesores", "guardias", "anadir-profesor", "Dar de alta al profesorado, sus cargos y claves, y las cuentas de Conserjería"]].map(([t, , mod, ic, txt]) => (
+              <button key={t} className="gd-pulsable" onClick={() => irAdmin(mod)}
+                style={{ display: "flex", alignItems: "center", gap: 12, textAlign: "left", minHeight: 72, padding: "12px 14px", background: R.azulClaro, border: `2px solid ${R.azul}`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", color: R.noche }}>
+                <Icono nombre={ic} tam={44} />
+                <span><strong style={{ fontSize: 17, display: "block" }}>{t} ›</strong><span style={{ fontSize: 14, color: R.petroleo }}>{txt}</span></span>
+              </button>
+            ))}
+          </div>
+        )}
         {tab === "admin_panel" && fx.secretaria && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
         {tab === "espacios_centro" && fx.guardias && <EspaciosCentro espacios={espaciosCentro} setEspacios={setEspaciosCentro} />}
         {tab === "horarios_aulas" && fx.guardias && <HorariosAulas horarios={horarios} setHorarios={setHorarios} profesores={profesores} cursos={cursos} espacios={espaciosCentro} />}
