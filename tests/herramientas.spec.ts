@@ -100,7 +100,7 @@ test('Notificar ausencia: llega a Jefatura y aparece como clase sin cubrir', asy
   await page.getByRole('button', { name: /Notificar/ }).last().click()
   const aus = await leer(page, 'ausencias')
   expect(aus.some((a: { profesor: string, horas: string[] }) => a.profesor === 'Carmen López' && a.horas.includes('6ª hora'))).toBe(true)
-  // Jefatura y Dirección reciben un aviso automático por Galvángram
+  // Jefatura y Dirección reciben un aviso automático por RumboChat
   const avisos = (await leer(page, 'mensajes')).filter((m: { remitente: string, texto: string }) => m.remitente === 'RumboAula' && m.texto.startsWith('Nueva ausencia: Carmen López'))
   expect(avisos.map((m: { destinatario: string }) => m.destinatario).sort()).toEqual(['Ana Jiménez', 'Luis García'])
   await salir(page)
@@ -556,8 +556,8 @@ test('Ausencias: comprobaciones, clases del horario, consigna por clase, modific
   await expect(tarjeta).toContainText('Pendiente')
   // Alguien cubre la primera clase
   await page.evaluate(([id, h]) => {
-    const c = JSON.parse(localStorage.getItem('galvandesk:coberturas_clase') || '{}'); c[`2026-10-08|${h}|${id}`] = 'Laura Torres'
-    localStorage.setItem('galvandesk:coberturas_clase', JSON.stringify(c))
+    const c = JSON.parse(localStorage.getItem('rumboaula:coberturas_clase') || '{}'); c[`2026-10-08|${h}|${id}`] = 'Laura Torres'
+    localStorage.setItem('rumboaula:coberturas_clase', JSON.stringify(c))
   }, [aus.id, horas[0]])
   await page.reload()
   await page.getByRole('button', { name: 'Guardias', exact: true }).click()
@@ -670,7 +670,7 @@ test('Conducta positiva: el profe la anota, la ve Jefatura en la ficha y se pued
   const visor = page.getByRole('dialog', { name: 'Vista previa del informe' })
   await expect(visor).toBeVisible()
   await visor.getByRole('button', { name: 'Cerrar' }).click()
-  // El tutor/a del grupo recibe un aviso en Galvángram
+  // El tutor/a del grupo recibe un aviso en RumboChat
   const aviso = (await leer(page, 'mensajes')).find((m: { texto: string }) => m.texto.includes('conducta positiva de Diego Sánchez Blanco'))
   expect(aviso.destinatario).toBe(mia.tutor)
   await salir(page)
@@ -870,5 +870,21 @@ test('Autoría: el enlace «Licencia» abre y muestra la pregunta de la licencia
   await page.locator('[data-autoria] button').first().click()
   await expect(page.locator('#faq-licencia')).toHaveAttribute('open', '')
   await expect(page.locator('#faq-licencia')).toBeInViewport()
+  expect(errores).toEqual([])
+})
+
+test('Datos guardados con el nombre antiguo del proyecto: se conservan al actualizar', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('prueba-ya')) return
+    sessionStorage.setItem('prueba-ya', '1')
+    localStorage.clear()
+    localStorage.setItem('galvandesk:datos_centro', JSON.stringify({ nombre: 'IES Prueba de Migración', ciudad: 'Getafe' }))
+  })
+  await page.goto('/')
+  await expect(page.getByText('IES Prueba de Migración').first()).toBeVisible()
+  const claves = await page.evaluate(() => Object.keys(localStorage))
+  expect(claves.some(k => k.startsWith('galvandesk:'))).toBe(false)
+  expect(claves).toContain('rumboaula:datos_centro')
   expect(errores).toEqual([])
 })

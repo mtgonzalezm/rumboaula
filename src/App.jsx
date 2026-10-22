@@ -327,9 +327,10 @@ const perfilesPermitidos = (cuentas, nombre) => cargoDe(cuentas, nombre).ids.fla
 const MIN_CLAVE = 6;
 // Las claves nunca se guardan tal cual: solo su huella SHA-256 (requiere conexión segura HTTPS).
 // En esta versión de demostración se guardan en el navegador; en el servidor del centro irán al servidor.
-async function hashClave(nombre, clave) {
+// «sal» distingue las claves creadas antes de octubre de 2026 (con el nombre antiguo del proyecto)
+async function hashClave(nombre, clave, sal = "rumboaula") {
   if (!window.crypto?.subtle) throw new Error("sin-https");
-  const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(`galvandesk|${nombre}|${clave}`));
+  const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${sal}|${nombre}|${clave}`));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -338,10 +339,10 @@ async function hashClave(nombre, clave) {
 const REFLEJO = "linear-gradient(to bottom, #000 0%, rgba(0,0,0,.45) 40%, transparent 92%), linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)";
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
-  const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("galvandesk:globo"); } catch { return MODO_DEMO; } });
-  const [ejemploListo, setEjemploListo] = useState(() => { try { return !!sessionStorage.getItem("galvandesk:ejemplo"); } catch { return false; } });
-  const cerrarGlobo = () => { setGlobo(false); try { sessionStorage.setItem("galvandesk:globo", "1"); } catch { /* sin almacenamiento */ } };
-  const cargarEjemplo = () => { onCargarEjemplo(); setEjemploListo(true); try { sessionStorage.setItem("galvandesk:ejemplo", "1"); } catch { /* sin almacenamiento */ } };
+  const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("rumboaula:globo"); } catch { return MODO_DEMO; } });
+  const [ejemploListo, setEjemploListo] = useState(() => { try { return !!sessionStorage.getItem("rumboaula:ejemplo"); } catch { return false; } });
+  const cerrarGlobo = () => { setGlobo(false); try { sessionStorage.setItem("rumboaula:globo", "1"); } catch { /* sin almacenamiento */ } };
+  const cargarEjemplo = () => { onCargarEjemplo(); setEjemploListo(true); try { sessionStorage.setItem("rumboaula:ejemplo", "1"); } catch { /* sin almacenamiento */ } };
   const [paso, setPaso] = useState("nombre");
   const [nombre, setNombre] = useState(nombreSugerido || "");
   const [clave, setClave] = useState("");
@@ -366,7 +367,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         const h = await hashClave(nombre, clave);
         setCuentas(prev => ({ ...prev, [nombre]: { ...(prev[nombre] || {}), clave: h } }));
       } else if (await hashClave(nombre, clave) !== cuentas[nombre].clave) {
-        setError("Clave incorrecta."); setClave(""); return;
+        // Clave creada antes del cambio de nombre: si coincide, se guarda ya con el formato nuevo
+        const h = await hashClave(nombre, clave);
+        if (await hashClave(nombre, clave, "galvandesk") !== cuentas[nombre].clave) { setError("Clave incorrecta."); setClave(""); return; }
+        setCuentas(prev => ({ ...prev, [nombre]: { ...(prev[nombre] || {}), clave: h } }));
       }
     } catch { setError("La conexión no es segura (HTTPS): no se pueden comprobar las claves."); return; }
     setError(""); setClave(""); setClave2("");
@@ -382,7 +386,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   // Demostración: elegir un perfil carga los datos de ejemplo (ficticios) y entra, sin nombre ni clave
   const entrarDemo = accion => { if (!ejemploListo) cargarEjemplo(); accion(); };
   const perfilesDemo = [
-    { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y Galvángram`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
+    { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y RumboChat`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
     { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
     { txt: "📊 Jefatura y Dirección", sub: "Ana Jiménez · convivencia, guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
     { txt: "⚙️ Administración", sub: "Elena Vega · alumnado, profesorado y centro", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
@@ -402,7 +406,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         </button>
       ))}
       </div>
-      {/* Entrar como cualquier profe (p. ej. quien ha recibido un aviso de Galvángram) */}
+      {/* Entrar como cualquier profe (p. ej. quien ha recibido un aviso de RumboChat) */}
       {(ejemploListo || profesores.length > 4) && (() => {
         const conAvisos = profesores.filter(p => sinLeerPor[p]).sort((a, b) => sinLeerPor[b].urgentes - sinLeerPor[a].urgentes || a.localeCompare(b));
         const resto = profesores.filter(p => !sinLeerPor[p]).sort((a, b) => a.localeCompare(b));
@@ -613,7 +617,22 @@ const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
 
 // Guardado en el navegador (localStorage). Los datos se conservan al recargar,
 // pero cada navegador/dispositivo guarda los suyos. Paso previo al servidor del centro.
-const PREFIJO = "galvandesk:";
+const PREFIJO = "rumboaula:";
+// Hasta octubre de 2026 los datos se guardaban con el prefijo «galvandesk:». Se pasan una vez al nuevo, sin perder nada.
+(() => {
+  try {
+    for (const almacen of [localStorage, sessionStorage]) {
+      for (let i = almacen.length - 1; i >= 0; i--) {
+        const k = almacen.key(i);
+        if (k && k.startsWith("galvandesk:")) {
+          const nuevo = "rumboaula:" + k.slice(11);
+          if (almacen.getItem(nuevo) === null) almacen.setItem(nuevo, almacen.getItem(k));
+          almacen.removeItem(k);
+        }
+      }
+    }
+  } catch { /* sin almacenamiento */ }
+})();
 async function sGet(k) {
   try { const v = localStorage.getItem(PREFIJO + k); return v ? JSON.parse(v) : null; }
   catch { return null; }
@@ -2954,7 +2973,7 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, tutores
     const x = { id: Date.now(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, email: al.email || "", tutor, tutorEmail: tutores[al.curso]?.email || "",
       tipo, detalle: detalle.trim(), profesor: usuario, ts: new Date().toISOString() };
     setPositivas(prev => [x, ...prev]);
-    // El tutor/a se entera también dentro de la app, por Galvángram
+    // El tutor/a se entera también dentro de la app, por RumboChat
     if (tutor && tutor !== usuario && setMensajes) setMensajes(prev => [{ id: x.id + 1, aviso: x.id + 1, remitente: "RumboAula", destinatario: tutor, conCopia: [], leido: false, urgente: false, ts: x.ts, lugar: null,
       texto: `⭐ ${usuario} ha anotado una conducta positiva de ${al.nombre} (${al.curso}): ${tipo}.${x.detalle ? ` «${x.detalle}»` : ""}` }, ...prev]);
     setComunicar(x);
@@ -2972,7 +2991,7 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, tutores
             <strong style={{ color: R.petroleo, fontSize: 16 }}>⭐ {comunicar.tipo} · {comunicar.alumno} — {comunicar.curso}</strong>
             <button onClick={() => setComunicar(null)} style={{ minHeight: 44, padding: "0 14px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer" }}>Cerrar</button>
           </div>
-          {comunicar.tutor && comunicar.tutor !== usuario && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Su tutor/a, {comunicar.tutor}, ya lo ha recibido en Galvángram.</div>}
+          {comunicar.tutor && comunicar.tutor !== usuario && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 6 }}>Su tutor/a, {comunicar.tutor}, ya lo ha recibido en RumboChat.</div>}
           <ComoComunicarPositiva x={comunicar} C={C} />
         </Card>
       )}
@@ -3352,7 +3371,7 @@ const AYUDAS = {
   positivas: { titulo: "Conducta positiva", pasos: [
     "Busca al alumno o alumna por su nombre o su grupo.",
     "Elige qué ha hecho bien. Te saldrán ideas de frases: toca una para usarla y retócala, o escribe la tuya.",
-    "Pulsa «Anotar». Su tutor/a recibe un aviso en Galvángram, lo ven Jefatura y el tutor/a en su ficha, y sale en el informe para la familia.",
+    "Pulsa «Anotar». Su tutor/a recibe un aviso en RumboChat, lo ven Jefatura y el tutor/a en su ficha, y sale en el informe para la familia.",
     "Después, como con un parte, puedes descargar el PDF o copiar el texto y enviarlo por correo a la familia, al tutor/a, a Jefatura y a Orientación.",
     "Debajo tienes tus anotaciones: «Comunicar» para enviarla más tarde y «Borrar» si te has equivocado."] },
   mis_coberturas: { titulo: "Mis coberturas", pasos: [
@@ -3362,7 +3381,7 @@ const AYUDAS = {
   guardias_ver: { titulo: "Guardias del día", pasos: [
     "Todas las zonas de guardia de hoy, hora a hora, con quién está en cada una.",
     "En naranja, las zonas en las que entra el sustituto; en rojo, las que se han quedado sin nadie."] },
-  mensajeria: { titulo: "Galvángram", pasos: [
+  mensajeria: { titulo: "RumboChat", pasos: [
     "Toca un mensaje rápido o escribe el tuyo; el texto se puede retocar.",
     "En «¿Dónde estás?», deja que se rellene según tu horario o escribe a mano el aula, el edificio y el grupo. En los avisos urgentes es obligatorio.",
     "En «¿A quién avisar?» aparecen los profes de guardia de esa hora por zonas, primero los de tu edificio. Toca un nombre o «Avisar a la zona»; también puedes añadir a cualquier otro profesor/a.",
@@ -3421,7 +3440,7 @@ const AYUDAS = {
   material_avisos: { titulo: "Necesidades y avisos", pasos: [
     "Elige si es algo roto o que no funciona, o material que hace falta.",
     "Indica el tipo de material, dónde y qué pasa (y la cantidad, si es una necesidad). Marca «Urgente» si impide dar clase.",
-    "Pulsa «Enviar aviso»: llega por Galvángram a quien lo gestiona (Coordinación TIC, Secretaría o Jefatura; si es urgente, también a Dirección).",
+    "Pulsa «Enviar aviso»: llega por RumboChat a quien lo gestiona (Coordinación TIC, Secretaría o Jefatura; si es urgente, también a Dirección).",
     "Abajo ves tus avisos y su estado. Cuando te contesten, te llega un mensaje y sale aquí la respuesta.",
     "Jefatura y Administración ven todos, responden, los marcan «En curso» o «Resuelto» y pueden descargar la lista en PDF."] },
   material_incidencias: { titulo: "Incidencias de puestos", pasos: [
@@ -4253,7 +4272,7 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
     return e;
   }
 
-  // Avisa por Galvángram a quien tenía asignada una clase que ya no hace falta cubrir
+  // Avisa por RumboChat a quien tenía asignada una clase que ya no hace falta cubrir
   function avisarCoberturasQuitadas(a, horasQuitadas) {
     const fecha = isoLocal(a.fecha);
     const quitadas = horasQuitadas.map(h => [h, coberturas[claveCob(fecha, h, a.id)]]).filter(([, p]) => p);
@@ -4268,7 +4287,7 @@ function NotificarAusencia({ usuario, modoJefatura = false, profesores, ausencia
     })), ...prev]);
   }
 
-  // Aviso por Galvángram a Jefatura de Estudios y Dirección cuando un profesor registra, cambia o anula su ausencia
+  // Aviso por RumboChat a Jefatura de Estudios y Dirección cuando un profesor registra, cambia o anula su ausencia
   function avisarJefatura(texto) {
     if (modoJefatura || !setMensajes) return;
     const destinos = profesores.filter(p => p !== ausProfesor && p !== usuario && cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"));
@@ -5000,12 +5019,12 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GALVÁNGRAM - MENSAJERÍA RÁPIDA
+// RUMBOCHAT - MENSAJERÍA RÁPIDA
 // ═══════════════════════════════════════════════════════════════════════════
 const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave" };
 const ICONO_MENSAJE = { "Alumno enfermo": "alumno-enfermo", "Emergencia": "emergencia", "Urgencia en aula": "emergencia", "Falta material": "falta-material",
   "Alumno derivado": "alumno-derivado", "Cambio de guardia": "sustituto", "Falta un profesor": "profe-ausente", "Reunión importante": "eventos" };
-function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, esJefatura, profesores, horarios = {}, cursos = [], cuadrante = {}, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, C, inpStyle, selStyle, labelStyle }) {
+function RumboChat({ vistaInicial = "enviar", mensajes, setMensajes, usuario, esJefatura, profesores, horarios = {}, cursos = [], cuadrante = {}, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, C, inpStyle, selStyle, labelStyle }) {
   // ¿Dónde estás? «auto» (según tu horario, guardia o clase que cubres) o «mano»
   const hoyISO = isoLocal();
   const [modoLugar, setModoLugar] = useState("auto");
@@ -5094,7 +5113,7 @@ function Galvangramm({ vistaInicial = "enviar", mensajes, setMensajes, usuario, 
   
   return (
     <div>
-      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Galvángram" icono="mensajes" /></div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="RumboChat" icono="mensajes" /></div>
       
       {/* TABS */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, borderBottom: `2px solid ${C.light}` }}>
@@ -7102,7 +7121,7 @@ function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], us
           <input id="gd-nec-urgente" type="checkbox" checked={f.urgente} onChange={e => setF(v => ({ ...v, urgente: e.target.checked }))} style={{ width: 22, height: 22, accentColor: R.azul }} />
           Urgente: impide dar clase
         </label>
-        <div style={{ fontSize: 14, color: R.petroleo }}>Se avisará por Galvángram a: <strong>{destino.length ? destino.join(", ") : "nadie todavía"}</strong>
+        <div style={{ fontSize: 14, color: R.petroleo }}>Se avisará por RumboChat a: <strong>{destino.length ? destino.join(", ") : "nadie todavía"}</strong>
           {" "}({profesores.some(p => cargosIds(cuentas[p]).includes(cat.cargo)) ? NOMBRE_CARGO[cat.cargo] : `Jefatura de Estudios, porque nadie tiene el cargo de ${NOMBRE_CARGO[cat.cargo]}`}{f.urgente ? " y Dirección" : ""}).</div>
         <button onClick={enviar} disabled={!f.descripcion.trim() || !f.lugar.trim()} style={{ minHeight: 52, border: "none", borderRadius: 6, background: f.descripcion.trim() && f.lugar.trim() ? R.azul : R.gris, color: f.descripcion.trim() && f.lugar.trim() ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 17, cursor: f.descripcion.trim() && f.lugar.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Enviar aviso</button>
         {hecho && <div role="status" style={{ padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
@@ -7349,7 +7368,7 @@ function DatosCentro({ datos, setDatos }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           <div>
             <label style={etiqueta} htmlFor="gd-centro-nombre">Nombre del centro</label>
-            <input id="gd-centro-nombre" value={datos.nombre || ""} onChange={e => setDatos(d => ({ ...d, nombre: e.target.value }))} placeholder="Por ejemplo, IES Enrique Tierno Galván" style={campo} />
+            <input id="gd-centro-nombre" value={datos.nombre || ""} onChange={e => setDatos(d => ({ ...d, nombre: e.target.value }))} placeholder="Nombre completo del centro" style={campo} />
           </div>
           <div>
             <label style={etiqueta} htmlFor="gd-centro-ciudad">Localidad</label>
@@ -7860,7 +7879,7 @@ const FUNCIONES_RUMBO = [
   ["guardias", "Guardias y ausencias", "Quién está en cada zona, clases sin profesor y quién las cubre, ausencias con la tarea para el alumnado y reparto equilibrado de las coberturas."],
   ["llave", "Espacios", "Reserva de laboratorios, aulas de informática, salón de actos y otros espacios, y quién tiene cada llave, junto con Conserjería."],
   ["ordenador", "Material del centro", "Quién se sienta en cada puesto y con qué profesor/a, incidencias con el último uso, y necesidades y avisos que llegan a quien los gestiona."],
-  ["mensajes", "Galvángram y avisos", "Mensajes rápidos y avisos urgentes a la guardia de tu zona, y una campana con todo lo que tienes pendiente."],
+  ["mensajes", "RumboChat y avisos", "Mensajes rápidos y avisos urgentes a la guardia de tu zona, y una campana con todo lo que tienes pendiente."],
 ];
 const QueEsRumboAula = () => (
   <>
@@ -7900,7 +7919,7 @@ const QueEsRumboAula = () => (
       <li><strong>Agilidad:</strong> lo que antes llevaba varios pasos o un paseo hasta conserjería se hace desde el móvil, en uno o dos toques.</li>
       <li><strong>Todo en un solo sitio:</strong> deja atrás la libreta de llaves, la hoja de reservas pegada en la puerta, el cuadrante de guardias en papel y la hoja de puestos del aula de informática.</li>
       <li><strong>Menos papel, mesas sin papeles:</strong> partes, guardias, ausencias, reservas, llaves y avisos se consultan en la pantalla en lugar de imprimirse y fotocopiarse. Se gasta menos en papel y tóner y se reduce el impacto ambiental del centro. El PDF se genera solo cuando hace falta firmar o archivar algo.</li>
-      <li><strong>Coordinación al momento:</strong> partes, ausencias, coberturas, reservas e incidencias llegan a quien tiene que verlas, con aviso en Galvángram y en la campana.</li>
+      <li><strong>Coordinación al momento:</strong> partes, ausencias, coberturas, reservas e incidencias llegan a quien tiene que verlas, con aviso en RumboChat y en la campana.</li>
       <li><strong>Responsabilidad y cuidado del material:</strong> queda constancia de quién tiene cada llave y de quién se sienta en cada puesto, y con qué profesor/a.</li>
       <li><strong>Equilibrio y seguimiento:</strong> reparto justo de las coberturas, estadísticas de convivencia y avisos del alumnado con varios partes.</li>
       <li><strong>Familias, cuando hace falta:</strong> informes y correos preparados, también para reconocer lo que el alumnado hace bien.</li>
@@ -7921,9 +7940,9 @@ const PREGUNTAS = [
     <p>En esta versión, cada dispositivo guarda sus propios datos: lo que hagas en el móvil no aparece en el ordenador. Cuando funcione con el servidor del centro, verás lo mismo en todos.</p>
     <p>En el centro, para usarla hay que estar <strong>conectado a la wifi o a la red del instituto</strong>: el servidor solo se ve desde dentro. La demostración, en cambio, funciona desde cualquier sitio con internet.</p></> },
   { id: "mensajes", q: "¿Por qué no le ha llegado mi mensaje a un compañero?", a: <>
-    <p>Porque en esta versión los mensajes de Galvángram se quedan en el dispositivo donde se escriben. En la demostración, para ver cómo llega un aviso, pulsa «Salir» y entra como quien lo ha recibido en «Entrar como otro profe del claustro».</p>
+    <p>Porque en esta versión los mensajes de RumboChat se quedan en el dispositivo donde se escriben. En la demostración, para ver cómo llega un aviso, pulsa «Salir» y entra como quien lo ha recibido en «Entrar como otro profe del claustro».</p>
     <p>Con el servidor del centro, el mensaje llegará al momento al móvil o al ordenador del compañero.</p></> },
-  { id: "privacidad", q: "¿Quién puede ver mis mensajes de Galvángram?", a: <p>Solo tú y las personas a las que se lo envías. Cada uno ve únicamente los mensajes que ha enviado o recibido.</p> },
+  { id: "privacidad", q: "¿Quién puede ver mis mensajes de RumboChat?", a: <p>Solo tú y las personas a las que se lo envías. Cada uno ve únicamente los mensajes que ha enviado o recibido.</p> },
   { id: "emergencia", q: "¿Qué hago en una emergencia?", a: <>
     <p>Sigue el <strong>protocolo del centro</strong>: llama a conserjería o a jefatura y avisa en persona si hace falta. RumboAula ayuda a avisar más rápido a los profes de guardia de tu zona, con el aula indicada, pero <strong>no sustituye</strong> al protocolo.</p></> },
   { id: "alumnado", q: "¿Qué datos del alumnado guarda y quién los ve?", a: <>
@@ -8238,7 +8257,7 @@ function AppInterna() {
   const [coberturasPropias, setCoberturasPropias] = useState({});
   const [vistaGalv, setVistaGalv]     = useState({ v: "enviar", k: 0 });
   const [ultimoProfe, setUltimoProfe] = useState(() => { try { return localStorage.getItem(PREFIJO + "ultimo_profe") || ""; } catch { return ""; } });
-  useEffect(() => { try { if (ultimoProfe) localStorage.setItem(PREFIJO + "ultimo_profe", ultimoProfe); } catch { /* sin almacenamiento */ } }, [ultimoProfe]); // vista con la que se abre Galvángram
+  useEffect(() => { try { if (ultimoProfe) localStorage.setItem(PREFIJO + "ultimo_profe", ultimoProfe); } catch { /* sin almacenamiento */ } }, [ultimoProfe]); // vista con la que se abre RumboChat
   const [horarios, setHorarios]       = useState({}); // horario de clases semanal: "Lunes|3ª hora|Profesor" → { grupo, aula, edificio, materia } // quién cubre cada clase sin profe: "fecha|hora|idAusencia" → profesor
   const [apoyosGuardia, setApoyosGuardia] = useState({}); // {fecha|hora|zona: profesor}
   const [sustitutosGuardia, setSustitutosGuardia] = useState({}); // {fecha|hora|zona: profesor}
@@ -8562,10 +8581,10 @@ function AppInterna() {
     onClose={() => setPrintInforme(false)} />;
 
   // ── Pantalla de entrada ──
-  // Abrir Galvángram en el historial (desde un aviso)
+  // Abrir RumboChat en el historial (desde un aviso)
   function abrirMensajes() {
-    if (perfil?.id === "profesor") setModuloProfesor("galvangramm");
-    if (perfil?.id === "jefatura") setModuloJefatura("galvangramm");
+    if (perfil?.id === "profesor") setModuloProfesor("rumbochat");
+    if (perfil?.id === "jefatura") setModuloJefatura("rumbochat");
     setTab("mensajeria");
     setVistaGalv({ v: "historial", k: Date.now() });
   }
@@ -8618,7 +8637,7 @@ function AppInterna() {
           { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
           { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
         ]
-      : [] // Galvángram no tiene tabs adicionales
+      : [] // RumboChat no tiene tabs adicionales
     : perfil.id === "jefatura"
     ? moduloJefatura === "alumnos"
       ? [
@@ -8655,7 +8674,7 @@ function AppInterna() {
           { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
           { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
         ]
-      : [] // Galvángram no tiene tabs adicionales
+      : [] // RumboChat no tiene tabs adicionales
     : perfil.id === "conserjeria"
     ? [
         { id: "llaves",   label: "🔑 Llaves", color: R.mostaza },
@@ -8679,7 +8698,7 @@ function AppInterna() {
         { id: "guardias", label: "🔄 Guardias" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
-        { id: "galvangramm", label: "💬 Galvángram" },
+        { id: "rumbochat", label: "💬 RumboChat" },
       ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
     : perfil.id === "jefatura"
     ? [
@@ -8687,7 +8706,7 @@ function AppInterna() {
         { id: "guardias", label: "🔄 Guardias & Ausencias" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
-        { id: "galvangramm", label: "💬 Galvángram" },
+        { id: "rumbochat", label: "💬 RumboChat" },
       ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
     : perfil.id === "admin"
     ? [
@@ -8707,7 +8726,7 @@ function AppInterna() {
     const equipoHoy = { profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias };
     if (perfil.id === "profesor") {
       const yo = fProfesor || usuario;
-      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Galvángram" : "mensajes sin leer en Galvángram", "galvangramm", "mensajeria", "mensaje-sin-leer");
+      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en RumboChat" : "mensajes sin leer en RumboChat", "rumbochat", "mensajeria", "mensaje-sin-leer");
       add(avisosPendientes, avisosPendientes === 1 ? "familia por avisar (3 o más partes)" : "familias por avisar (3 o más partes)", "alumnos", "mis_estadisticas", "alertas");
       const sinFirmar = esLectivo(new Date()) && yo ? guardiasDeProfesor({ fecha: hoy, profesor: yo, ...equipoHoy })
         .filter(g => horaEmpezada(hoy, g.hora) && !firmas.some(f => f.fecha === hoy && f.hora === g.hora && f.profesor === yo)).length : 0;
@@ -8721,7 +8740,7 @@ function AppInterna() {
       const misReservas = reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy && !horaTerminada(hoy, r.hora)).length;
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
-      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Galvángram" : "mensajes sin leer en Galvángram", "galvangramm", "mensajeria", "mensaje-sin-leer");
+      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en RumboChat" : "mensajes sin leer en RumboChat", "rumbochat", "mensajeria", "mensaje-sin-leer");
       add(alertasNoLeidas, alertasNoLeidas === 1 ? "alerta de convivencia sin leer" : "alertas de convivencia sin leer", "alumnos", "alertas", "alertas");
       add(medidasHoy, medidasHoy === 1 ? "medida correctora por programar o para hoy" : "medidas correctoras por programar o para hoy", "alumnos", "medidas", "tipificacion");
       const ausSinLeer = ausencias.filter(a => !a.leida && isoLocal(a.fecha) >= hoy).length;
@@ -8743,7 +8762,7 @@ function AppInterna() {
   const globoModulo = id => advertencias.filter(a => a.modulo === id).reduce((n, a) => n + a.n, 0);
   const globoTab = id => advertencias.filter(a => a.modulo === moduloActivo && a.tab === id).reduce((n, a) => n + a.n, 0);
   const irAdvertencia = a => {
-    if (a.modulo === "galvangramm") { abrirMensajes(); return; }
+    if (a.modulo === "rumbochat") { abrirMensajes(); return; }
     if (perfil.id === "conserjeria") { setTab(a.tab); return; }
     if (perfil.id === "profesor") setModuloProfesor(a.modulo); else setModuloJefatura(a.modulo);
     setTab(a.tab);
@@ -9601,9 +9620,9 @@ function AppInterna() {
           </div>
         )}
 
-        {/* ── Galvángram (Jefatura & Profesor) ── */}
+        {/* ── RumboChat (Jefatura & Profesor) ── */}
         {tab === "mensajeria" && (
-          <Galvangramm 
+          <RumboChat 
             key={vistaGalv.k} vistaInicial={vistaGalv.v}
             mensajes={mensajes} 
             setMensajes={setMensajes}
