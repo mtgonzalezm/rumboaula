@@ -100,7 +100,7 @@ test('Notificar ausencia: llega a Jefatura y aparece como clase sin cubrir', asy
   await page.getByRole('button', { name: /Notificar/ }).last().click()
   const aus = await leer(page, 'ausencias')
   expect(aus.some((a: { profesor: string, horas: string[] }) => a.profesor === 'Carmen López' && a.horas.includes('6ª hora'))).toBe(true)
-  // Jefatura y Dirección reciben un aviso automático por RumboChat
+  // Jefatura y Dirección reciben un aviso automático por Rumbogram
   const avisos = (await leer(page, 'mensajes')).filter((m: { remitente: string, texto: string }) => m.remitente === 'RumboAula' && m.texto.startsWith('Nueva ausencia: Carmen López'))
   expect(avisos.map((m: { destinatario: string }) => m.destinatario).sort()).toEqual(['Ana Jiménez', 'Luis García'])
   await salir(page)
@@ -670,7 +670,7 @@ test('Conducta positiva: el profe la anota, la ve Jefatura en la ficha y se pued
   const visor = page.getByRole('dialog', { name: 'Vista previa del informe' })
   await expect(visor).toBeVisible()
   await visor.getByRole('button', { name: 'Cerrar' }).click()
-  // El tutor/a del grupo recibe un aviso en RumboChat
+  // El tutor/a del grupo recibe un aviso en Rumbogram
   const aviso = (await leer(page, 'mensajes')).find((m: { texto: string }) => m.texto.includes('conducta positiva de Diego Sánchez Blanco'))
   expect(aviso.destinatario).toBe(mia.tutor)
   await salir(page)

@@ -96,11 +96,11 @@ test('Cubrir clases: jefatura asigna y la profe lo ve', async ({ page }) => {
   expect(errores).toEqual([])
 })
 
-test('RumboChat: aviso urgente a la pareja de guardia, respuesta «Voy»', async ({ page }) => {
+test('Rumbogram: aviso urgente a la pareja de guardia, respuesta «Voy»', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoProfe(page)
-  await page.getByRole('button', { name: /RumboChat/ }).first().click()
+  await page.getByRole('button', { name: /Rumbogram/ }).first().click()
   await page.getByRole('button', { name: 'Emergencia' }).click()
   // Lugar según el horario y zonas del mismo edificio primero
   await expect(page.getByText('📍 1º ESO A · Aula A1.01 · Edificio A')).toBeVisible()
@@ -126,12 +126,12 @@ test('RumboChat: aviso urgente a la pareja de guardia, respuesta «Voy»', async
   expect(errores).toEqual([])
 })
 
-test('RumboChat: un aviso urgente no se envía sin lugar', async ({ page }) => {
+test('Rumbogram: un aviso urgente no se envía sin lugar', async ({ page }) => {
   await empezar(page, new Date('2026-10-07T10:40:00+02:00'))
   await comoProfe(page)
   const avisos: string[] = []
   page.on('dialog', d => avisos.push(d.message()))
-  await page.getByRole('button', { name: /RumboChat/ }).first().click()
+  await page.getByRole('button', { name: /Rumbogram/ }).first().click()
   await page.getByRole('button', { name: 'Alumno enfermo' }).click()
   await page.getByRole('button', { name: '✏️ A mano' }).click()
   await page.locator('select').filter({ hasText: 'Añadir a cualquier' }).first().selectOption('Ana Jiménez')
@@ -139,16 +139,16 @@ test('RumboChat: un aviso urgente no se envía sin lugar', async ({ page }) => {
   await expect.poll(() => avisos.join(' ')).toContain('hay que indicar dónde estás')
 })
 
-test('RumboChat: cada uno ve solo sus mensajes', async ({ page }) => {
+test('Rumbogram: cada uno ve solo sus mensajes', async ({ page }) => {
   await empezar(page)
   await comoProfe(page)
-  await page.getByRole('button', { name: /RumboChat/ }).first().click()
+  await page.getByRole('button', { name: /Rumbogram/ }).first().click()
   await page.getByRole('button', { name: 'Falta material' }).click()
   await page.locator('select').filter({ hasText: 'Añadir a cualquier' }).first().selectOption('Laura Torres')
   await page.getByRole('button', { name: 'Enviar Mensaje' }).last().click()
   await salir(page)
   await comoJefatura(page)
-  await page.getByRole('button', { name: /RumboChat/ }).first().click()
+  await page.getByRole('button', { name: /Rumbogram/ }).first().click()
   await page.getByRole('button', { name: /Historial/ }).click()
   await expect(page.getByText('Necesito material urgente')).toHaveCount(0)
 })
