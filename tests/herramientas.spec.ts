@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import fs from 'fs'
-import { vigilarErrores, empezar, entrar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
+import { vigilarErrores, empezar, entrar, comoProfe, comoJefatura, comoAdmin, comoSecretaria, comoTic, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
 
 // ───────────────────────── PROFESORADO: partes ─────────────────────────
 test('Nuevo parte: se crea, aparece en Mis partes y en Jefatura, y el PDF se descarga', async ({ page }) => {
@@ -100,7 +100,7 @@ test('Notificar ausencia: llega a Jefatura y aparece como clase sin cubrir', asy
   await page.getByRole('button', { name: /Notificar/ }).last().click()
   const aus = await leer(page, 'ausencias')
   expect(aus.some((a: { profesor: string, horas: string[] }) => a.profesor === 'Carmen López' && a.horas.includes('6ª hora'))).toBe(true)
-  // Jefatura y Dirección reciben un aviso automático por RumboChat
+  // Jefatura y Dirección reciben un aviso automático por Rumbogram
   const avisos = (await leer(page, 'mensajes')).filter((m: { remitente: string, texto: string }) => m.remitente === 'RumboAula' && m.texto.startsWith('Nueva ausencia: Carmen López'))
   expect(avisos.map((m: { destinatario: string }) => m.destinatario).sort()).toEqual(['Ana Jiménez', 'Luis García'])
   await salir(page)
@@ -190,7 +190,7 @@ test('Jefatura: ausencia por teléfono y cuadrante de guardias', async ({ page }
 })
 
 // ───────────────────────── ADMINISTRACIÓN ─────────────────────────
-test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', async ({ page }) => {
+test('Secretaría: importar alumnado desde Raíces (CSV) sin duplicar', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -217,7 +217,7 @@ test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', asyn
   expect(errores).toEqual([])
 })
 
-test('Administración: tutorías y profesorado', async ({ page }) => {
+test('Secretaría: tutorías y profesorado', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -250,7 +250,7 @@ test('Un parte puesto en 7ª hora (15:10) no salta como «fuera de horario»', a
   expect(alertas.filter((a: { tipo: string, msg: string }) => a.tipo === 'fuera_horario' && /15:10/.test(a.msg))).toHaveLength(0)
 })
 
-test('Administración: alta manual de alumno, sin duplicados y con aviso de campos obligatorios', async ({ page }) => {
+test('Secretaría: alta manual de alumno, sin duplicados y con aviso de campos obligatorios', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -378,7 +378,7 @@ test('Medidas correctoras: la guardia del aula de convivencia ve a su alumnado y
 })
 
 // ───────────────────────── Datos del centro ─────────────────────────
-test('Datos del centro: Administración cambia el nombre y la localidad y salen en toda la app', async ({ page }) => {
+test('Datos del centro: Secretaría cambia el nombre y la localidad y salen en toda la app', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -398,10 +398,12 @@ test('Datos del centro: Administración cambia el nombre y la localidad y salen 
   expect(errores).toEqual([])
 })
 
-test('Horario del centro: Administración cambia las horas de una franja y se usan en la app', async ({ page }) => {
+test('Horario del centro: Jefatura cambia las horas de una franja y se usan en la app', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
-  await comoAdmin(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
+  await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Inicio de 1ª hora').fill('08:00')
   await page.getByLabel('Fin de 1ª hora').fill('08:55')
   expect((await leer(page, 'horario_centro'))['1ª hora']).toBe('8:00 – 8:55')
@@ -417,7 +419,7 @@ test('Horario del centro: Administración cambia las horas de una franja y se us
   expect(errores).toEqual([])
 })
 
-test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ page }) => {
+test('Logotipo del centro: Secretaría lo sube y sale en los PDF', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -442,10 +444,12 @@ test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ 
   expect(errores).toEqual([])
 })
 
-test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cuadrante las usa', async ({ page }) => {
+test('Zonas de guardia: Jefatura renombra, oculta y añade zonas, y el cuadrante las usa', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
-  await comoAdmin(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
+  await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Nombre de la zona Edificio A · Planta 0 · Pasillo').fill('Pasillo de la entrada')
   await page.locator('[data-zona="rec-maquina"]').getByRole('button', { name: 'Ocultar' }).click()
   await page.locator('#gd-zona-nueva').fill('Edificio D · Planta 0 · Pasillo')
@@ -457,9 +461,7 @@ test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cu
   expect(zonas.some((z: { label: string, edificio: string }) => z.label === 'Edificio D · Planta 0 · Pasillo' && z.edificio === 'D')).toBe(true)
   // Las zonas necesarias no se pueden ocultar
   await expect(page.locator('[data-zona="aula-conv"]').getByRole('button', { name: 'Ocultar' })).toHaveCount(0)
-  // Jefatura: el cuadrante ofrece la zona nueva y no la oculta; las guardias ya hechas muestran el nombre nuevo
-  await salir(page)
-  await comoJefatura(page)
+  // El cuadrante ofrece la zona nueva y no la oculta; las guardias ya hechas muestran el nombre nuevo
   await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
   await pestaña(page, 'Cuadrante')
   await page.locator('select').filter({ hasText: 'Elige un profesor' }).first().selectOption({ index: 1 })
@@ -477,7 +479,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   const errores = vigilarErrores(page)
   await empezar(page)
   // En la demostración se ven los perfiles; el acceso real está en «Entrar con nombre y clave»
-  await expect(page.getByRole('button', { name: /Jefatura y Dirección/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Jefatura de Estudios/ })).toBeVisible()
   await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   // Nombre que no está en la lista
   await page.locator('#gd-nombre').fill('Nadie Inventado')
@@ -507,7 +509,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   await page.getByRole('button', { name: '¿Has olvidado tu clave?' }).click()
-  await expect(page.getByText(/Pide a Administración del centro que restablezca tu clave/)).toBeVisible()
+  await expect(page.getByText(/Pide a Secretaría del centro que restablezca tu clave/)).toBeVisible()
   await page.getByRole('button', { name: /Preguntas frecuentes/ }).first().click()
   await expect(page.getByRole('dialog', { name: 'Preguntas frecuentes' })).toBeVisible()
   expect(errores).toEqual([])
@@ -670,7 +672,7 @@ test('Conducta positiva: el profe la anota, la ve Jefatura en la ficha y se pued
   const visor = page.getByRole('dialog', { name: 'Vista previa del informe' })
   await expect(visor).toBeVisible()
   await visor.getByRole('button', { name: 'Cerrar' }).click()
-  // El tutor/a del grupo recibe un aviso en RumboChat
+  // El tutor/a del grupo recibe un aviso en Rumbogram
   const aviso = (await leer(page, 'mensajes')).find((m: { texto: string }) => m.texto.includes('conducta positiva de Diego Sánchez Blanco'))
   expect(aviso.destinatario).toBe(mia.tutor)
   await salir(page)
@@ -705,9 +707,12 @@ test('Llaves: el profe se la lleva y la devuelve, Conserjería anota por otro y 
   await expect(page.locator('[data-tabla="movimientos"]')).toContainText('Laboratorio de Ciencias')
   await salir(page)
   // Conserjería: anota que se la lleva otro profesor y marca devuelta la que seguía fuera desde ayer
-  await entrar(page, 'Llaves de las aulas')
+  await entrar(page, 'Entrega y recogida de llaves')
   const campana = page.getByRole('button', { name: /^Advertencias/ })
-  await expect(campana.locator('.gd-globo')).toHaveText('1')
+  const panel = page.getByRole('dialog', { name: 'Advertencias' })
+  await campana.click()
+  await expect(panel).toContainText('1 llave sin devolver')
+  await page.keyboard.press('Escape')
   const salon = page.locator('[data-llave="salon-actos"]')
   await salon.getByRole('combobox').selectOption('Laura Torres')
   await salon.getByRole('button', { name: 'Se la lleva' }).click()
@@ -715,7 +720,9 @@ test('Llaves: el profe se la lleva y la devuelve, Conserjería anota por otro y 
   p = (await leer(page, 'llaves_prestamos')).find((x: { llaveId: string, devolucion: string | null }) => x.llaveId === 'salon-actos' && !x.devolucion)
   expect(p.anotaSalida).toBe('Conserjería')
   await page.locator('[data-llave="tecnologia"]').getByRole('button', { name: 'Devuelta' }).click()
-  await expect(campana.locator('.gd-globo')).toHaveCount(0)
+  await campana.click()
+  await expect(panel).not.toContainText('llave sin devolver')
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'En Dirección' }).click()
   await expect(page.locator('[data-llave]')).toHaveCount(3)
   await page.getByRole('button', { name: 'Descargar PDF' }).click()
@@ -749,7 +756,7 @@ test('Reservas de espacios: el profe reserva, no se puede reservar dos veces, Co
   await expect(page.getByRole('alert')).toContainText('Ya tienes reservado Sala de usos múltiples')
   await salir(page)
   // Conserjería ve la reserva y puede anularla
-  await entrar(page, 'Llaves de las aulas')
+  await entrar(page, 'Entrega y recogida de llaves')
   await pestaña(page, 'Reservas')
   await page.locator('#gd-espacio').selectOption('sum')
   await jueves()
@@ -778,7 +785,7 @@ test('Reservas que se repiten cada semana y cuentas de Conserjería aparte del p
   await page.locator(`[data-serie="${serie[0].serie}"]`).getByRole('button', { name: 'Anular la serie' }).click()
   expect((await leer(page, 'reservas_espacios')).some((r: { serie?: number }) => r.serie === serie[0].serie)).toBe(false)
   await salir(page)
-  // Administración da de alta una cuenta de Conserjería que no aparece en el profesorado
+  // Secretaría da de alta una cuenta de Conserjería que no aparece en el profesorado
   await comoAdmin(page)
   await page.getByRole('button', { name: 'Profesores', exact: true }).click()
   await page.locator('#gd-conserje-nuevo').fill('Rosa Conserje')
@@ -822,16 +829,15 @@ test('Material del centro: colocar al grupo, guardar la sesión, anotar una inci
   await expect(page.locator('[data-usos="PC02"]')).toContainText(delGrupo[1].nombre)
   await expect(page.locator('[data-usos="PC02"]')).toContainText('Carmen López')
   await salir(page)
-  // Jefatura la ve en la campana y la resuelve
-  await comoJefatura(page)
-  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  // Coordinación TIC la ve y la resuelve
+  await comoTic(page)
   await pestaña(page, 'Incidencias de puestos')
   await page.locator(`[data-incidencia="${inc.id}"]`).getByRole('button', { name: 'Marcar resuelta' }).click()
   expect((await leer(page, 'material_incidencias')).find((x: { id: number }) => x.id === inc.id).estado).toBe('resuelta')
   expect(errores).toEqual([])
 })
 
-test('Necesidades y avisos de material: el profe avisa, llega a Coordinación TIC, Jefatura responde y el profe lo ve', async ({ page }) => {
+test('Necesidades y avisos de material: la avería informática llega a Coordinación TIC y el material que hace falta a Secretaría', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoProfe(page)
@@ -848,10 +854,26 @@ test('Necesidades y avisos de material: el profe avisa, llega a Coordinación TI
   const msjs = (await leer(page, 'mensajes')).filter((m: { texto: string }) => m.texto.includes('Prueba automática: la pizarra digital'))
   expect(msjs.map((m: { destinatario: string }) => m.destinatario).sort()).toEqual(['Elena Vega', 'Luis García'])
   await salir(page)
-  // Jefatura lo ve en su campana, responde y lo marca resuelto
-  await comoJefatura(page)
+  // El material que hace falta va a Secretaría
+  await comoProfe(page)
   await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
   await pestaña(page, 'Necesidades y avisos')
+  await page.getByRole('button', { name: /Material que hace falta/ }).click()
+  await page.locator('#gd-nec-categoria').selectOption('informatica')
+  await page.locator('#gd-nec-lugar').fill('Aula de Informática 2')
+  await page.locator('#gd-nec-descripcion').fill('Prueba automática: cables HDMI')
+  await page.getByRole('button', { name: 'Enviar aviso' }).click()
+  const nec = (await leer(page, 'material_avisos')).find((a: { descripcion: string }) => a.descripcion === 'Prueba automática: cables HDMI')
+  expect(nec.notificados).toEqual(['Beatriz Navarro'])
+  await salir(page)
+  // Secretaría ve la necesidad pero no la avería informática
+  await comoSecretaria(page)
+  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  await expect(page.locator(`[data-aviso-material="${nec.id}"]`)).toBeVisible()
+  await expect(page.locator(`[data-aviso-material="${av.id}"]`)).toHaveCount(0)
+  await salir(page)
+  // Coordinación TIC responde la avería y la marca resuelta
+  await comoTic(page)
   const tarjeta = page.locator(`[data-aviso-material="${av.id}"]`)
   await tarjeta.getByRole('textbox').fill('Cambiamos la lámpara el lunes.')
   await tarjeta.getByRole('button', { name: 'Resuelto' }).click()
@@ -886,5 +908,144 @@ test('Datos guardados con el nombre antiguo del proyecto: se conservan al actual
   const claves = await page.evaluate(() => Object.keys(localStorage))
   expect(claves.some(k => k.startsWith('galvandesk:'))).toBe(false)
   expect(claves).toContain('rumboaula:datos_centro')
+  expect(errores).toEqual([])
+})
+
+test('Espacios: cuando alguien reserva o libera, a los demás les llega en la campana y en Novedades', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page, new Date('2026-10-07T09:00:00+02:00'))
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Espacios', exact: true }).click()
+  await expect(page.locator('[data-novedades]')).toContainText('Liberado')
+  await page.locator('#gd-espacio').selectOption('sum')
+  const jueves = page.getByRole('button', { name: 'Jue 8', exact: true }); if (await jueves.count()) await jueves.click()
+  await page.locator('[data-celda="2026-10-08|2ª hora"]').click()
+  await page.getByRole('button', { name: 'Confirmar reserva' }).click()
+  const nov = await leer(page, 'espacios_novedades')
+  expect(nov[0]).toMatchObject({ tipo: 'reserva', espacio: 'Sala de usos múltiples', profesor: 'Carmen López' })
+  await salir(page)
+  // Otra persona lo ve en su campana y, al entrar en Reservas, marcado como nuevo
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /^Advertencias/ }).click()
+  await page.getByRole('dialog', { name: 'Advertencias' }).getByRole('button', { name: /cambios? en las reservas de espacios/ }).click()
+  await expect(page.locator('[data-novedades]').getByText('Nuevo').first()).toBeVisible()
+  await expect(page.locator('[data-novedades]')).toContainText('Para Carmen López')
+  expect(errores).toEqual([])
+})
+
+test('Asistencia: pasar lista, justificante del alumno, aviso al tutor y límites de Jefatura', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Asistencia', exact: true }).click()
+  const fila = page.locator('[data-alumno-lista]').first()
+  await fila.click()
+  await page.locator('[data-alumno-lista]').nth(1).click(); await page.locator('[data-alumno-lista]').nth(1).click()
+  await page.getByRole('button', { name: 'Guardar la lista' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Lista guardada' })).toContainText('1 falta y 1 retraso')
+  const reg = (await leer(page, 'asistencia_alumnado')).find((r: { fecha: string, hora: string, profesor: string }) => r.fecha === '2026-10-07' && r.hora === '5ª hora' && r.profesor === 'Carmen López')
+  expect(reg.faltas).toHaveLength(1); expect(reg.retrasos).toHaveLength(1)
+  // Justificante de un alumno de otro grupo: avisa a su tutor/a
+  await pestaña(page, 'Justificantes')
+  await page.locator('#gd-just-grupo').selectOption('2º ESO B')
+  await page.locator('#gd-just-alumno').selectOption({ index: 1 })
+  await page.getByRole('button', { name: 'Registrar el justificante' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Justificante registrado' })).toContainText('Avisado su tutor/a')
+  const tutor = (await leer(page, 'mensajes'))[0]
+  expect(tutor.texto).toContain('ha entregado un justificante')
+  await salir(page)
+  // Jefatura ve el resumen y cambia los límites
+  await comoJefatura(page)
+  await pestaña(page, 'Asistencia')
+  await expect(page.locator('[data-total="Protocolo de absentismo"]')).not.toContainText(/^0/)
+  await page.locator('#gd-lim-abs').fill('50')
+  expect((await leer(page, 'asistencia_limites')).absentismo).toBe(50)
+  await pestaña(page, 'Estadísticas')
+  await page.getByRole('button', { name: 'Mes', exact: true }).click()
+  await expect(page.locator('[data-comparativa] [data-rosco]').first()).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+test('Justificante del profesorado: lo entrega quien falta y Jefatura lo revisa', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Notificar Ausencia')
+  await page.locator('input[type=date]').first().fill('2026-10-08')
+  await page.getByRole('button', { name: /Día completo/ }).click()
+  await page.getByRole('button', { name: /Notificar/ }).last().click()
+  const aus = (await leer(page, 'ausencias')).find((a: { profesor: string, fecha: string }) => a.profesor === 'Carmen López' && String(a.fecha).startsWith('2026-10-08'))
+  const tarjeta = page.locator(`[data-ausencia="${aus.id}"]`)
+  await tarjeta.getByRole('button', { name: /Entregar justificante/ }).click()
+  await tarjeta.getByRole('button', { name: 'Marcar como entregado' }).click()
+  await expect(tarjeta.locator('[data-justificante-prof]')).toContainText('pendiente de revisar')
+  await salir(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await pestaña(page, 'Ausencias de Profesores')
+  await page.getByRole('button', { name: 'Marcar revisado' }).first().click()
+  expect((await leer(page, 'ausencias')).find((a: { id: number }) => a.id === aus.id).justificante.revisado.por).toBe('Ana Jiménez')
+  expect(errores).toEqual([])
+})
+
+test('Lista de la guardia: llega al profesor que faltaba y a Jefatura, cuenta para la asistencia y se descarga en PDF', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page, new Date('2026-10-07T10:30:00+02:00'))
+  await comoProfe(page)
+  await page.getByRole('button', { name: 'Guardias', exact: true }).click()
+  await pestaña(page, 'Mi Guardia Hoy')
+  await page.getByRole('button', { name: /Pasar lista · / }).first().click()
+  await page.getByRole('dialog').getByRole('button').nth(1).click()
+  await page.getByRole('button', { name: /Guardar|Terminar|Lista pasada/ }).last().click()
+  const l = (await leer(page, 'listas_guardia')).slice(-1)[0]
+  expect(l.ausente).toBeTruthy()
+  const msjs = (await leer(page, 'mensajes')).filter((m: { texto: string }) => m.texto.startsWith(`📋 Lista de ${l.curso}`))
+  expect(msjs.map((m: { destinatario: string }) => m.destinatario)).toEqual(expect.arrayContaining([l.ausente, 'Ana Jiménez']))
+  expect((await leer(page, 'asistencia_alumnado')).some((r: { grupo: string, hora: string, deGuardia?: boolean }) => r.grupo === l.curso && r.hora === l.hora && r.deGuardia)).toBe(true)
+  await page.getByRole('button', { name: `Descargar el PDF de la lista de ${l.curso}` }).click()
+  await expect(page.getByRole('dialog', { name: 'Vista previa del informe' })).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+test('Organización: Jefatura asigna grupo, materia y aula en el horario, y avisa si un aula coincide', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
+  await page.locator('#gd-hor-prof').selectOption('Carmen López')
+  // Busca una hora libre del lunes y le asigna una clase
+  const libre = page.locator('[data-hor-celda^="Lunes|"]').filter({ hasText: 'Libre' }).first()
+  const celda = await libre.getAttribute('data-hor-celda')
+  await libre.click()
+  await page.locator('#gd-hor-f-grupo').selectOption({ index: 1 })
+  await page.locator('#gd-hor-f-materia').fill('Matemáticas')
+  await page.locator('#gd-hor-f-aula').fill('Aula Prueba 1')
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  const hor = await leer(page, 'horarios_clase')
+  expect(hor[`${celda}|Carmen López`]).toMatchObject({ materia: 'Matemáticas', aula: 'Aula Prueba 1' })
+  // Otra persona con la misma aula a la misma hora: avisa
+  await page.locator('#gd-hor-prof').selectOption('Pedro Sánchez')
+  await page.locator(`[data-hor-celda="${celda}"]`).click()
+  await page.locator('#gd-hor-f-grupo').selectOption({ index: 2 })
+  await page.locator('#gd-hor-f-aula').fill('Aula Prueba 1')
+  await expect(page.getByRole('alert').filter({ hasText: 'ya está asignada' })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  await expect(page.locator('[data-conflictos]')).toContainText('Aula Prueba 1')
+  // Espacios del centro, ahora en Jefatura
+  await pestaña(page, 'Espacios del centro')
+  await expect(page.locator('[data-espacio-admin]').first()).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+test('Secretaría: anota el coste de lo que compra y ve el total gastado', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoSecretaria(page)
+  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  const pendiente = page.locator('[data-aviso-material]').filter({ hasText: 'Pendiente' }).first()
+  await pendiente.getByLabel(/Coste del aviso/).fill('32,50')
+  await pendiente.getByRole('button', { name: 'Resuelto' }).click()
+  await expect(page.locator('[data-gasto]')).toContainText('77,50')
   expect(errores).toEqual([])
 })
