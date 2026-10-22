@@ -1,0 +1,159 @@
+import { test, expect, type Page } from '@playwright/test'
+import { vigilarErrores, empezar, comoProfe, comoJefatura, salir, leer, pestaña } from './ayuda'
+
+type Al = { id: number, nombre: string, curso: string }
+const comoOtroProfe = async (page: Page, nombre: string) => {
+  await salir(page)
+  await page.locator('#gd-otro-profe').selectOption(nombre)
+  await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+}
+const buscarAlumno = async (page: Page, nombre: string) => {
+  await page.getByPlaceholder('Nombre o curso…').first().fill(nombre)
+  await page.getByText(nombre).first().click()
+}
+// El alumnado de ejemplo con alerta temprana es el último de 1º ESO A (tutoría de Carmen López)
+const alumnoAlerta = async (page: Page) => (await leer(page, 'alumnos') as Al[]).filter(a => a.curso === '1º ESO A').at(-1)!
+
+// ───────────────────────── Parte leve exprés ─────────────────────────
+test('Parte leve exprés: motivo con un toque, tipificación y hora solas', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  const antes = (await leer(page, 'partes')).length
+  await buscarAlumno(page, 'Lucía Martínez García')
+  const expres = page.locator('[data-parte-expres]')
+  const generar = expres.getByRole('button', { name: /Generar parte leve/ })
+  await expect(generar).toBeDisabled()
+  // «Falta de respeto o de material» pide elegir cuál de las dos
+  await expres.getByRole('button', { name: /Falta de respeto o de material/ }).click()
+  await expect(generar).toBeDisabled()
+  await expres.getByRole('button', { name: 'Falta de material' }).click()
+  await expect(expres).toContainText('2L.')
+  // «Otros» necesita una observación
+  await expres.getByRole('button', { name: /Otros/ }).click()
+  await expect(generar).toBeDisabled()
+  await expres.getByPlaceholder(/Qué ha pasado/).fill('Lanza papeles.')
+  await expect(generar).toBeEnabled()
+  await expres.getByRole('button', { name: /Móvil o dispositivos/ }).click()
+  await expres.getByPlaceholder(/Una frase/).fill('Lo saca durante el examen.')
+  await expect(generar).toBeEnabled()
+  await generar.click()
+  await expect(page.getByText(/✅ Parte generado/)).toBeVisible()
+  const partes = await leer(page, 'partes')
+  expect(partes.length).toBe(antes + 1)
+  expect(partes[0]).toMatchObject({ alumno: 'Lucía Martínez García', gravedad: 'leve', tipificacion: '8L', tipo: 'Comportamiento', hora: '5ª hora', expres: true,
+    descripcion: 'Móvil o dispositivos. Lo saca durante el examen.', profesor: 'Carmen López' })
+  // El formulario completo sigue ahí, con todas las tipificaciones
+  await expect(page.getByText('📋 Parte completo')).toBeVisible()
+  await expect(page.getByPlaceholder(/Describe detalladamente/)).toBeVisible()
+  await page.locator('select').filter({ hasText: 'Muy Grave' }).first().selectOption({ label: '⚠️ Grave' })
+  await expect(page.locator('select').filter({ hasText: 'Seleccionar tipificación' }).locator('option')).toHaveCount(15)
+  expect(errores).toEqual([])
+})
+
+// ───────────────────────── Alerta temprana ─────────────────────────
+test('Alerta temprana: 2 partes leves en asignaturas distintas en 14 días avisan al tutor/a', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  const al = await alumnoAlerta(page)
+  // La tutora lo ve en la campana y en el resumen de tutoría
+  await page.getByRole('button', { name: /avisos|Avisos|campana/i }).first().click().catch(() => {})
+  await pestaña(page, '📑 Resumen de tutoría')
+  const alerta = page.locator('[data-alerta-temprana]')
+  await expect(alerta).toContainText(`${al.nombre} — 1º ESO A · 2 partes leves en Inglés, Matemáticas`)
+  await alerta.getByRole('button', { name: 'Visto' }).click()
+  expect(Object.keys(await leer(page, 'alertas_tempranas_vistas')).length).toBe(1)
+  await alerta.getByRole('button', { name: 'Ver resumen' }).click()
+  await expect(page.locator('#gd-resumen-alumno')).toHaveValue(String(al.id))
+  // Otro profe pone un parte leve de otra asignatura: la tutora recibe un aviso discreto por RumboChat
+  await comoOtroProfe(page, 'Laura Torres')
+  await buscarAlumno(page, al.nombre)
+  await page.locator('[data-parte-expres]').getByRole('button', { name: /Interrupción de clase/ }).click()
+  await page.locator('[data-parte-expres]').getByRole('button', { name: /Generar parte leve/ }).click()
+  await expect(page.getByText(/✅ Parte generado/)).toBeVisible()
+  const aviso = (await leer(page, 'mensajes')).find((m: { texto: string }) => m.texto.includes('Alerta temprana') && m.texto.includes(al.nombre))
+  expect(aviso).toMatchObject({ destinatario: 'Carmen López', urgente: false })
+  expect(aviso.texto).toContain('3 partes leves en 3 asignaturas distintas')
+  expect(errores).toEqual([])
+})
+
+// ───────────────────────── Notas de aula ─────────────────────────
+test('Notas de aula: solo las ven quien la escribe y el tutor/a, y no son partes', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  const al = await alumnoAlerta(page)
+  const partesAntes = (await leer(page, 'partes')).length
+  await comoOtroProfe(page, 'Laura Torres')
+  await pestaña(page, '🗒 Notas de aula')
+  await page.locator('#gd-nota-busca').fill(al.nombre)
+  await page.getByRole('button', { name: new RegExp(al.nombre) }).first().click()
+  await page.getByRole('button', { name: 'Olvido de material' }).click()
+  await page.locator('#gd-nota-texto').fill('Prueba automática: sin el cuaderno.')
+  await page.getByRole('button', { name: /Guardar nota/ }).click()
+  const nota = (await leer(page, 'notas_aula'))[0]
+  expect(nota).toMatchObject({ alumno: al.nombre, profesor: 'Laura Torres', categoria: 'Olvido de material' })
+  expect((await leer(page, 'partes')).length).toBe(partesAntes)
+  // La tutora (Carmen López) la ve en su tutoría y en el resumen
+  await salir(page)
+  await comoProfe(page)
+  await pestaña(page, '🗒 Notas de aula')
+  await expect(page.locator(`[data-nota="${nota.id}"]`)).toContainText('Prueba automática: sin el cuaderno.')
+  await pestaña(page, '📑 Resumen de tutoría')
+  await page.locator('#gd-resumen-alumno').selectOption(String(al.id))
+  await expect(page.getByText('Prueba automática: sin el cuaderno.')).toBeVisible()
+  await page.getByRole('button', { name: /Descargar PDF/ }).click()
+  await expect(page.getByText(/resumen-tutoria-.*\.pdf/)).toBeVisible()
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Descargar PDF/ }).last().click()
+  expect((await descarga).suggestedFilename()).toMatch(/\.pdf$/)
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+  // Otro profe que no es su tutor no la ve
+  await comoOtroProfe(page, 'Jorge Ruiz')
+  await pestaña(page, '🗒 Notas de aula')
+  await expect(page.locator(`[data-nota="${nota.id}"]`)).toHaveCount(0)
+  // Jefatura no tiene notas de aula
+  await salir(page)
+  await comoJefatura(page)
+  await expect(page.getByRole('button', { name: /Notas de aula/ })).toHaveCount(0)
+  expect(errores).toEqual([])
+})
+
+// ───────────────────────── Mediación y compromisos ─────────────────────────
+test('Compromisos: mediación entre dos alumnos, seguimiento y estados sin partes', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  const partesAntes = (await leer(page, 'partes')).length
+  await pestaña(page, '🤝 Compromisos')
+  await page.getByRole('button', { name: 'Acuerdo de mediación' }).click()
+  await page.locator('#gd-comp-busca').fill('Lucía Martínez')
+  await page.getByRole('button', { name: /Lucía Martínez García/ }).first().click()
+  await page.locator('#gd-comp-acuerdo').fill('Prueba automática: hablar con respeto.')
+  await expect(page.getByRole('button', { name: /Registrar/ })).toBeDisabled()
+  await page.locator('#gd-comp-busca').fill('Diego Sánchez')
+  await page.getByRole('button', { name: /Diego Sánchez Blanco/ }).first().click()
+  await page.getByRole('button', { name: /Registrar/ }).click()
+  const c = (await leer(page, 'compromisos'))[0]
+  expect(c).toMatchObject({ tipo: 'mediacion', estado: 'en_proceso', creadoPor: 'Carmen López', acuerdo: 'Prueba automática: hablar con respeto.' })
+  expect(c.alumnos.map((a: Al) => a.nombre)).toEqual(['Lucía Martínez García', 'Diego Sánchez Blanco'])
+  const tarjeta = page.locator(`[data-compromiso="${c.id}"]`)
+  await tarjeta.getByPlaceholder('Anotar cómo va…').fill('Primera semana bien.')
+  await tarjeta.getByRole('button', { name: 'Anotar' }).click()
+  await tarjeta.getByRole('button', { name: 'Cumplido', exact: true }).click()
+  const guardado = (await leer(page, 'compromisos')).find((x: { id: number }) => x.id === c.id)
+  expect(guardado.estado).toBe('cumplido')
+  expect(guardado.seguimiento.map((s: { texto: string }) => s.texto)).toEqual(['Primera semana bien.', 'Estado: Cumplido'])
+  expect((await leer(page, 'partes')).length).toBe(partesAntes)
+  // El tutor/a de Diego recibe un aviso; Jefatura lo ve en su pestaña
+  const tutorDiego = (await leer(page, 'tutores'))[c.alumnos[1].curso]?.tutor
+  if (tutorDiego && tutorDiego !== 'Carmen López')
+    expect((await leer(page, 'mensajes')).some((m: { destinatario: string, texto: string }) => m.destinatario === tutorDiego && m.texto.includes('Prueba automática: hablar con respeto.'))).toBe(true)
+  await salir(page)
+  await comoJefatura(page)
+  await pestaña(page, '🤝 Compromisos')
+  await page.getByRole('button', { name: /^Cumplidos/ }).click()
+  await expect(page.locator(`[data-compromiso="${c.id}"]`)).toContainText('Primera semana bien.')
+  expect(errores).toEqual([])
+})

@@ -23,7 +23,7 @@ async function entrar(page: Page, texto: string | RegExp) {
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
 }
 const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
-const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · convivencia')
+const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias')
 async function salir(page: Page) {
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await expect(page.locator('#gd-otro-profe')).toBeVisible()
@@ -54,10 +54,10 @@ test.describe('Todas las pantallas se abren sin fallos', () => {
   for (const [perfil, quien] of [
     ['Profesor/a', 'poner partes, guardias'],
     ['Tutor/a', 'tutoría de'],
-    ['Jefatura', 'Ana Jiménez · convivencia'],
-    ['Secretaría', 'Beatriz Navarro · profesorado'],
+    ['Jefatura', 'Ana Jiménez · guardias'],
+    ['Secretaría', 'Beatriz Navarro · compras'],
     ['Coordinación TIC', 'Elena Vega · averías'],
-    ['Conserjería', 'Llaves de las aulas'],
+    ['Conserjería', 'Entrega y recogida de llaves'],
   ] as const) {
     test(perfil, async ({ page }) => {
       const errores = vigilarErrores(page)

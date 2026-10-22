@@ -22,8 +22,8 @@ export async function entrar(page: Page, texto: string | RegExp) {
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
 }
 export const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
-export const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · convivencia')
-export const comoAdmin = (page: Page) => entrar(page, 'Beatriz Navarro · profesorado')
+export const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias')
+export const comoAdmin = (page: Page) => entrar(page, 'Beatriz Navarro · compras')
 export const comoSecretaria = comoAdmin
 export const comoTic = (page: Page) => entrar(page, 'Elena Vega · averías')
 export async function salir(page: Page) {

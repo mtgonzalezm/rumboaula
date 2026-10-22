@@ -190,7 +190,7 @@ test('Jefatura: ausencia por teléfono y cuadrante de guardias', async ({ page }
 })
 
 // ───────────────────────── ADMINISTRACIÓN ─────────────────────────
-test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', async ({ page }) => {
+test('Secretaría: importar alumnado desde Raíces (CSV) sin duplicar', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -217,7 +217,7 @@ test('Administración: importar alumnado desde Raíces (CSV) sin duplicar', asyn
   expect(errores).toEqual([])
 })
 
-test('Administración: tutorías y profesorado', async ({ page }) => {
+test('Secretaría: tutorías y profesorado', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -250,7 +250,7 @@ test('Un parte puesto en 7ª hora (15:10) no salta como «fuera de horario»', a
   expect(alertas.filter((a: { tipo: string, msg: string }) => a.tipo === 'fuera_horario' && /15:10/.test(a.msg))).toHaveLength(0)
 })
 
-test('Administración: alta manual de alumno, sin duplicados y con aviso de campos obligatorios', async ({ page }) => {
+test('Secretaría: alta manual de alumno, sin duplicados y con aviso de campos obligatorios', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -378,7 +378,7 @@ test('Medidas correctoras: la guardia del aula de convivencia ve a su alumnado y
 })
 
 // ───────────────────────── Datos del centro ─────────────────────────
-test('Datos del centro: Administración cambia el nombre y la localidad y salen en toda la app', async ({ page }) => {
+test('Datos del centro: Secretaría cambia el nombre y la localidad y salen en toda la app', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -402,7 +402,7 @@ test('Horario del centro: Jefatura cambia las horas de una franja y se usan en l
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoJefatura(page)
-  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
   await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Inicio de 1ª hora').fill('08:00')
   await page.getByLabel('Fin de 1ª hora').fill('08:55')
@@ -419,7 +419,7 @@ test('Horario del centro: Jefatura cambia las horas de una franja y se usan en l
   expect(errores).toEqual([])
 })
 
-test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ page }) => {
+test('Logotipo del centro: Secretaría lo sube y sale en los PDF', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoAdmin(page)
@@ -448,7 +448,7 @@ test('Zonas de guardia: Jefatura renombra, oculta y añade zonas, y el cuadrante
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoJefatura(page)
-  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
   await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Nombre de la zona Edificio A · Planta 0 · Pasillo').fill('Pasillo de la entrada')
   await page.locator('[data-zona="rec-maquina"]').getByRole('button', { name: 'Ocultar' }).click()
@@ -462,6 +462,7 @@ test('Zonas de guardia: Jefatura renombra, oculta y añade zonas, y el cuadrante
   // Las zonas necesarias no se pueden ocultar
   await expect(page.locator('[data-zona="aula-conv"]').getByRole('button', { name: 'Ocultar' })).toHaveCount(0)
   // El cuadrante ofrece la zona nueva y no la oculta; las guardias ya hechas muestran el nombre nuevo
+  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
   await pestaña(page, 'Cuadrante')
   await page.locator('select').filter({ hasText: 'Elige un profesor' }).first().selectOption({ index: 1 })
   await expect(page.locator('optgroup[label="── Edificio D"]').first()).toBeAttached()
@@ -508,7 +509,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   await page.getByRole('button', { name: '¿Has olvidado tu clave?' }).click()
-  await expect(page.getByText(/Pide a Administración del centro que restablezca tu clave/)).toBeVisible()
+  await expect(page.getByText(/Pide a Secretaría del centro que restablezca tu clave/)).toBeVisible()
   await page.getByRole('button', { name: /Preguntas frecuentes/ }).first().click()
   await expect(page.getByRole('dialog', { name: 'Preguntas frecuentes' })).toBeVisible()
   expect(errores).toEqual([])
@@ -706,7 +707,7 @@ test('Llaves: el profe se la lleva y la devuelve, Conserjería anota por otro y 
   await expect(page.locator('[data-tabla="movimientos"]')).toContainText('Laboratorio de Ciencias')
   await salir(page)
   // Conserjería: anota que se la lleva otro profesor y marca devuelta la que seguía fuera desde ayer
-  await entrar(page, 'Llaves de las aulas')
+  await entrar(page, 'Entrega y recogida de llaves')
   const campana = page.getByRole('button', { name: /^Advertencias/ })
   const panel = page.getByRole('dialog', { name: 'Advertencias' })
   await campana.click()
@@ -755,7 +756,7 @@ test('Reservas de espacios: el profe reserva, no se puede reservar dos veces, Co
   await expect(page.getByRole('alert')).toContainText('Ya tienes reservado Sala de usos múltiples')
   await salir(page)
   // Conserjería ve la reserva y puede anularla
-  await entrar(page, 'Llaves de las aulas')
+  await entrar(page, 'Entrega y recogida de llaves')
   await pestaña(page, 'Reservas')
   await page.locator('#gd-espacio').selectOption('sum')
   await jueves()
@@ -784,7 +785,7 @@ test('Reservas que se repiten cada semana y cuentas de Conserjería aparte del p
   await page.locator(`[data-serie="${serie[0].serie}"]`).getByRole('button', { name: 'Anular la serie' }).click()
   expect((await leer(page, 'reservas_espacios')).some((r: { serie?: number }) => r.serie === serie[0].serie)).toBe(false)
   await salir(page)
-  // Administración da de alta una cuenta de Conserjería que no aparece en el profesorado
+  // Secretaría da de alta una cuenta de Conserjería que no aparece en el profesorado
   await comoAdmin(page)
   await page.getByRole('button', { name: 'Profesores', exact: true }).click()
   await page.locator('#gd-conserje-nuevo').fill('Rosa Conserje')
@@ -1004,5 +1005,47 @@ test('Lista de la guardia: llega al profesor que faltaba y a Jefatura, cuenta pa
   expect((await leer(page, 'asistencia_alumnado')).some((r: { grupo: string, hora: string, deGuardia?: boolean }) => r.grupo === l.curso && r.hora === l.hora && r.deGuardia)).toBe(true)
   await page.getByRole('button', { name: `Descargar el PDF de la lista de ${l.curso}` }).click()
   await expect(page.getByRole('dialog', { name: 'Vista previa del informe' })).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+test('Organización: Jefatura asigna grupo, materia y aula en el horario, y avisa si un aula coincide', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: 'Organización', exact: true }).click()
+  await page.locator('#gd-hor-prof').selectOption('Carmen López')
+  // Busca una hora libre del lunes y le asigna una clase
+  const libre = page.locator('[data-hor-celda^="Lunes|"]').filter({ hasText: 'Libre' }).first()
+  const celda = await libre.getAttribute('data-hor-celda')
+  await libre.click()
+  await page.locator('#gd-hor-f-grupo').selectOption({ index: 1 })
+  await page.locator('#gd-hor-f-materia').fill('Matemáticas')
+  await page.locator('#gd-hor-f-aula').fill('Aula Prueba 1')
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  const hor = await leer(page, 'horarios_clase')
+  expect(hor[`${celda}|Carmen López`]).toMatchObject({ materia: 'Matemáticas', aula: 'Aula Prueba 1' })
+  // Otra persona con la misma aula a la misma hora: avisa
+  await page.locator('#gd-hor-prof').selectOption('Pedro Sánchez')
+  await page.locator(`[data-hor-celda="${celda}"]`).click()
+  await page.locator('#gd-hor-f-grupo').selectOption({ index: 2 })
+  await page.locator('#gd-hor-f-aula').fill('Aula Prueba 1')
+  await expect(page.getByRole('alert').filter({ hasText: 'ya está asignada' })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  await expect(page.locator('[data-conflictos]')).toContainText('Aula Prueba 1')
+  // Espacios del centro, ahora en Jefatura
+  await pestaña(page, 'Espacios del centro')
+  await expect(page.locator('[data-espacio-admin]').first()).toBeVisible()
+  expect(errores).toEqual([])
+})
+
+test('Secretaría: anota el coste de lo que compra y ve el total gastado', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoSecretaria(page)
+  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  const pendiente = page.locator('[data-aviso-material]').filter({ hasText: 'Pendiente' }).first()
+  await pendiente.getByLabel(/Coste del aviso/).fill('32,50')
+  await pendiente.getByRole('button', { name: 'Resuelto' }).click()
+  await expect(page.locator('[data-gasto]')).toContainText('77,50')
   expect(errores).toEqual([])
 })
