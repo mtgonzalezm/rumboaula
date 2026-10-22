@@ -164,3 +164,41 @@ test('Compromisos: mediación entre dos alumnos, seguimiento y estados sin parte
   await expect(page.locator(`[data-compromiso="${c.id}"]`)).toContainText('Primera semana bien.')
   expect(errores).toEqual([])
 })
+
+// ───────────────────────── Perfiles: Tutor/a y alta del profesorado ─────────────────────────
+test('Tutor/a: quien tiene una tutoría tiene los perfiles Profesor/a y Tutor/a', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  // Carmen López es tutora de 1º ESO A: cambia al perfil Tutor/a
+  await page.getByRole('button', { name: /Cambiar de perfil|Profesor\/a/ }).first().click()
+  await page.getByRole('option', { name: /Tutor\/a de 1º ESO A/ }).click()
+  expect((await leer(page, 'sesion')).perfil).toMatchObject({ cargo: 'tutor', id: 'profesor' })
+  await expect(page.getByRole('button', { name: /Mi tutoría/ }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Resumen de tutoría' })).toBeVisible()
+  for (const t of ['Partes y familias', 'Asistencia del grupo', 'Notas de aula', 'Compromisos', 'Resumen de tutoría']) await pestaña(page, t)
+  // Y vuelve al perfil Profesor/a, con Nuevo Parte
+  await page.getByRole('button', { name: /Cambiar de perfil|Tutor\/a de/ }).first().click()
+  await page.getByRole('option', { name: /^Profesor\/a/ }).click()
+  await expect(page.getByPlaceholder(/Describe detalladamente/)).toBeVisible()
+  // Desde la portada, «Tutor/a de un grupo» entra directamente en su tutoría
+  await salir(page)
+  await page.getByRole('button').filter({ hasText: 'tutoría de' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Resumen de tutoría' })).toBeVisible()
+  // Quien no tiene tutoría no tiene ese perfil
+  await comoOtroProfe(page, 'Nuria Gil')
+  expect(await page.getByRole('option', { name: /Tutor\/a de/ }).count()).toBe(0)
+  expect(errores).toEqual([])
+})
+
+test('Jefatura de Estudios da de alta al profesorado en Organización', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /^Organización/ }).first().click()
+  await pestaña(page, 'Profesorado')
+  await page.getByPlaceholder('Nombre completo del profesor').fill('Profesora De Prueba')
+  await page.getByRole('button', { name: /^Añadir$/ }).click()
+  expect(await leer(page, 'profesores')).toContain('Profesora De Prueba')
+  expect(errores).toEqual([])
+})
