@@ -696,6 +696,7 @@ const ICONO_EMOJI = {
   "📢": "profe-ausente", "🗂": "documentos", "📅": "horario", "👥": "grupos", "✍": "tareas", "⚙": "cargo-administracion",
   "👨‍🏫": "profesorado", "🔑": "llave", "🗓": "horario", "🖥": "ordenador", "✅": "pasar-lista", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
   "🔍": "buscar", "⏰": "hora", "📂": "tipo-parte", "🎯": "gravedad-campo", "⚖": "tipificacion", "📝": "descripcion",
+  "⚡": "parte-expres", "🗒": "notas-aula", "🤝": "compromiso", "📑": "resumen-tutoria",
 };
 const ICONO_TEXTO = [[/^Secretaría/, "cargo-secretaria"], [/^Coordinación TIC/, "cargo-tic"], [/^Jefatura de Estudios/, "cargo-jefatura"], [/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
 function iconoDe(texto) {
@@ -3074,6 +3075,463 @@ function ConductasPositivas({ alumnos, positivas, setPositivas, usuario, tutores
   );
 }
 
+// ─── Convivencia ágil: compromisos, notas de aula, alerta temprana y resumen de tutoría ───
+// Nada de esto genera partes ni medidas: es seguimiento y prevención.
+const ESTADOS_COMPROMISO = {
+  en_proceso:  { label: "En proceso",  color: R.crema, borde: R.mostaza },
+  cumplido:    { label: "Cumplido",    color: R.verdeCaminoClaro, borde: R.verdeCamino },
+  no_cumplido: { label: "No cumplido", color: R.gris,  borde: R.petroleo },
+};
+const TIPOS_COMPROMISO = [
+  { id: "compromiso", label: "Compromiso de convivencia" },
+  { id: "mediacion",  label: "Acuerdo de mediación" },
+];
+const CATEGORIAS_NOTA = ["Olvido de material", "Despiste puntual", "No trae la tarea", "Cansancio o desánimo", "Mejora o buen día", "Otra"];
+const DIAS_ALERTA_TEMPRANA = 14;
+// Parte leve exprés: cuatro motivos que llevan a una tipificación del Plan de Convivencia
+const MOTIVOS_EXPRES = [
+  { id: "interrupcion", label: "Interrupción de clase", icono: "interrupcion", tip: "1L", tipo: "Comportamiento" },
+  { id: "respeto", label: "Falta de respeto o de material", icono: "falta-respeto", opciones: [
+    { tip: "6L", label: "Falta de respeto", tipo: "Comportamiento" },
+    { tip: "2L", label: "Falta de material", tipo: "Académico" },
+  ] },
+  { id: "movil", label: "Móvil o dispositivos", icono: "movil", tip: "8L", tipo: "Comportamiento" },
+  { id: "otros", label: "Otros", icono: "otros", tip: "10L", tipo: "Otro" },
+];
+
+const tutorDe = (tutores, curso) => tutores?.[curso]?.tutor || "";
+const verCompromiso = (c, usuario, tutores, convivencia) =>
+  convivencia || c.creadoPor === usuario || c.alumnos.some(a => tutorDe(tutores, a.curso) === usuario);
+// Las notas de aula solo las ven quien la escribe y el tutor/a del alumno (ni Jefatura)
+const verNota = (n, usuario, tutores) => n.profesor === usuario || tutorDe(tutores, n.curso) === usuario;
+
+// Asignatura de un parte: la que tiene el profesor a esa hora en su horario; si no consta, su clase
+function materiaDeParte(p, horarios = {}) {
+  if (p.materia) return p.materia;
+  const c = horarios[`${DIAS_ES[new Date(p.ts).getDay()]}|${p.hora}|${p.profesor}`];
+  return c?.materia || `Clase de ${p.profesor}`;
+}
+// Alerta temprana: 2 o más partes leves en asignaturas distintas en los últimos 14 días
+function alertaTempranaDe(partesAlumno, horarios, hoy = new Date()) {
+  const desde = isoLocal(sumarDias(hoy, -(DIAS_ALERTA_TEMPRANA - 1)));
+  const leves = partesAlumno.filter(p => p.gravedad === "leve" && isoLocal(p.ts) >= desde).sort((a, b) => b.ts.localeCompare(a.ts));
+  const materias = [...new Set(leves.map(p => materiaDeParte(p, horarios)))];
+  return materias.length >= 2 ? { partes: leves, materias } : null;
+}
+function alertasTempranas({ partes, horarios, tutores, usuario, hoy = new Date() }) {
+  const grupos = Object.entries(tutores).filter(([, t]) => t?.tutor === usuario).map(([c]) => c);
+  const porAlumno = new Map();
+  partes.filter(p => grupos.includes(p.curso)).forEach(p => { const k = p.alumnoId ?? p.alumno; if (!porAlumno.has(k)) porAlumno.set(k, []); porAlumno.get(k).push(p); });
+  const lista = [];
+  porAlumno.forEach((ps, k) => {
+    const a = alertaTempranaDe(ps, horarios, hoy);
+    if (a) lista.push({ id: `${k}|${a.partes[0].id}`, alumnoId: ps[0].alumnoId, alumno: ps[0].alumno, curso: ps[0].curso, ...a });
+  });
+  return lista.sort((a, b) => b.partes[0].ts.localeCompare(a.partes[0].ts));
+}
+
+// Buscador de alumnado reutilizable (mismo aspecto que en «Conducta positiva»)
+function BuscarAlumno({ alumnos, onElegir, id, placeholder = "Nombre o grupo…", C, inpStyle }) {
+  const [busca, setBusca] = useState("");
+  const coinciden = busca ? alumnos.filter(a => `${a.nombre} ${a.curso}`.toLowerCase().includes(busca.toLowerCase())).slice(0, 30) : [];
+  return (
+    <>
+      <input id={id} value={busca} onChange={e => setBusca(e.target.value)} placeholder={placeholder} style={{ ...inpStyle, marginBottom: 8 }} />
+      {coinciden.length > 0 && (
+        <div style={{ border: `3px solid ${R.turquesa}`, background: C.white, maxHeight: 240, overflowY: "auto", marginBottom: 12 }}>
+          {coinciden.map(a => (
+            <button key={a.id} onClick={() => { onElegir(a); setBusca(""); }}
+              style={{ display: "block", width: "100%", textAlign: "left", minHeight: 48, padding: "12px 14px", border: "none", borderBottom: `1px solid ${R.turquesaClaro}`, background: "none", cursor: "pointer", fontSize: 16, color: R.noche, fontFamily: "inherit" }}>
+              <strong>{a.nombre}</strong> — {a.curso}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+const chipEleccion = (activo, colorActivo = R.azul) => ({ minHeight: 44, padding: "0 14px", borderRadius: 22, border: `2px solid ${activo ? colorActivo : R.turquesaClaro}`, background: activo ? R.azulClaro : "#fff", color: R.noche, fontWeight: activo ? 700 : 400, fontSize: 15, cursor: "pointer", fontFamily: "inherit" });
+const NotaSinSancion = ({ children }) => (
+  <div style={{ margin: "14px 0 0", padding: "10px 14px", background: R.azulClaro, borderLeft: `5px solid ${R.azul}`, color: R.noche, fontSize: 15, lineHeight: 1.45 }}>{children}</div>
+);
+
+const primerGrupo = alumnos => { const c = [...new Set(alumnos.map(a => a.curso))].sort()[0]; return alumnos.filter(a => a.curso === c); };
+function compromisosEjemplo(todos, profesores, tutores) {
+  const alumnos = primerGrupo(todos);
+  if (alumnos.length < 2) return [];
+  const hace = d => { const x = new Date(); x.setDate(x.getDate() - d); return x; };
+  const al = i => { const a = alumnos[i % alumnos.length]; return { id: a.id, nombre: a.nombre, curso: a.curso }; };
+  const tut = i => tutores[al(i).curso]?.tutor || profesores[i % profesores.length];
+  return [
+    { id: 8800, tipo: "mediacion", alumnos: [al(0), al(1)], mediador: "Equipo de mediación (alumnado de 4º ESO)", acuerdo: "Hablar con respeto en clase y en el recreo. Si surge un problema, acudir al equipo de mediación antes de discutir.", revisar: isoLocal(sumarDias(new Date(), 3)), estado: "en_proceso", creadoPor: tut(0), ts: hace(11).toISOString(), seguimiento: [{ ts: hace(4).toISOString(), por: tut(0), texto: "Primera semana sin incidentes entre ellos." }] },
+    { id: 8801, tipo: "compromiso", alumnos: [al(2)], mediador: "", acuerdo: "Traer el material todos los días y apuntar las tareas en la agenda. La familia firma la agenda los viernes.", revisar: isoLocal(sumarDias(new Date(), -1)), estado: "en_proceso", creadoPor: tut(2), ts: hace(15).toISOString(), seguimiento: [] },
+    { id: 8802, tipo: "compromiso", alumnos: [al(5)], mediador: "", acuerdo: "Llegar puntual a primera hora durante dos semanas.", revisar: isoLocal(sumarDias(new Date(), -6)), estado: "cumplido", creadoPor: tut(5), ts: hace(24).toISOString(), seguimiento: [{ ts: hace(6).toISOString(), por: tut(5), texto: "Ha llegado puntual todos los días. ¡Bien!" }] },
+  ];
+}
+function notasEjemplo(todos, profesores, tutores) {
+  const alumnos = primerGrupo(todos);
+  if (!alumnos.length) return [];
+  const hace = (d, h) => { const x = new Date(); x.setDate(x.getDate() - d); x.setHours(h, 20, 0, 0); return x.toISOString(); };
+  const datos = [[0, 1, "Olvido de material", "Sin el libro ni el cuaderno de Matemáticas.", 9], [2, 3, "Despiste puntual", "Muy distraído hoy, le cuesta seguir la explicación.", 11], [0, 4, "No trae la tarea", "", 10], [3, 2, "Cansancio o desánimo", "Dice que ha dormido poco. Lo comento con su tutor/a.", 12], [7, 6, "Mejora o buen día", "Participa y ayuda a su compañero de mesa.", 13]];
+  return datos.map(([i, d, categoria, texto, h], k) => {
+    const a = alumnos[i % alumnos.length];
+    const tutor = tutores[a.curso]?.tutor;
+    const prof = profesores.filter(p => p !== tutor)[(k * 3) % (profesores.length - 1)];
+    return { id: 8900 + k, alumnoId: a.id, alumno: a.nombre, curso: a.curso, profesor: prof, materia: "", categoria, texto, ts: hace(d, h) };
+  });
+}
+
+// Dos partes leves recientes en asignaturas distintas, para que se vea la alerta temprana
+function partesAlertaEjemplo(todos, profesores, tutores) {
+  const grupo = primerGrupo(todos), a = grupo[grupo.length - 1];
+  if (!a) return [];
+  const tutor = tutores[a.curso]?.tutor || "";
+  const otros = profesores.filter(p => p !== tutor);
+  const hace = (d, h) => { const x = new Date(); x.setDate(x.getDate() - d); x.setHours(h, 10, 0, 0); return x.toISOString(); };
+  const base = { alumnoId: a.id, alumno: a.nombre, curso: a.curso, tutor, tutorEmail: tutores[a.curso]?.email || "", email: a.email, telefono: a.telefono, gravedad: "leve" };
+  return [
+    { ...base, id: 8990, tipo: "Comportamiento", tipificacion: "8L", descripcion: "Móvil o dispositivos. Usa el móvil en clase sin permiso.", profesor: otros[2], materia: "Inglés", hora: "2ª hora", ts: hace(2, 9), expres: true },
+    { ...base, id: 8991, tipo: "Comportamiento", tipificacion: "1L", descripcion: "Interrupción de clase. Interrumpe la explicación con comentarios en voz alta.", profesor: otros[5], materia: "Matemáticas", hora: "4ª hora", ts: hace(6, 12), expres: true },
+  ];
+}
+
+// ─── Mediación y compromisos ──────────────────────────────────────────────────
+function MediacionCompromisos({ alumnos, compromisos, setCompromisos, usuario, tutores = {}, convivencia = false, setMensajes, C, inpStyle, labelStyle }) {
+  const [tipo, setTipo] = useState("compromiso");
+  const [elegidos, setElegidos] = useState([]);
+  const [mediador, setMediador] = useState("");
+  const [acuerdo, setAcuerdo] = useState("");
+  const [revisar, setRevisar] = useState(isoLocal(sumarDias(new Date(), 14)));
+  const [filtro, setFiltro] = useState("en_proceso");
+  const [nota, setNota] = useState({});
+  const [hecho, setHecho] = useState("");
+  const minimo = tipo === "mediacion" ? 2 : 1;
+  const listo = elegidos.length >= minimo && acuerdo.trim();
+  const registrar = () => {
+    if (!listo) return;
+    const c = { id: Date.now(), tipo, alumnos: elegidos.map(a => ({ id: a.id, nombre: a.nombre, curso: a.curso })), mediador: mediador.trim(), acuerdo: acuerdo.trim(), revisar, estado: "en_proceso", creadoPor: usuario, ts: new Date().toISOString(), seguimiento: [] };
+    setCompromisos(prev => [c, ...prev]);
+    // Aviso discreto al tutor/a de cada alumno, si no es quien lo registra
+    const tutoresAvisar = [...new Set(c.alumnos.map(a => tutorDe(tutores, a.curso)).filter(t => t && t !== usuario))];
+    if (setMensajes && tutoresAvisar.length) setMensajes(prev => [...tutoresAvisar.map((t, k) => mensajeRumbo(t, `🤝 ${usuario} ha registrado un ${TIPOS_COMPROMISO.find(x => x.id === tipo).label.toLowerCase()} con ${c.alumnos.map(a => `${a.nombre} (${a.curso})`).join(", ")}: «${c.acuerdo}». Revisión: ${fmtD(c.revisar)}. No es un parte.`, k)), ...prev]);
+    setHecho(`Registrado: ${c.alumnos.map(a => a.nombre).join(", ")}`); setElegidos([]); setMediador(""); setAcuerdo(""); setRevisar(isoLocal(sumarDias(new Date(), 14)));
+    setFiltro("en_proceso");
+    setTimeout(() => setHecho(""), 4000);
+  };
+  const cambiar = (id, cambios) => setCompromisos(prev => prev.map(c => c.id === id ? { ...c, ...cambios } : c));
+  const cambiarEstado = (c, estado) => cambiar(c.id, { estado, seguimiento: [...(c.seguimiento || []), { ts: new Date().toISOString(), por: usuario, texto: `Estado: ${ESTADOS_COMPROMISO[estado].label}` }] });
+  const anadirNota = c => { const t = (nota[c.id] || "").trim(); if (!t) return; cambiar(c.id, { seguimiento: [...(c.seguimiento || []), { ts: new Date().toISOString(), por: usuario, texto: t }] }); setNota(v => ({ ...v, [c.id]: "" })); };
+  const visibles = compromisos.filter(c => verCompromiso(c, usuario, tutores, convivencia)).sort((a, b) => (a.revisar || "").localeCompare(b.revisar || ""));
+  const filtrados = visibles.filter(c => !filtro || c.estado === filtro);
+  const hoy = isoLocal();
+  return (
+    <div>
+      <TituloBloque titulo="Mediación y compromisos" sub="Acuerdos con el alumnado y su seguimiento, sin partes ni sanciones" icono="compromiso" />
+      <NotaSinSancion><Ic n="compromiso" tam={26} />Un compromiso o una mediación <b>no es un parte</b>: no cuenta para los avisos a familias ni genera medidas correctoras. Lo ven quien lo registra, el tutor/a de cada alumno y Jefatura y Orientación.</NotaSinSancion>
+      {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+      <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
+        <div style={labelStyle}>¿Qué quieres registrar?</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {TIPOS_COMPROMISO.map(t => <button key={t.id} aria-pressed={tipo === t.id} onClick={() => setTipo(t.id)} style={chipEleccion(tipo === t.id)}>{tipo === t.id ? "✓ " : ""}{t.label}</button>)}
+        </div>
+        <label htmlFor="gd-comp-busca" style={labelStyle}><ConIcono texto={tipo === "mediacion" ? "🔍 Alumnos que participan (dos o más)" : "🔍 Alumno o alumna"} tam={30} /></label>
+        <BuscarAlumno id="gd-comp-busca" alumnos={alumnos.filter(a => !elegidos.some(e => e.id === a.id))} onElegir={a => setElegidos(v => [...v, a])} C={C} inpStyle={inpStyle} />
+        {elegidos.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+            {elegidos.map(a => (
+              <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: `2px solid ${R.azul}`, borderRadius: 22, padding: "4px 4px 4px 12px", fontSize: 15, color: R.noche }}>
+                {a.nombre} — {a.curso}
+                <button onClick={() => setElegidos(v => v.filter(x => x.id !== a.id))} aria-label={`Quitar a ${a.nombre}`} style={{ minWidth: 36, minHeight: 36, border: "none", borderRadius: "50%", background: R.gris, cursor: "pointer", fontSize: 16 }}>✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+        {tipo === "mediacion" && (<>
+          <label htmlFor="gd-comp-mediador" style={labelStyle}>Quién media (opcional)</label>
+          <input id="gd-comp-mediador" value={mediador} onChange={e => setMediador(e.target.value)} placeholder="Por ejemplo: equipo de mediación, Orientación…" style={{ ...inpStyle, marginBottom: 12 }} />
+        </>)}
+        <label htmlFor="gd-comp-acuerdo" style={labelStyle}>Acuerdo</label>
+        <textarea id="gd-comp-acuerdo" value={acuerdo} onChange={e => setAcuerdo(e.target.value)} rows={3} placeholder={tipo === "mediacion" ? "Qué se comprometen a hacer las partes." : "Qué se compromete a hacer el alumno o la alumna."} style={{ ...inpStyle, marginBottom: 12, resize: "vertical" }} />
+        <label htmlFor="gd-comp-revisar" style={labelStyle}>Revisar el</label>
+        <input id="gd-comp-revisar" type="date" value={revisar} onChange={e => setRevisar(e.target.value)} style={{ ...inpStyle, marginBottom: 12 }} />
+        <Btn onClick={registrar} disabled={!listo} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="compromiso" tam={30} />Registrar</span></Btn>
+        {!listo && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>{elegidos.length < minimo ? (minimo === 2 ? "Elige al menos dos alumnos." : "Elige al alumno o alumna.") : "Escribe el acuerdo."}</div>}
+      </Card>
+      <Card>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
+          <h3 style={{ margin: 0, color: R.petroleo, fontSize: 18, flex: "1 1 auto" }}>Seguimiento ({filtrados.length})</h3>
+          {[["en_proceso", "En proceso"], ["cumplido", "Cumplidos"], ["no_cumplido", "No cumplidos"], ["", "Todos"]].map(([id, l]) => (
+            <button key={id || "todos"} aria-pressed={filtro === id} onClick={() => setFiltro(id)} style={chipEleccion(filtro === id)}>{l} ({id ? visibles.filter(c => c.estado === id).length : visibles.length})</button>
+          ))}
+        </div>
+        {filtrados.length === 0 && <p style={{ color: R.petroleo, margin: 0 }}>No hay ninguno{filtro ? " en este estado" : ""}.</p>}
+        {filtrados.map(c => {
+          const e = ESTADOS_COMPROMISO[c.estado];
+          const tocaRevisar = c.estado === "en_proceso" && c.revisar && c.revisar <= hoy;
+          return (
+            <div key={c.id} data-compromiso={c.id} style={{ border: `1px solid ${R.turquesaClaro}`, borderLeft: `10px solid ${e.borde}`, padding: 12, marginBottom: 10, background: "#fff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ fontWeight: 700, color: R.noche, fontSize: 16 }}>{c.alumnos.map(a => `${a.nombre} (${a.curso})`).join(" · ")}</div>
+                <span style={{ background: e.color, border: `1px solid ${e.borde}`, borderRadius: 4, padding: "2px 10px", fontSize: 14, fontWeight: 700, color: R.noche, whiteSpace: "nowrap" }}>{e.label}</span>
+              </div>
+              <div style={{ fontSize: 14, color: R.petroleo, marginTop: 2 }}>{TIPOS_COMPROMISO.find(t => t.id === c.tipo)?.label}{c.mediador ? ` · media: ${c.mediador}` : ""} · {c.creadoPor} · {fmtD(c.ts)}</div>
+              <div style={{ fontSize: 15, color: R.noche, margin: "6px 0" }}>«{c.acuerdo}»</div>
+              <div style={{ fontSize: 14, color: tocaRevisar ? R.noche : R.petroleo, fontWeight: tocaRevisar ? 700 : 400 }}>{tocaRevisar ? "⏰ Toca revisarlo: " : "Revisión: "}{c.revisar ? fmtD(c.revisar) : "sin fecha"}</div>
+              {(c.seguimiento || []).length > 0 && (
+                <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 14, color: R.petroleo }}>
+                  {c.seguimiento.map((s, i) => <li key={i}>{fmtD(s.ts)} · {s.por}: {s.texto}</li>)}
+                </ul>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                {Object.entries(ESTADOS_COMPROMISO).map(([id, x]) => (
+                  <button key={id} aria-pressed={c.estado === id} onClick={() => c.estado !== id && cambiarEstado(c, id)} style={chipEleccion(c.estado === id, x.borde)}>{c.estado === id ? "✓ " : ""}{x.label}</button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <input aria-label={`Anotar seguimiento de ${c.alumnos.map(a => a.nombre).join(" y ")}`} value={nota[c.id] || ""} onChange={ev => setNota(v => ({ ...v, [c.id]: ev.target.value }))} onKeyDown={ev => ev.key === "Enter" && anadirNota(c)} placeholder="Anotar cómo va…" style={{ ...inpStyle, flex: 1, minWidth: 0, marginBottom: 0 }} />
+                <button onClick={() => anadirNota(c)} disabled={!(nota[c.id] || "").trim()} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${R.azul}`, borderRadius: 6, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>Anotar</button>
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+    </div>
+  );
+}
+
+// ─── Notas de aula: bitácora sin carga disciplinaria ──────────────────────────
+function NotasAula({ alumnos, notas, setNotas, usuario, tutores = {}, horarios = {}, C, inpStyle, labelStyle }) {
+  const [al, setAl] = useState(null);
+  const [categoria, setCategoria] = useState("");
+  const [texto, setTexto] = useState("");
+  const [hecho, setHecho] = useState("");
+  const guardar = () => {
+    if (!al || !categoria) return;
+    const ahora = new Date(), hora = horaEnCurso(ahora);
+    const materia = hora ? horarios[`${DIAS_ES[ahora.getDay()]}|${hora}|${usuario}`]?.materia || "" : "";
+    setNotas(prev => [{ id: Date.now(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, profesor: usuario, materia, categoria, texto: texto.trim(), ts: ahora.toISOString() }, ...prev]);
+    setHecho(`Nota guardada: ${categoria} · ${al.nombre}`); setAl(null); setCategoria(""); setTexto("");
+    setTimeout(() => setHecho(""), 4000);
+  };
+  const visibles = notas.filter(n => verNota(n, usuario, tutores)).sort((a, b) => b.ts.localeCompare(a.ts));
+  const mias = visibles.filter(n => n.profesor === usuario);
+  const deTutoria = visibles.filter(n => n.profesor !== usuario);
+  const fila = n => (
+    <div key={n.id} data-nota={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.noche }}>
+      <div><strong>{n.alumno}</strong> — {n.curso}<div style={{ color: R.petroleo, fontWeight: 700 }}><Ic n="notas-aula" tam={22} />{n.categoria}</div>{n.texto && <div style={{ color: C.gray, fontSize: 14 }}>{n.texto}</div>}<div style={{ color: C.gray, fontSize: 13 }}>{fmt(n.ts)}{n.profesor !== usuario ? ` · ${n.profesor}` : ""}{n.materia ? ` · ${n.materia}` : ""}</div></div>
+      {n.profesor === usuario && <button onClick={() => setNotas(prev => prev.filter(y => y.id !== n.id))} aria-label={`Borrar la nota de ${n.alumno}`} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer", flexShrink: 0 }}>Borrar</button>}
+    </div>
+  );
+  return (
+    <div>
+      <TituloBloque titulo="Notas de aula" sub="Apuntes del día a día, sin carga disciplinaria" icono="notas-aula" />
+      <NotaSinSancion><Ic n="privado" tam={26} />Solo las ves <b>tú y el tutor/a</b> del alumno. <b>No son partes</b>: no cuentan para avisos ni medidas. Sirven para el seguimiento y salen en el resumen de tutoría.</NotaSinSancion>
+      {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
+      <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
+        <label htmlFor="gd-nota-busca" style={labelStyle}><ConIcono texto="🔍 Alumno o alumna" tam={30} /></label>
+        {al
+          ? <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#fff", border: `2px solid ${R.azul}`, padding: "8px 12px", marginBottom: 12, fontSize: 16, color: R.noche }}><span><strong>{al.nombre}</strong> — {al.curso}</span><button onClick={() => setAl(null)} style={{ minHeight: 40, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", cursor: "pointer" }}>Cambiar</button></div>
+          : <BuscarAlumno id="gd-nota-busca" alumnos={alumnos} onElegir={setAl} C={C} inpStyle={inpStyle} />}
+        <div style={labelStyle}>¿Qué ha pasado?</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {CATEGORIAS_NOTA.map(t => <button key={t} aria-pressed={categoria === t} onClick={() => setCategoria(t)} style={chipEleccion(categoria === t)}>{categoria === t ? "✓ " : ""}{t}</button>)}
+        </div>
+        <label htmlFor="gd-nota-texto" style={labelStyle}>Detalle (opcional)</label>
+        <input id="gd-nota-texto" value={texto} onChange={e => setTexto(e.target.value)} maxLength={200} placeholder="Una frase basta." style={{ ...inpStyle, marginBottom: 12 }} />
+        <Btn onClick={guardar} disabled={!al || !categoria} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="notas-aula" tam={30} />Guardar nota</span></Btn>
+      </Card>
+      <Card>
+        <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18 }}>Mis notas ({mias.length})</h3>
+        {mias.length === 0 ? <p style={{ color: R.petroleo, margin: 0 }}>Todavía no has escrito ninguna.</p> : mias.map(fila)}
+      </Card>
+      {deTutoria.length > 0 && (
+        <Card>
+          <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18 }}>Notas del profesorado sobre tu tutoría ({deTutoria.length})</h3>
+          {deTutoria.map(fila)}
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─── Resumen de tutoría en un clic ────────────────────────────────────────────
+function trimestresDelCurso(hoy = new Date()) {
+  const y = hoy.getMonth() >= 8 ? hoy.getFullYear() : hoy.getFullYear() - 1;
+  return [trimestreDe(new Date(y, 9, 1)), trimestreDe(new Date(y + 1, 1, 1)), trimestreDe(new Date(y + 1, 4, 1))];
+}
+function datosResumenTutoria({ alumno, periodo, partes, positivas, medidas, notas, compromisos }) {
+  const enP = ts => { const f = isoLocal(ts); return f >= periodo.desde && f <= periodo.hasta; };
+  const delAl = x => x.alumnoId === alumno.id;
+  return {
+    positivas: positivas.filter(x => delAl(x) && enP(x.ts)).sort((a, b) => a.ts.localeCompare(b.ts)),
+    partes: partes.filter(x => delAl(x) && enP(x.ts)).sort((a, b) => a.ts.localeCompare(b.ts)),
+    medidas: medidas.filter(x => delAl(x) && enP(x.ts)),
+    notas: notas.filter(x => delAl(x) && enP(x.ts)).sort((a, b) => a.ts.localeCompare(b.ts)),
+    compromisos: compromisos.filter(c => c.alumnos.some(a => a.id === alumno.id) && (enP(c.ts) || c.estado === "en_proceso")),
+  };
+}
+function pdfResumenTutoria(alumno, periodo, d, tutor) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, "Resumen de tutoría", `${alumno.nombre} · ${alumno.curso} · ${periodo.texto}`);
+  const tabla = (titulo, head, body) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text(`${titulo} (${body.length})`, 14, y + 4);
+    if (!body.length) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text("Nada en este periodo.", 14, y + 10); y += 16; return; }
+    autoTable(doc, { ...estiloTabla, startY: y + 7, head: [head], body: body.map(r => r.map(sinEmoji)) });
+    y = doc.lastAutoTable.finalY + 6;
+  };
+  tabla("Conductas positivas", ["Fecha", "Conducta", "Profesor/a", "Detalle"], d.positivas.map(x => [fmtD(x.ts), x.tipo, x.profesor, x.detalle || ""]));
+  tabla("Partes", ["Fecha", "Gravedad", "Tipificación", "Profesor/a", "Descripción"], d.partes.map(p => [fmtD(p.ts), GRAVEDAD.find(g => g.id === p.gravedad)?.label || p.gravedad, etiquetaTip(p), p.profesor, p.descripcion]));
+  tabla("Medidas correctoras", ["Medida", "Estado", "Puesta por"], d.medidas.map(m => [tipoMedida(m.tipo).label, ESTADO_MEDIDA[estadoMedida(m)].label, m.puestaPor || ""]));
+  tabla("Notas de observación", ["Fecha", "Nota", "Profesor/a", "Detalle"], d.notas.map(n => [fmtD(n.ts), n.categoria, n.profesor, n.texto || ""]));
+  tabla("Compromisos y mediaciones", ["Desde", "Tipo", "Acuerdo", "Estado"], d.compromisos.map(c => [fmtD(c.ts), TIPOS_COMPROMISO.find(t => t.id === c.tipo)?.label || "", c.acuerdo, ESTADOS_COMPROMISO[c.estado].label]));
+  firmasPDF(doc, y, [{ cargo: "El tutor/a", nombre: tutor }]);
+  guardarPDF(doc, `resumen-tutoria-${nombreArchivo(alumno.nombre)}-${periodo.clave}.pdf`);
+}
+function ResumenTutoria({ alumnos, partes, positivas, medidas, notas, compromisos, usuario, tutores = {}, horarios = {}, alertasVistas = {}, setAlertasVistas, C, selStyle, labelStyle }) {
+  const grupos = Object.entries(tutores).filter(([, t]) => t?.tutor === usuario).map(([c]) => c).sort();
+  const misAlumnos = alumnos.filter(a => grupos.includes(a.curso)).sort((a, b) => a.curso.localeCompare(b.curso) || a.nombre.localeCompare(b.nombre));
+  const tris = trimestresDelCurso();
+  const [alumnoId, setAlumnoId] = useState("");
+  const [triClave, setTriClave] = useState(trimestreDe().clave);
+  const periodo = tris.find(t => t.clave === triClave) || trimestreDe();
+  const alumno = misAlumnos.find(a => String(a.id) === String(alumnoId));
+  const alertas = alertasTempranas({ partes, horarios, tutores, usuario });
+  const pendientes = alertas.filter(a => !alertasVistas[a.id]);
+  const d = alumno ? datosResumenTutoria({ alumno, periodo, partes, positivas, medidas, notas: notas.filter(n => verNota(n, usuario, tutores)), compromisos }) : null;
+  const bloque = (icono, titulo, lista, color, pinta, vacio = "Nada en este periodo.") => (
+    <div style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `6px solid ${color}`, padding: 12 }}>
+      <h3 style={{ margin: "0 0 6px", fontSize: 17, color: R.noche, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre={icono} tam={30} />{titulo} ({lista.length})</h3>
+      {lista.length === 0 ? <div style={{ fontSize: 14, color: R.petroleo }}>{vacio}</div> : <div style={{ display: "grid", gap: 6 }}>{lista.map(pinta)}</div>}
+    </div>
+  );
+  const linea = (key, principal, sec) => <div key={key} style={{ fontSize: 14, color: R.noche, lineHeight: 1.4 }}><strong>{principal}</strong>{sec ? <span style={{ color: R.petroleo }}> · {sec}</span> : null}</div>;
+  return (
+    <div>
+      <TituloBloque titulo="Resumen de tutoría" sub="Todo lo del trimestre de un alumno, en una sola vista y en PDF" icono="resumen-tutoria" />
+      {alertas.length > 0 && (
+        <div data-alerta-temprana style={{ marginTop: 14, background: R.crema, borderLeft: `6px solid ${R.mostaza}`, padding: "10px 14px" }}>
+          <div style={{ fontWeight: 700, color: R.noche, fontSize: 16 }}><Ic n="alertas" tam={26} />Alerta temprana{pendientes.length ? ` · ${pendientes.length} nueva(s)` : ""}</div>
+          <div style={{ fontSize: 14, color: R.petroleo, margin: "2px 0 8px" }}>Alumnado de tu tutoría con 2 o más partes leves en asignaturas distintas en los últimos {DIAS_ALERTA_TEMPRANA} días. Es un aviso para prevenir, no una sanción.</div>
+          {alertas.map(a => (
+            <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: `1px solid ${R.mostaza}` }}>
+              <div style={{ fontSize: 15, color: R.noche }}><strong>{a.alumno}</strong> — {a.curso} · {a.partes.length} partes leves en {a.materias.join(", ")}{alertasVistas[a.id] ? " · vista" : ""}</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setAlumnoId(String(a.alumnoId))} style={{ minHeight: 44, padding: "0 12px", border: `2px solid ${R.azul}`, borderRadius: 6, background: "#fff", color: R.petroleo, fontWeight: 700, cursor: "pointer" }}>Ver resumen</button>
+                {!alertasVistas[a.id] && <button onClick={() => setAlertasVistas(v => ({ ...v, [a.id]: new Date().toISOString() }))} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer" }}>Visto</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
+        <div className="gd-rejilla-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <div>
+            <label htmlFor="gd-resumen-alumno" style={labelStyle}><Ic n="por-alumno" tam={24} />Alumno o alumna</label>
+            <select id="gd-resumen-alumno" value={alumnoId} onChange={e => setAlumnoId(e.target.value)} style={selStyle}>
+              <option value="">— Elige de tu tutoría —</option>
+              {misAlumnos.map(a => <option key={a.id} value={a.id}>{a.nombre} — {a.curso}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="gd-resumen-tri" style={labelStyle}><Ic n="fecha" tam={24} />Trimestre</label>
+            <select id="gd-resumen-tri" value={triClave} onChange={e => setTriClave(e.target.value)} style={selStyle}>
+              {tris.map(t => <option key={t.clave} value={t.clave}>{t.n}º trimestre</option>)}
+            </select>
+          </div>
+        </div>
+      </Card>
+      {alumno && d && (
+        <Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+            <div><div style={{ fontWeight: 700, fontSize: 18, color: R.noche }}>{alumno.nombre} — {alumno.curso}</div><div style={{ fontSize: 14, color: R.petroleo }}>{periodo.texto}</div></div>
+            <Btn onClick={() => pdfResumenTutoria(alumno, periodo, d, usuario)} style={{ minHeight: 48 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="informe" tam={30} />Descargar PDF</span></Btn>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+            {bloque("estrella", "Conductas positivas", d.positivas, R.verdeCamino, x => linea(x.id, x.tipo, `${fmtD(x.ts)} · ${x.profesor}${x.detalle ? ` — ${x.detalle}` : ""}`))}
+            {bloque("partes", "Partes", d.partes, R.mostaza, p => linea(p.id, `${fmtD(p.ts)} · ${GRAVEDAD.find(g => g.id === p.gravedad)?.label || p.gravedad}`, `${etiquetaTip(p) || p.tipo} · ${p.profesor}`))}
+            {bloque("tipificacion", "Medidas correctoras", d.medidas, R.azul, m => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, color: R.noche }}><strong>{tipoMedida(m.tipo).label}</strong><ChipMedida m={m} /></div>)}
+            {bloque("notas-aula", "Notas de observación", d.notas, R.turquesa, n => linea(n.id, n.categoria, `${fmtD(n.ts)} · ${n.profesor}${n.texto ? ` — ${n.texto}` : ""}`))}
+            {bloque("compromiso", "Compromisos y mediaciones", d.compromisos, R.morado, c => linea(c.id, ESTADOS_COMPROMISO[c.estado].label, `«${c.acuerdo}»`))}
+          </div>
+        </Card>
+      )}
+      {!misAlumnos.length && <Card><p style={{ margin: 0, color: R.petroleo }}>No tienes ninguna tutoría asignada.</p></Card>}
+    </div>
+  );
+}
+
+// ─── Parte leve exprés: pestaña propia; genera un parte leve como los demás ───
+function ParteExpres({ alumnos, usuario, tutores = {}, horarios = {}, onCrear, medidas, setMedidas, C, inpStyle, labelStyle }) {
+  const [al, setAl] = useState(null);
+  const [motivo, setMotivo] = useState(null); // { motivo, tip, tipo, label }
+  const [obs, setObs] = useState("");
+  const [hora, setHora] = useState(() => horaEnCurso() || HORAS[0]);
+  const [hecho, setHecho] = useState(null);
+  const listo = al && motivo?.tip && !(motivo.motivo === "otros" && !obs.trim());
+  const generar = () => {
+    if (!listo) return;
+    const ahora = new Date(), o = obs.trim();
+    const materia = horarios[`${DIAS_ES[ahora.getDay()]}|${hora}|${usuario}`]?.materia || "";
+    const p = { id: ahora.getTime(), alumnoId: al.id, alumno: al.nombre, curso: al.curso, tutor: tutorDeGrupo(tutores, alumnos, al.curso) || al.tutor || "", tutorEmail: tutores[al.curso]?.email || "", email: al.email, telefono: al.telefono,
+      tipo: motivo.tipo, gravedad: "leve", tipificacion: motivo.tip, descripcion: o ? `${motivo.label}. ${o}` : `${motivo.label}.`, profesor: usuario, hora, ...(materia ? { materia } : {}), expres: true, ts: ahora.toISOString() };
+    onCrear(p);
+    setHecho(p); setAl(null); setMotivo(null); setObs("");
+  };
+  return (
+    <div>
+      <TituloBloque titulo="Parte leve exprés" sub="Un parte leve en segundos: alumno, motivo y listo" icono="parte-expres" />
+      {hecho && (
+        <Card style={{ ...caja(R.verde), borderRadius: 0, boxShadow: "none", marginTop: 16 }}>
+          <strong style={{ color: R.petroleo, fontSize: 16 }}>✅ Parte generado · {hecho.alumno} — {hecho.curso} · {fmt(hecho.ts)}</strong>
+          <div style={{ fontSize: 15, color: R.petroleo, marginTop: 4 }}>{TIPIFICACION.leve.find(t => t.id === hecho.tipificacion)?.label}</div>
+          <MedidasDeParte key={hecho.id} parte={hecho} medidas={medidas} setMedidas={setMedidas} esJefatura={false} usuario={usuario} />
+          <ComoAvisar parte={hecho} />
+        </Card>
+      )}
+      <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
+        <label htmlFor="gd-expres-busca" style={labelStyle}><ConIcono texto="🔍 Alumno o alumna" tam={30} /></label>
+        {al
+          ? <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#fff", border: `2px solid ${R.azul}`, padding: "8px 12px", marginBottom: 12, fontSize: 16, color: R.noche }}><span><strong>{al.nombre}</strong> — {al.curso}</span><button onClick={() => setAl(null)} style={{ minHeight: 40, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", cursor: "pointer" }}>Cambiar</button></div>
+          : <BuscarAlumno id="gd-expres-busca" alumnos={alumnos} onElegir={a => { setAl(a); setHecho(null); }} C={C} inpStyle={inpStyle} />}
+        <div style={labelStyle}>Motivo</div>
+        <div data-parte-expres style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+          {MOTIVOS_EXPRES.map(m => {
+            const activo = motivo?.motivo === m.id;
+            return (
+              <button key={m.id} className="gd-pulsable" aria-pressed={activo}
+                onClick={() => setMotivo(m.opciones ? { motivo: m.id, tip: "", tipo: "", label: "" } : { motivo: m.id, tip: m.tip, tipo: m.tipo, label: m.label })}
+                style={{ minHeight: 72, padding: "8px 10px", borderRadius: 8, border: `3px solid ${activo ? R.azul : R.turquesaClaro}`, background: activo ? "#fff" : "#fff", boxShadow: activo ? `inset 0 0 0 2px ${R.azul}` : "none", color: R.noche, fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", lineHeight: 1.25 }}>
+                <Icono nombre={m.icono} tam={40} />{m.label}
+              </button>
+            );
+          })}
+        </div>
+        {motivo?.motivo === "respeto" && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            {MOTIVOS_EXPRES.find(m => m.id === "respeto").opciones.map(o => (
+              <button key={o.tip} aria-pressed={motivo.tip === o.tip} onClick={() => setMotivo({ motivo: "respeto", tip: o.tip, tipo: o.tipo, label: o.label })} style={chipEleccion(motivo.tip === o.tip)}>{motivo.tip === o.tip ? "✓ " : ""}{o.label}</button>
+            ))}
+          </div>
+        )}
+        {motivo?.tip && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}><Ic n="tipificacion" tam={22} />{TIPIFICACION.leve.find(t => t.id === motivo.tip)?.label}</div>}
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 10, marginTop: 12 }}>
+          <div>
+            <label htmlFor="gd-expres-obs" style={labelStyle}>Observaciones {motivo?.motivo === "otros" ? "" : "(opcional)"}</label>
+            <input id="gd-expres-obs" value={obs} onChange={e => setObs(e.target.value)} maxLength={200} placeholder={motivo?.motivo === "otros" ? "Qué ha pasado, en una frase" : "Una frase, si hace falta"} style={{ ...inpStyle, marginBottom: 0 }} />
+          </div>
+          <div>
+            <label htmlFor="gd-expres-hora" style={labelStyle}>Hora</label>
+            <select id="gd-expres-hora" value={hora} onChange={e => setHora(e.target.value)} style={{ ...inpStyle, marginBottom: 0 }}>{HORAS.map(h => <option key={h}>{h}</option>)}</select>
+          </div>
+        </div>
+        <Btn onClick={generar} disabled={!listo} style={{ width: "100%", minHeight: 52, marginTop: 14 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="parte-expres" tam={30} />Generar parte leve</span></Btn>
+        {!listo && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>{!al ? "Busca primero al alumno o alumna." : !motivo?.tip ? (motivo?.motivo === "respeto" ? "Elige si es falta de respeto o de material." : "Toca el motivo.") : "Escribe qué ha pasado."}</div>}
+        <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>Es un parte leve como los de «Nuevo Parte»: sale en Mis partes, en Jefatura y en los avisos a familias. Para un parte grave o con más detalle, usa «Nuevo Parte».</div>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Jefatura: reparto de coberturas y ausencias de un mes o del curso ───────
 function datosResumenGuardias({ profesores, ausencias, coberturas, propias, desde, hasta }) {
   const dentro = f => f >= desde && f <= hasta;
@@ -3397,6 +3855,26 @@ const AYUDAS = {
     "Pulsa «Anotar». Su tutor/a recibe un aviso en Rumbogram, lo ven Jefatura y el tutor/a en su ficha, y sale en el informe para la familia.",
     "Después, como con un parte, puedes descargar el PDF o copiar el texto y enviarlo por correo a la familia, al tutor/a, a Jefatura y a Orientación.",
     "Debajo tienes tus anotaciones: «Comunicar» para enviarla más tarde y «Borrar» si te has equivocado."] },
+  parte_expres: { titulo: "Parte leve exprés", pasos: [
+    "Busca al alumno o alumna y toca el motivo: interrupción de clase, falta de respeto o de material, móvil o dispositivos, u otros.",
+    "Añade una frase si hace falta (en «Otros» es obligatoria). La hora es la de ahora; cámbiala si no es la correcta.",
+    "Pulsa «Generar parte leve». La tipificación se pone sola y el parte es como los de «Nuevo Parte»: sale en Mis partes, en Jefatura y en los avisos a familias.",
+    "Para un parte grave o con más detalle, usa «Nuevo Parte»."] },
+  notas_aula: { titulo: "Notas de aula", pasos: [
+    "Para lo del día a día que no merece un parte: un olvido de material, un despiste, un mal día… o algo bueno.",
+    "Busca al alumno o alumna, toca qué ha pasado y, si quieres, añade una frase. Pulsa «Guardar nota».",
+    "Solo la ves tú y su tutor/a. No es un parte: no cuenta para los avisos a familias ni para las medidas.",
+    "Su tutor/a la ve en «Resumen de tutoría», junto con el resto del trimestre."] },
+  compromisos: { titulo: "Mediación y compromisos", pasos: [
+    "Elige si es un compromiso de convivencia (un alumno o alumna) o un acuerdo de mediación (dos o más).",
+    "Añade al alumnado, escribe el acuerdo y la fecha para revisarlo. Pulsa «Registrar»: su tutor/a recibe un aviso en Rumbogram.",
+    "En «Seguimiento», anota cómo va y márcalo En proceso, Cumplido o No cumplido. Cuando toca revisarlo, avisa en la campana.",
+    "No es un parte ni una sanción: no genera medidas correctoras ni cuenta para los avisos a familias."] },
+  resumen_tutoria: { titulo: "Resumen de tutoría", pasos: [
+    "Elige un alumno o alumna de tu tutoría y el trimestre.",
+    "Sale todo en una vista: conductas positivas, partes, medidas correctoras, notas de aula y compromisos.",
+    "Pulsa «Descargar PDF» para la sesión de evaluación, una reunión con la familia o el archivo de tutoría.",
+    "Arriba, la «Alerta temprana» avisa si alguien de tu grupo suma 2 o más partes leves en asignaturas distintas en 14 días. Es para prevenir, no una sanción: pulsa «Visto» cuando lo tengas en cuenta."] },
   mis_coberturas: { titulo: "Mis coberturas", pasos: [
     "Aquí están las clases que has cubierto: las de hoy, las del mes y las del curso, desde el 1 de septiembre.",
     "Arriba, las próximas clases que tienes que cubrir. Cada una dice si te la asignaste tú o Jefatura.",
@@ -8819,6 +9297,11 @@ function AppInterna() {
   const [banos, setBanos]         = useState([]);
   // Conductas positivas: {id, alumnoId, alumno, curso, tipo, detalle, profesor, ts}
   const [positivas, setPositivas] = useState([]);
+  // Compromisos y mediaciones: {id, tipo, alumnos[], mediador, acuerdo, revisar, estado, creadoPor, ts, seguimiento[]}
+  const [compromisos, setCompromisos] = useState([]);
+  // Notas de aula (sin carga disciplinaria): {id, alumnoId, alumno, curso, profesor, materia, categoria, texto, ts}
+  const [notasAula, setNotasAula] = useState([]);
+  const [alertasTempVistas, setAlertasTempVistas] = useState({}); // alertas tempranas que el tutor/a ya ha visto
   const [alertas, setAlertas]     = useState([]);
   const [mensajes, setMensajes]   = useState([]);
   const [guardias, setGuardias]   = useState([]);
@@ -8945,6 +9428,9 @@ function AppInterna() {
       const p  = await sGet("partes");    if (p)  setPartes(p);
       const b  = await sGet("banos");     if (b)  setBanos(b);
       const pos = await sGet("positivas"); if (pos) setPositivas(pos);
+      const comp = await sGet("compromisos"); if (comp) setCompromisos(comp);
+      const nau = await sGet("notas_aula"); if (nau) setNotasAula(nau);
+      const atv = await sGet("alertas_tempranas_vistas"); if (atv) setAlertasTempVistas(atv);
       const a  = await sGet("alertas");   if (a)  setAlertas(a);
       const m  = await sGet("mensajes");  if (m)  setMensajes(m);
       const al = await sGet("alumnos");   if (al) setAlumnos(al);
@@ -9007,6 +9493,9 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
   useEffect(() => { POSITIVAS_PDF = positivas; if (!loading) sSet("positivas", positivas); }, [positivas, loading]);
   useEffect(() => { if (!loading) sSet("alertas", alertas); },   [alertas, loading]);
+  useEffect(() => { if (!loading) sSet("compromisos", compromisos); }, [compromisos, loading]);
+  useEffect(() => { if (!loading) sSet("notas_aula", notasAula); }, [notasAula, loading]);
+  useEffect(() => { if (!loading) sSet("alertas_tempranas_vistas", alertasTempVistas); }, [alertasTempVistas, loading]);
   useEffect(() => { if (!loading) sSet("mensajes", mensajes); }, [mensajes, loading]);
   useEffect(() => { if (!loading) sSet("alumnos", alumnos); },   [alumnos, loading]);
   useEffect(() => { if (!loading) sSet("tutores", tutores); },   [tutores, loading]);
@@ -9094,6 +9583,9 @@ function AppInterna() {
   function cargarEjemploGuardias() {
     const conv = datosEjemploConvivencia(DEMO_PROFESORES);
     setAlumnos(conv.alumnos); setPartes(conv.partes); setBanos(conv.banos); setPositivas(positivasEjemplo(conv.alumnos, DEMO_PROFESORES)); setAlertas(conv.alertas); setInformes(conv.informes); setTutores(conv.tutores);
+    // Convivencia: compromisos, notas de aula y dos partes leves que muestran la alerta temprana
+    setPartes(prev => [...partesAlertaEjemplo(conv.alumnos, DEMO_PROFESORES, conv.tutores), ...prev]);
+    setCompromisos(compromisosEjemplo(conv.alumnos, DEMO_PROFESORES, conv.tutores)); setNotasAula(notasEjemplo(conv.alumnos, DEMO_PROFESORES, conv.tutores)); setAlertasTempVistas({});
     // El ejemplo usa los profesores ficticios de demostración; se añaden a la lista si faltan
     const lista = [...new Set([...profesores, ...DEMO_PROFESORES])];
     setProfesores(lista);
@@ -9293,9 +9785,13 @@ function AppInterna() {
     ? moduloProfesor === "alumnos"
       ? [
           { id: "partes",      label: "📋 Nuevo Parte", color: "#06b6d4" },
+          { id: "parte_expres", label: "⚡ Parte exprés", color: R.azul },
           { id: "parte_grupo", label: "👥 Parte de Grupo", color: "#ec4899" },
           { id: "bano",        label: "🚻 Baños", color: "#63CBA1" },
           { id: "positivas",   label: "Conducta positiva", color: R.verdeCamino },
+          { id: "notas_aula",  label: "🗒 Notas de aula", color: R.azul },
+          { id: "compromisos", label: "🤝 Compromisos", color: R.azul },
+          ...(misTutoriasProf.length ? [{ id: "resumen_tutoria", label: "📑 Resumen de tutoría", color: R.azul }] : []),
           { id: "historial",   label: "🗂 Mis Partes", color: "#2B647E" },
           { id: "mis_estadisticas", label: "📈 Estadísticas", color: "#06b6d4" },
         ]
@@ -9334,6 +9830,7 @@ function AppInterna() {
           { id: "por_alumno",   label: "👤 Por Alumno", color: "#63CBA1" },
           { id: "partes_todos", label: "📋 Partes", color: "#2B647E" },
           { id: "medidas",      label: "⚖️ Medidas", color: "#2B647E" },
+          ...(fx.convivencia ? [{ id: "compromisos", label: "🤝 Compromisos", color: R.azul }] : []),
           { id: "bano_live",    label: "🚻 Baños", color: "#06b6d4" },
           { id: "alertas",      label: "🔔 Alertas", color: "#ec4899" },
           { id: "informe",      label: "📤 Informe", color: "#63CBA1" },
@@ -9439,6 +9936,10 @@ function AppInterna() {
       add(misLlaves, misLlaves === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
       const respMat = avisosMaterial.filter(a => a.profesor === yo && a.respuesta && !a.respuestaVista).length;
       add(respMat, respMat === 1 ? "respuesta nueva a tus avisos de material" : "respuestas nuevas a tus avisos de material", "material", "material_avisos", "mensaje-recibido");
+      const tempranas = alertasTempranas({ partes, horarios, tutores, usuario: yo }).filter(a => !alertasTempVistas[a.id]).length;
+      add(tempranas, tempranas === 1 ? "alerta temprana en tu tutoría" : "alertas tempranas en tu tutoría", "alumnos", "resumen_tutoria", "alertas");
+      const porRevisar = compromisos.filter(c => c.estado === "en_proceso" && c.revisar && c.revisar <= hoy && verCompromiso(c, yo, tutores, false)).length;
+      add(porRevisar, porRevisar === 1 ? "compromiso por revisar" : "compromisos por revisar", "alumnos", "compromisos", "tareas");
       const misReservas = reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy && !horaTerminada(hoy, r.hora)).length;
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
@@ -9844,6 +10345,19 @@ function AppInterna() {
         {/* ── Baños (profesor) ── */}
         {tab === "positivas" && (
           <ConductasPositivas alumnos={alumnos} positivas={positivas} setPositivas={setPositivas} usuario={fProfesor || usuario} tutores={tutores} setMensajes={setMensajes} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
+        )}
+        {tab === "parte_expres" && perfil.id === "profesor" && (
+          <ParteExpres alumnos={alumnos} usuario={fProfesor || usuario} tutores={tutores} horarios={horarios} medidas={medidas} setMedidas={setMedidas} C={C} inpStyle={inpStyle} labelStyle={labelStyle}
+            onCrear={p => { generarAlertasParte(p, partes); setPartes(prev => [p, ...prev]); }} />
+        )}
+        {tab === "notas_aula" && perfil.id === "profesor" && (
+          <NotasAula alumnos={alumnos} notas={notasAula} setNotas={setNotasAula} usuario={fProfesor || usuario} tutores={tutores} horarios={horarios} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
+        )}
+        {tab === "compromisos" && (perfil.id === "profesor" || fx.convivencia) && (
+          <MediacionCompromisos alumnos={alumnos} compromisos={compromisos} setCompromisos={setCompromisos} usuario={perfil.id === "profesor" ? fProfesor || usuario : usuario} tutores={tutores} convivencia={perfil.id === "jefatura" && fx.convivencia} setMensajes={setMensajes} C={C} inpStyle={inpStyle} labelStyle={labelStyle} />
+        )}
+        {tab === "resumen_tutoria" && perfil.id === "profesor" && (
+          <ResumenTutoria alumnos={alumnos} partes={partes} positivas={positivas} medidas={medidas} notas={notasAula} compromisos={compromisos} usuario={fProfesor || usuario} tutores={tutores} horarios={horarios} alertasVistas={alertasTempVistas} setAlertasVistas={setAlertasTempVistas} C={C} selStyle={selStyle} labelStyle={labelStyle} />
         )}
         {tab === "bano" && (
           <div>
