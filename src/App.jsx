@@ -6569,7 +6569,12 @@ function useEstrecho(px = 640) {
   return e;
 }
 // Reservar un espacio por día y hora. gestion: Jefatura y Conserjería reservan para cualquiera y anulan cualquier reserva
-function Reservas({ espacios, reservas = [], setReservas, profesores = [], cursos = [], usuario, gestion = false }) {
+// Novedad: {id, tipo: "reserva" | "anulacion", espacio, fecha, hora, profesor, semanas, por, ts}. Todo el claustro las ve.
+function Reservas({ espacios, reservas = [], setReservas, profesores = [], cursos = [], usuario, gestion = false, novedades = [], onNovedad, vistoHasta = "", onVisto }) {
+  // Lo nuevo desde la última vez que esta persona miró las reservas; al entrar queda visto
+  const [desde] = useState(vistoHasta);
+  useEffect(() => { onVisto?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const avisar = (tipo, r, semanas = 1) => onNovedad?.({ id: Date.now() + Math.random(), tipo, espacio: r.espacio, fecha: r.fecha, hora: r.hora, profesor: r.profesor, semanas, por: usuario, ts: new Date().toISOString() });
   const lista = listaEspacios(espacios).filter(e => !e.oculta && reservable(e));
   const [espId, setEspId] = useState(lista[0]?.id || "");
   const esp = lista.find(e => e.id === espId) || lista[0];
@@ -6603,14 +6608,19 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
     const libres = fechas.filter(f => !ocupada(f)), saltadas = fechas.filter(ocupada);
     const base = Date.now(), serie = form.repetir ? base : undefined, ts = new Date().toISOString();
     setReservas(prev => [...prev, ...libres.map((f, i) => ({ id: base + i, espacioId: esp.id, espacio: esp.nombre, fecha: f, hora: sel.hora, profesor: quien, grupo: form.grupo, actividad: form.actividad.trim(), anota: usuario, ts, ...(serie ? { serie } : {}) }))]);
+    if (libres.length) avisar("reserva", { espacio: esp.nombre, fecha: libres[0], hora: sel.hora, profesor: quien }, libres.length);
     setHecho(form.repetir
       ? `Reservado ${esp.nombre} ${libres.length} ${libres.length === 1 ? "semana" : "semanas"}, ${diaSemana(sel.fecha)} a ${sel.hora}.${saltadas.length ? ` No se ha podido reservar ${saltadas.map(f => fmtD(parseISO(f))).join(", ")} porque ya estaba ocupado.` : ""}`
       : `Reservado ${esp.nombre} · ${diaCorto(sel.fecha)} · ${sel.hora}.`);
     setSel(null);
   };
-  const anular = r => setReservas(prev => prev.filter(x => x.id !== r.id));
+  const anular = r => { setReservas(prev => prev.filter(x => x.id !== r.id)); avisar("anulacion", r); };
   // Anula las semanas que quedan de una serie (las ya pasadas se conservan)
-  const anularSerie = serie => setReservas(prev => prev.filter(x => x.serie !== serie || horaTerminada(x.fecha, x.hora)));
+  const anularSerie = serie => {
+    const quedan = reservas.filter(x => x.serie === serie && !horaTerminada(x.fecha, x.hora)).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    setReservas(prev => prev.filter(x => x.serie !== serie || horaTerminada(x.fecha, x.hora)));
+    if (quedan.length) avisar("anulacion", quedan[0], quedan.length);
+  };
   const puedeAnular = r => (gestion || r.profesor === usuario) && !horaTerminada(r.fecha, r.hora);
   const mias = reservas.filter(r => r.profesor === usuario && !horaTerminada(r.fecha, r.hora)).sort((a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.hora) - HORAS.indexOf(b.hora));
   const boton = (fondo, letra, borde) => ({ minHeight: 44, padding: "0 14px", borderRadius: 6, border: borde ? `2px solid ${borde}` : "none", background: fondo, color: letra, fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" });
@@ -6735,6 +6745,23 @@ function Reservas({ espacios, reservas = [], setReservas, profesores = [], curso
             </div>
           ))];
         })()}
+      </div>
+      <div data-novedades style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, padding: 16, marginTop: 16 }}>
+        <div style={{ fontWeight: 800, color: R.petroleo, fontSize: 17, marginBottom: 4 }}>Novedades de los espacios</div>
+        <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>Lo último que se ha reservado o liberado, para todo el claustro. Lo nuevo desde tu última visita va marcado.</div>
+        {novedades.length === 0 ? <div style={{ color: R.petroleo }}>Todavía no hay cambios.</div> : [...novedades].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 12).map(n => {
+          const nueva = n.ts > desde && n.por !== usuario;
+          return (
+            <div key={n.id} data-novedad={n.tipo} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderTop: `1px solid ${R.gris}`, background: nueva ? R.azulClaro : "transparent", fontSize: 15, color: R.noche }}>
+              <span aria-hidden="true" style={{ fontSize: 18 }}>{n.tipo === "reserva" ? "📅" : "🔓"}</span>
+              <div style={{ flex: 1 }}>
+                <strong>{n.tipo === "reserva" ? "Reservado" : "Liberado"}</strong> {n.espacio} · {diaCorto(n.fecha)} · {n.hora}{n.semanas > 1 ? ` (${n.semanas} semanas)` : ""}
+                <div style={{ fontSize: 13, color: R.petroleo }}>{n.tipo === "reserva" ? `Para ${n.profesor}` : `Era de ${n.profesor}; ya está libre`}{n.por && n.por !== n.profesor ? ` · lo anotó ${n.por}` : ""} · {fmtD(n.ts)} {horaCorta(n.ts)}</div>
+              </div>
+              {nueva && <span style={{ background: R.noche, color: "#fff", fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>Nuevo</span>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -8210,6 +8237,8 @@ function AppInterna() {
   const [espaciosCentro, setEspaciosCentro] = useState(null); // null = los de ejemplo
   const [prestamosLlaves, setPrestamosLlaves] = useState([]);
   const [reservasEspacios, setReservasEspacios] = useState([]);
+  const [novedadesEspacios, setNovedadesEspacios] = useState([]); // reservas y anulaciones, para avisar a todos
+  const [vistasNovedades, setVistasNovedades] = useState({});     // { persona: fecha de la última vez que miró }
   const [aulasMaterial, setAulasMaterial] = useState(null); // null = las de ejemplo
   const [sesionesMaterial, setSesionesMaterial] = useState([]);
   const [incidenciasMaterial, setIncidenciasMaterial] = useState([]);
@@ -8349,6 +8378,8 @@ function AppInterna() {
       const es = await sGet("espacios_centro"); if (es) setEspaciosCentro(es);
       const pl = await sGet("llaves_prestamos"); if (pl) setPrestamosLlaves(pl);
       const rs = await sGet("reservas_espacios"); if (rs) setReservasEspacios(rs);
+      const ne = await sGet("espacios_novedades"); if (ne) setNovedadesEspacios(ne);
+      const nv = await sGet("espacios_novedades_vistas"); if (nv) setVistasNovedades(nv);
       const am = await sGet("material_aulas"); if (am) setAulasMaterial(am);
       const sm = await sGet("material_sesiones"); if (sm) setSesionesMaterial(sm);
       const im = await sGet("material_incidencias"); if (im) setIncidenciasMaterial(im);
@@ -8397,6 +8428,8 @@ function AppInterna() {
   useEffect(() => { if (!loading && zonasCentro) sSet("zonas_centro", zonasCentro); }, [zonasCentro, loading]);
   useEffect(() => { if (!loading && espaciosCentro) sSet("espacios_centro", espaciosCentro); }, [espaciosCentro, loading]);
   useEffect(() => { if (!loading) sSet("reservas_espacios", reservasEspacios); }, [reservasEspacios, loading]);
+  useEffect(() => { if (!loading) sSet("espacios_novedades", novedadesEspacios); }, [novedadesEspacios, loading]);
+  useEffect(() => { if (!loading) sSet("espacios_novedades_vistas", vistasNovedades); }, [vistasNovedades, loading]);
   useEffect(() => { if (!loading && aulasMaterial) sSet("material_aulas", aulasMaterial); }, [aulasMaterial, loading]);
   useEffect(() => { if (!loading) sSet("material_sesiones", sesionesMaterial); }, [sesionesMaterial, loading]);
   useEffect(() => { if (!loading) sSet("material_incidencias", incidenciasMaterial); }, [incidenciasMaterial, loading]);
@@ -8462,7 +8495,15 @@ function AppInterna() {
     setHorarios(horarioEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort()));
     setFirmas(ej.firmas); setListas([]);
     setPrestamosLlaves(prestamosEjemplo(DEMO_PROFESORES, ej.sugerido));
-    setReservasEspacios(reservasEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort(), ej.sugerido));
+    const rEj = reservasEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort(), ej.sugerido);
+    setReservasEspacios(rEj);
+    // Unas novedades de ejemplo: las últimas reservas y una anulación
+    const hace = h => new Date(Date.now() - h * 3600e3).toISOString();
+    setNovedadesEspacios([
+      ...rEj.filter(r => r.profesor !== ej.sugerido).slice(-3).map((r, i) => ({ id: 9500 + i, tipo: "reserva", espacio: r.espacio, fecha: r.fecha, hora: r.hora, profesor: r.profesor, semanas: 1, por: r.profesor, ts: hace(2 + i * 5) })),
+      { id: 9510, tipo: "anulacion", espacio: "Sala de usos múltiples", fecha: rEj[0]?.fecha || isoLocal(new Date()), hora: "6ª hora", profesor: DEMO_PROFESORES[6], semanas: 1, por: DEMO_PROFESORES[6], ts: hace(1) },
+    ]);
+    setVistasNovedades({});
     const sm = sesionesMaterialEjemplo(conv.alumnos, DEMO_PROFESORES, ej.sugerido);
     setSesionesMaterial(sm); setIncidenciasMaterial(incidenciasMaterialEjemplo(sm, conv.alumnos, DEMO_PROFESORES));
     setAvisosMaterial(avisosMaterialEjemplo(DEMO_PROFESORES, ej.sugerido));
@@ -8800,6 +8841,11 @@ function AppInterna() {
     }
     return lista;
   })();
+  // Cambios en las reservas de espacios desde la última visita de cada persona (salen a todo el claustro)
+  if (perfil.id !== "admin") {
+    const nNov = novedadesEspacios.filter(n => n.ts > (vistasNovedades[usuario] || "") && n.por !== usuario && n.por !== (fProfesor || usuario)).length;
+    if (nNov) advertencias.push({ id: "espacios-novedades", n: nNov, txt: nNov === 1 ? "cambio en las reservas de espacios" : "cambios en las reservas de espacios", modulo: "espacios", tab: "reservas", icono: "horario" });
+  }
   const globoModulo = id => advertencias.filter(a => a.modulo === id).reduce((n, a) => n + a.n, 0);
   const globoTab = id => advertencias.filter(a => a.modulo === moduloActivo && a.tab === id).reduce((n, a) => n + a.n, 0);
   const irAdvertencia = a => {
@@ -9617,7 +9663,9 @@ function AppInterna() {
 
         {tab === "reservas" && (
           <Reservas espacios={espaciosCentro} reservas={reservasEspacios} setReservas={setReservasEspacios} profesores={profesores} cursos={cursos}
-            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} />
+            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"}
+            novedades={novedadesEspacios} onNovedad={n => setNovedadesEspacios(prev => [n, ...prev].slice(0, 200))}
+            vistoHasta={vistasNovedades[usuario] || ""} onVisto={() => setVistasNovedades(prev => ({ ...prev, [usuario]: new Date().toISOString() }))} />
         )}
 
         {tab === "llaves" && (
