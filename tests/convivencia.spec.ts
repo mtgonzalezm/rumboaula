@@ -20,7 +20,7 @@ test('Parte leve exprés: pestaña propia, motivo con un toque y tipificación s
   await empezar(page)
   await comoProfe(page)
   const antes = (await leer(page, 'partes')).length
-  await pestaña(page, '⚡ Parte exprés')
+  await pestaña(page, 'Parte exprés')
   await page.locator('#gd-expres-busca').fill('Lucía Martínez')
   await page.getByRole('button', { name: /Lucía Martínez García/ }).first().click()
   const motivos = page.locator('[data-parte-expres]')
@@ -62,7 +62,7 @@ test('Alerta temprana: 2 partes leves en asignaturas distintas en 14 días avisa
   await empezar(page)
   await comoProfe(page)
   const al = await alumnoAlerta(page)
-  await pestaña(page, '📑 Resumen de tutoría')
+  await pestaña(page, 'Resumen de tutoría')
   const alerta = page.locator('[data-alerta-temprana]')
   await expect(alerta).toContainText(`${al.nombre} — 1º ESO A · 2 partes leves en Inglés, Matemáticas`)
   await alerta.getByRole('button', { name: 'Visto' }).click()
@@ -71,7 +71,7 @@ test('Alerta temprana: 2 partes leves en asignaturas distintas en 14 días avisa
   await expect(page.locator('#gd-resumen-alumno')).toHaveValue(String(al.id))
   // Otro profe le pone un parte leve: la alerta vuelve a salir como nueva para la tutora
   await comoOtroProfe(page, 'Laura Torres')
-  await pestaña(page, '⚡ Parte exprés')
+  await pestaña(page, 'Parte exprés')
   await page.locator('#gd-expres-busca').fill(al.nombre)
   await page.getByRole('button', { name: new RegExp(al.nombre) }).first().click()
   await page.locator('[data-parte-expres]').getByRole('button', { name: /Interrupción de clase/ }).click()
@@ -79,7 +79,7 @@ test('Alerta temprana: 2 partes leves en asignaturas distintas en 14 días avisa
   await expect(page.getByText(/✅ Parte generado/)).toBeVisible()
   await salir(page)
   await comoProfe(page)
-  await pestaña(page, '📑 Resumen de tutoría')
+  await pestaña(page, 'Resumen de tutoría')
   await expect(alerta).toContainText('1 nueva')
   await expect(alerta).toContainText('3 partes leves')
   expect(errores).toEqual([])
@@ -93,7 +93,7 @@ test('Notas de aula: solo las ven quien la escribe y el tutor/a, y no son partes
   const al = await alumnoAlerta(page)
   const partesAntes = (await leer(page, 'partes')).length
   await comoOtroProfe(page, 'Laura Torres')
-  await pestaña(page, '🗒 Notas de aula')
+  await pestaña(page, 'Notas de aula')
   await page.locator('#gd-nota-busca').fill(al.nombre)
   await page.getByRole('button', { name: new RegExp(al.nombre) }).first().click()
   await page.getByRole('button', { name: 'Olvido de material' }).click()
@@ -105,9 +105,9 @@ test('Notas de aula: solo las ven quien la escribe y el tutor/a, y no son partes
   // La tutora (Carmen López) la ve en su tutoría y en el resumen
   await salir(page)
   await comoProfe(page)
-  await pestaña(page, '🗒 Notas de aula')
+  await pestaña(page, 'Notas de aula')
   await expect(page.locator(`[data-nota="${nota.id}"]`)).toContainText('Prueba automática: sin el cuaderno.')
-  await pestaña(page, '📑 Resumen de tutoría')
+  await pestaña(page, 'Resumen de tutoría')
   await page.locator('#gd-resumen-alumno').selectOption(String(al.id))
   await expect(page.getByText('Prueba automática: sin el cuaderno.')).toBeVisible()
   await page.getByRole('button', { name: /Descargar PDF/ }).click()
@@ -118,7 +118,7 @@ test('Notas de aula: solo las ven quien la escribe y el tutor/a, y no son partes
   await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
   // Otro profe que no es su tutor no la ve
   await comoOtroProfe(page, 'Jorge Ruiz')
-  await pestaña(page, '🗒 Notas de aula')
+  await pestaña(page, 'Notas de aula')
   await expect(page.locator(`[data-nota="${nota.id}"]`)).toHaveCount(0)
   // Jefatura no tiene notas de aula
   await salir(page)
@@ -133,7 +133,7 @@ test('Compromisos: mediación entre dos alumnos, seguimiento y estados sin parte
   await empezar(page)
   await comoProfe(page)
   const partesAntes = (await leer(page, 'partes')).length
-  await pestaña(page, '🤝 Compromisos')
+  await pestaña(page, 'Compromisos')
   await page.getByRole('button', { name: 'Acuerdo de mediación' }).click()
   await page.locator('#gd-comp-busca').fill('Lucía Martínez')
   await page.getByRole('button', { name: /Lucía Martínez García/ }).first().click()
@@ -159,7 +159,7 @@ test('Compromisos: mediación entre dos alumnos, seguimiento y estados sin parte
     expect((await leer(page, 'mensajes')).some((m: { destinatario: string, texto: string }) => m.destinatario === tutorDiego && m.texto.includes('Prueba automática: hablar con respeto.'))).toBe(true)
   await salir(page)
   await comoJefatura(page)
-  await pestaña(page, '🤝 Compromisos')
+  await pestaña(page, 'Compromisos')
   await page.getByRole('button', { name: /^Cumplidos/ }).click()
   await expect(page.locator(`[data-compromiso="${c.id}"]`)).toContainText('Primera semana bien.')
   expect(errores).toEqual([])

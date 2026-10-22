@@ -696,6 +696,7 @@ const ICONO_EMOJI = {
   "📢": "profe-ausente", "🗂": "documentos", "📅": "horario", "👥": "grupos", "✍": "tareas", "⚙": "cargo-administracion",
   "👨‍🏫": "profesorado", "🔑": "llave", "🗓": "horario", "🖥": "ordenador", "✅": "pasar-lista", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
   "🔍": "buscar", "⏰": "hora", "📂": "tipo-parte", "🎯": "gravedad-campo", "⚖": "tipificacion", "📝": "descripcion",
+  "⚡": "parte-expres", "🗒": "notas-aula", "🤝": "compromiso", "📑": "resumen-tutoria",
 };
 const ICONO_TEXTO = [[/^Secretaría/, "cargo-secretaria"], [/^Coordinación TIC/, "cargo-tic"], [/^Jefatura de Estudios/, "cargo-jefatura"], [/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
 function iconoDe(texto) {
@@ -3089,13 +3090,13 @@ const CATEGORIAS_NOTA = ["Olvido de material", "Despiste puntual", "No trae la t
 const DIAS_ALERTA_TEMPRANA = 14;
 // Parte leve exprés: cuatro motivos que llevan a una tipificación del Plan de Convivencia
 const MOTIVOS_EXPRES = [
-  { id: "interrupcion", label: "Interrupción de clase", emoji: "🗣", tip: "1L", tipo: "Comportamiento" },
-  { id: "respeto", label: "Falta de respeto o de material", emoji: "🤚", opciones: [
+  { id: "interrupcion", label: "Interrupción de clase", icono: "interrupcion", tip: "1L", tipo: "Comportamiento" },
+  { id: "respeto", label: "Falta de respeto o de material", icono: "falta-respeto", opciones: [
     { tip: "6L", label: "Falta de respeto", tipo: "Comportamiento" },
     { tip: "2L", label: "Falta de material", tipo: "Académico" },
   ] },
-  { id: "movil", label: "Móvil o dispositivos", emoji: "📱", tip: "8L", tipo: "Comportamiento" },
-  { id: "otros", label: "Otros", emoji: "✏️", tip: "10L", tipo: "Otro" },
+  { id: "movil", label: "Móvil o dispositivos", icono: "movil", tip: "8L", tipo: "Comportamiento" },
+  { id: "otros", label: "Otros", icono: "otros", tip: "10L", tipo: "Otro" },
 ];
 
 const tutorDe = (tutores, curso) => tutores?.[curso]?.tutor || "";
@@ -3225,8 +3226,8 @@ function MediacionCompromisos({ alumnos, compromisos, setCompromisos, usuario, t
   const hoy = isoLocal();
   return (
     <div>
-      <TituloBloque titulo="Mediación y compromisos" sub="Acuerdos con el alumnado y su seguimiento, sin partes ni sanciones" icono="saludo" />
-      <NotaSinSancion>🤝 Un compromiso o una mediación <b>no es un parte</b>: no cuenta para los avisos a familias ni genera medidas correctoras. Lo ven quien lo registra, el tutor/a de cada alumno y Jefatura y Orientación.</NotaSinSancion>
+      <TituloBloque titulo="Mediación y compromisos" sub="Acuerdos con el alumnado y su seguimiento, sin partes ni sanciones" icono="compromiso" />
+      <NotaSinSancion><Ic n="compromiso" tam={26} />Un compromiso o una mediación <b>no es un parte</b>: no cuenta para los avisos a familias ni genera medidas correctoras. Lo ven quien lo registra, el tutor/a de cada alumno y Jefatura y Orientación.</NotaSinSancion>
       {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
       <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
         <div style={labelStyle}>¿Qué quieres registrar?</div>
@@ -3253,7 +3254,7 @@ function MediacionCompromisos({ alumnos, compromisos, setCompromisos, usuario, t
         <textarea id="gd-comp-acuerdo" value={acuerdo} onChange={e => setAcuerdo(e.target.value)} rows={3} placeholder={tipo === "mediacion" ? "Qué se comprometen a hacer las partes." : "Qué se compromete a hacer el alumno o la alumna."} style={{ ...inpStyle, marginBottom: 12, resize: "vertical" }} />
         <label htmlFor="gd-comp-revisar" style={labelStyle}>Revisar el</label>
         <input id="gd-comp-revisar" type="date" value={revisar} onChange={e => setRevisar(e.target.value)} style={{ ...inpStyle, marginBottom: 12 }} />
-        <Btn onClick={registrar} disabled={!listo} style={{ width: "100%", minHeight: 52 }}>🤝 Registrar</Btn>
+        <Btn onClick={registrar} disabled={!listo} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="compromiso" tam={30} />Registrar</span></Btn>
         {!listo && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>{elegidos.length < minimo ? (minimo === 2 ? "Elige al menos dos alumnos." : "Elige al alumno o alumna.") : "Escribe el acuerdo."}</div>}
       </Card>
       <Card>
@@ -3317,14 +3318,14 @@ function NotasAula({ alumnos, notas, setNotas, usuario, tutores = {}, horarios =
   const deTutoria = visibles.filter(n => n.profesor !== usuario);
   const fila = n => (
     <div key={n.id} data-nota={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${R.turquesaClaro}`, fontSize: 15, color: R.noche }}>
-      <div><strong>{n.alumno}</strong> — {n.curso}<div style={{ color: R.petroleo, fontWeight: 700 }}>🗒 {n.categoria}</div>{n.texto && <div style={{ color: C.gray, fontSize: 14 }}>{n.texto}</div>}<div style={{ color: C.gray, fontSize: 13 }}>{fmt(n.ts)}{n.profesor !== usuario ? ` · ${n.profesor}` : ""}{n.materia ? ` · ${n.materia}` : ""}</div></div>
+      <div><strong>{n.alumno}</strong> — {n.curso}<div style={{ color: R.petroleo, fontWeight: 700 }}><Ic n="notas-aula" tam={22} />{n.categoria}</div>{n.texto && <div style={{ color: C.gray, fontSize: 14 }}>{n.texto}</div>}<div style={{ color: C.gray, fontSize: 13 }}>{fmt(n.ts)}{n.profesor !== usuario ? ` · ${n.profesor}` : ""}{n.materia ? ` · ${n.materia}` : ""}</div></div>
       {n.profesor === usuario && <button onClick={() => setNotas(prev => prev.filter(y => y.id !== n.id))} aria-label={`Borrar la nota de ${n.alumno}`} style={{ minHeight: 44, padding: "0 12px", border: `1px solid ${R.turquesaClaro}`, borderRadius: 6, background: "#fff", color: R.petroleo, cursor: "pointer", flexShrink: 0 }}>Borrar</button>}
     </div>
   );
   return (
     <div>
-      <TituloBloque titulo="Notas de aula" sub="Apuntes del día a día, sin carga disciplinaria" icono="descripcion" />
-      <NotaSinSancion>🔒 Solo las ves <b>tú y el tutor/a</b> del alumno. <b>No son partes</b>: no cuentan para avisos ni medidas. Sirven para el seguimiento y salen en el resumen de tutoría.</NotaSinSancion>
+      <TituloBloque titulo="Notas de aula" sub="Apuntes del día a día, sin carga disciplinaria" icono="notas-aula" />
+      <NotaSinSancion><Ic n="privado" tam={26} />Solo las ves <b>tú y el tutor/a</b> del alumno. <b>No son partes</b>: no cuentan para avisos ni medidas. Sirven para el seguimiento y salen en el resumen de tutoría.</NotaSinSancion>
       {hecho && <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
       <Card style={{ background: R.azulClaro, border: "none", marginTop: 16 }}>
         <label htmlFor="gd-nota-busca" style={labelStyle}><ConIcono texto="🔍 Alumno o alumna" tam={30} /></label>
@@ -3337,7 +3338,7 @@ function NotasAula({ alumnos, notas, setNotas, usuario, tutores = {}, horarios =
         </div>
         <label htmlFor="gd-nota-texto" style={labelStyle}>Detalle (opcional)</label>
         <input id="gd-nota-texto" value={texto} onChange={e => setTexto(e.target.value)} maxLength={200} placeholder="Una frase basta." style={{ ...inpStyle, marginBottom: 12 }} />
-        <Btn onClick={guardar} disabled={!al || !categoria} style={{ width: "100%", minHeight: 52 }}>🗒 Guardar nota</Btn>
+        <Btn onClick={guardar} disabled={!al || !categoria} style={{ width: "100%", minHeight: 52 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="notas-aula" tam={30} />Guardar nota</span></Btn>
       </Card>
       <Card>
         <h3 style={{ marginTop: 0, color: R.petroleo, fontSize: 18 }}>Mis notas ({mias.length})</h3>
@@ -3397,19 +3398,19 @@ function ResumenTutoria({ alumnos, partes, positivas, medidas, notas, compromiso
   const alertas = alertasTempranas({ partes, horarios, tutores, usuario });
   const pendientes = alertas.filter(a => !alertasVistas[a.id]);
   const d = alumno ? datosResumenTutoria({ alumno, periodo, partes, positivas, medidas, notas: notas.filter(n => verNota(n, usuario, tutores)), compromisos }) : null;
-  const bloque = (titulo, lista, color, pinta, vacio = "Nada en este periodo.") => (
+  const bloque = (icono, titulo, lista, color, pinta, vacio = "Nada en este periodo.") => (
     <div style={{ background: "#fff", border: `1px solid ${R.turquesaClaro}`, borderTop: `6px solid ${color}`, padding: 12 }}>
-      <h3 style={{ margin: "0 0 6px", fontSize: 17, color: R.noche }}>{titulo} ({lista.length})</h3>
+      <h3 style={{ margin: "0 0 6px", fontSize: 17, color: R.noche, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre={icono} tam={30} />{titulo} ({lista.length})</h3>
       {lista.length === 0 ? <div style={{ fontSize: 14, color: R.petroleo }}>{vacio}</div> : <div style={{ display: "grid", gap: 6 }}>{lista.map(pinta)}</div>}
     </div>
   );
   const linea = (key, principal, sec) => <div key={key} style={{ fontSize: 14, color: R.noche, lineHeight: 1.4 }}><strong>{principal}</strong>{sec ? <span style={{ color: R.petroleo }}> · {sec}</span> : null}</div>;
   return (
     <div>
-      <TituloBloque titulo="Resumen de tutoría" sub="Todo lo del trimestre de un alumno, en una sola vista y en PDF" icono="informe" />
+      <TituloBloque titulo="Resumen de tutoría" sub="Todo lo del trimestre de un alumno, en una sola vista y en PDF" icono="resumen-tutoria" />
       {alertas.length > 0 && (
         <div data-alerta-temprana style={{ marginTop: 14, background: R.crema, borderLeft: `6px solid ${R.mostaza}`, padding: "10px 14px" }}>
-          <div style={{ fontWeight: 700, color: R.noche, fontSize: 16 }}>🔔 Alerta temprana{pendientes.length ? ` · ${pendientes.length} nueva(s)` : ""}</div>
+          <div style={{ fontWeight: 700, color: R.noche, fontSize: 16 }}><Ic n="alertas" tam={26} />Alerta temprana{pendientes.length ? ` · ${pendientes.length} nueva(s)` : ""}</div>
           <div style={{ fontSize: 14, color: R.petroleo, margin: "2px 0 8px" }}>Alumnado de tu tutoría con 2 o más partes leves en asignaturas distintas en los últimos {DIAS_ALERTA_TEMPRANA} días. Es un aviso para prevenir, no una sanción.</div>
           {alertas.map(a => (
             <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: `1px solid ${R.mostaza}` }}>
@@ -3443,14 +3444,14 @@ function ResumenTutoria({ alumnos, partes, positivas, medidas, notas, compromiso
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             <div><div style={{ fontWeight: 700, fontSize: 18, color: R.noche }}>{alumno.nombre} — {alumno.curso}</div><div style={{ fontSize: 14, color: R.petroleo }}>{periodo.texto}</div></div>
-            <Btn onClick={() => pdfResumenTutoria(alumno, periodo, d, usuario)} style={{ minHeight: 48 }}>📄 Descargar PDF</Btn>
+            <Btn onClick={() => pdfResumenTutoria(alumno, periodo, d, usuario)} style={{ minHeight: 48 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="informe" tam={30} />Descargar PDF</span></Btn>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-            {bloque("⭐ Conductas positivas", d.positivas, R.verdeCamino, x => linea(x.id, x.tipo, `${fmtD(x.ts)} · ${x.profesor}${x.detalle ? ` — ${x.detalle}` : ""}`))}
-            {bloque("📋 Partes", d.partes, R.mostaza, p => linea(p.id, `${fmtD(p.ts)} · ${GRAVEDAD.find(g => g.id === p.gravedad)?.label || p.gravedad}`, `${etiquetaTip(p) || p.tipo} · ${p.profesor}`))}
-            {bloque("⚖️ Medidas correctoras", d.medidas, R.azul, m => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, color: R.noche }}><strong>{tipoMedida(m.tipo).label}</strong><ChipMedida m={m} /></div>)}
-            {bloque("🗒 Notas de observación", d.notas, R.turquesa, n => linea(n.id, n.categoria, `${fmtD(n.ts)} · ${n.profesor}${n.texto ? ` — ${n.texto}` : ""}`))}
-            {bloque("🤝 Compromisos y mediaciones", d.compromisos, R.morado, c => linea(c.id, ESTADOS_COMPROMISO[c.estado].label, `«${c.acuerdo}»`))}
+            {bloque("estrella", "Conductas positivas", d.positivas, R.verdeCamino, x => linea(x.id, x.tipo, `${fmtD(x.ts)} · ${x.profesor}${x.detalle ? ` — ${x.detalle}` : ""}`))}
+            {bloque("partes", "Partes", d.partes, R.mostaza, p => linea(p.id, `${fmtD(p.ts)} · ${GRAVEDAD.find(g => g.id === p.gravedad)?.label || p.gravedad}`, `${etiquetaTip(p) || p.tipo} · ${p.profesor}`))}
+            {bloque("tipificacion", "Medidas correctoras", d.medidas, R.azul, m => <div key={m.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, color: R.noche }}><strong>{tipoMedida(m.tipo).label}</strong><ChipMedida m={m} /></div>)}
+            {bloque("notas-aula", "Notas de observación", d.notas, R.turquesa, n => linea(n.id, n.categoria, `${fmtD(n.ts)} · ${n.profesor}${n.texto ? ` — ${n.texto}` : ""}`))}
+            {bloque("compromiso", "Compromisos y mediaciones", d.compromisos, R.morado, c => linea(c.id, ESTADOS_COMPROMISO[c.estado].label, `«${c.acuerdo}»`))}
           </div>
         </Card>
       )}
@@ -3478,7 +3479,7 @@ function ParteExpres({ alumnos, usuario, tutores = {}, horarios = {}, onCrear, m
   };
   return (
     <div>
-      <TituloBloque titulo="Parte leve exprés" sub="Un parte leve en segundos: alumno, motivo y listo" icono="nuevo-parte" />
+      <TituloBloque titulo="Parte leve exprés" sub="Un parte leve en segundos: alumno, motivo y listo" icono="parte-expres" />
       {hecho && (
         <Card style={{ ...caja(R.verde), borderRadius: 0, boxShadow: "none", marginTop: 16 }}>
           <strong style={{ color: R.petroleo, fontSize: 16 }}>✅ Parte generado · {hecho.alumno} — {hecho.curso} · {fmt(hecho.ts)}</strong>
@@ -3500,7 +3501,7 @@ function ParteExpres({ alumnos, usuario, tutores = {}, horarios = {}, onCrear, m
               <button key={m.id} className="gd-pulsable" aria-pressed={activo}
                 onClick={() => setMotivo(m.opciones ? { motivo: m.id, tip: "", tipo: "", label: "" } : { motivo: m.id, tip: m.tip, tipo: m.tipo, label: m.label })}
                 style={{ minHeight: 72, padding: "8px 10px", borderRadius: 8, border: `3px solid ${activo ? R.azul : R.turquesaClaro}`, background: activo ? "#fff" : "#fff", boxShadow: activo ? `inset 0 0 0 2px ${R.azul}` : "none", color: R.noche, fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", lineHeight: 1.25 }}>
-                <span aria-hidden="true" style={{ fontSize: 24 }}>{m.emoji}</span>{m.label}
+                <Icono nombre={m.icono} tam={40} />{m.label}
               </button>
             );
           })}
@@ -3512,7 +3513,7 @@ function ParteExpres({ alumnos, usuario, tutores = {}, horarios = {}, onCrear, m
             ))}
           </div>
         )}
-        {motivo?.tip && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>⚖️ {TIPIFICACION.leve.find(t => t.id === motivo.tip)?.label}</div>}
+        {motivo?.tip && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}><Ic n="tipificacion" tam={22} />{TIPIFICACION.leve.find(t => t.id === motivo.tip)?.label}</div>}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 10, marginTop: 12 }}>
           <div>
             <label htmlFor="gd-expres-obs" style={labelStyle}>Observaciones {motivo?.motivo === "otros" ? "" : "(opcional)"}</label>
@@ -3523,7 +3524,7 @@ function ParteExpres({ alumnos, usuario, tutores = {}, horarios = {}, onCrear, m
             <select id="gd-expres-hora" value={hora} onChange={e => setHora(e.target.value)} style={{ ...inpStyle, marginBottom: 0 }}>{HORAS.map(h => <option key={h}>{h}</option>)}</select>
           </div>
         </div>
-        <Btn onClick={generar} disabled={!listo} style={{ width: "100%", minHeight: 52, marginTop: 14 }}>⚡ Generar parte leve</Btn>
+        <Btn onClick={generar} disabled={!listo} style={{ width: "100%", minHeight: 52, marginTop: 14 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icono nombre="parte-expres" tam={30} />Generar parte leve</span></Btn>
         {!listo && <div style={{ fontSize: 14, color: R.petroleo, marginTop: 8 }}>{!al ? "Busca primero al alumno o alumna." : !motivo?.tip ? (motivo?.motivo === "respeto" ? "Elige si es falta de respeto o de material." : "Toca el motivo.") : "Escribe qué ha pasado."}</div>}
         <div style={{ fontSize: 14, color: R.petroleo, marginTop: 10 }}>Es un parte leve como los de «Nuevo Parte»: sale en Mis partes, en Jefatura y en los avisos a familias. Para un parte grave o con más detalle, usa «Nuevo Parte».</div>
       </Card>
