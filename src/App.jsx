@@ -10041,7 +10041,7 @@ function AppInterna() {
         .gd-tab { flex: none; min-height: 48px; padding: 0 16px; border: none; border-right: 1px solid #D5DEE2; background: transparent; color: ${R.petroleo}; font-family: inherit; font-size: 16px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
         .gd-tab:hover { background: rgba(255,255,255,.6); }
         .gd-tab.activo { background: ${C.white}; font-weight: 700; box-shadow: inset 0 3px 0 ${R.azul}; }
-        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${R.noche}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
+        .gd-globo { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 8px; border-radius: 11px; background: ${R.azul}; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; flex: none; font-family: ${FUENTE}; }
         .gd-globo.flota { position: absolute; top: -2px; right: -4px; margin: 0; border: 2px solid #fff; height: 24px; min-width: 24px; border-radius: 12px; }
         @media (prefers-reduced-motion: reduce) { .gd-pulsable:active:not(:disabled) { transform: none; } }
         @media print { .no-print { display: none !important; } }
