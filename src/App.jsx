@@ -79,8 +79,8 @@ const DEMO_ALUMNOS = [
   { id: 2, nombre: "Marcos Fernández Ruiz",    curso: "1º ESO A", tutor: "Carmen López",   email: "familia.fernandez@email.com", telefono: "623456789", nia: "" },
   { id: 3, nombre: "Sara González Pérez",      curso: "2º ESO B", tutor: "Pedro Sánchez",  email: "familia.gonzalez@email.com", telefono: "634567890", nia: "" },
   { id: 4, nombre: "Alejandro Torres Díaz",    curso: "2º ESO B", tutor: "Pedro Sánchez",  email: "familia.torres@email.com", telefono: "645678901", nia: "" },
-  { id: 5, nombre: "Paula Ramírez Moreno",     curso: "3º ESO A", tutor: "Ana Jiménez",    email: "familia.ramirez@email.com", telefono: "656789012", nia: "" },
-  { id: 6, nombre: "Diego Sánchez Blanco",     curso: "3º ESO A", tutor: "Ana Jiménez",    email: "familia.sanchez@email.com", telefono: "667890123", nia: "" },
+  { id: 5, nombre: "Paula Ramírez Moreno",     curso: "3º ESO A", tutor: "Raquel Serrano", email: "familia.ramirez@email.com", telefono: "656789012", nia: "" },
+  { id: 6, nombre: "Diego Sánchez Blanco",     curso: "3º ESO A", tutor: "Raquel Serrano", email: "familia.sanchez@email.com", telefono: "667890123", nia: "" },
   { id: 7, nombre: "Elena Romero Castro",      curso: "4º ESO C", tutor: "Luis García",    email: "familia.romero@email.com", telefono: "678901234", nia: "" },
   { id: 8, nombre: "Adrián López Vega",        curso: "4º ESO C", tutor: "Luis García",    email: "familia.lopez@email.com", telefono: "689012345", nia: "" },
 ];
@@ -345,6 +345,8 @@ function funcionesDe(perfil) {
   };
 }
 // El perfil (con su cargo) con el que entra una persona
+// Jefatura de Estudios no tiene tutoría
+const sinTutoria = (cuentas, nombre) => cargosIds(cuentas?.[nombre]).includes("jefatura");
 // Tutor/a: no es un cargo, se asigna en Alumnos › Tutorías; quien tiene un grupo entra también con este perfil
 const perfilTutor = grupos => ({ id: "profesor", key: "tutor-profesor", cargo: "tutor", label: `Tutor/a de ${grupos.join(", ")}` });
 const gruposDeTutor = (tutores, nombre) => Object.entries(tutores || {}).filter(([, t]) => t?.tutor === nombre).map(([c]) => c).sort();
@@ -1845,7 +1847,7 @@ function ParteCard({ parte, onVer, onPrint, medidas = [] }) {
 // ─── Gestión de alumnos ───────────────────────────────────────────────────────
 // ─── Tutorías de grupo ───────────────────────────────────────────────────────
 // Cada grupo tiene su tutor/a. Se usa en los partes nuevos y en los informes.
-function TutoriasGrupos({ cursos, tutores, setTutores, setAlumnos, profesores, soloCurso, C, inpStyle }) {
+function TutoriasGrupos({ cursos, tutores, setTutores, setAlumnos, profesores, soloCurso, cuentas = CUENTAS_DEMO, C, inpStyle }) {
   const lista = soloCurso ? [soloCurso] : [...new Set([...cursos, ...Object.keys(tutores)])].sort();
   function cambiar(curso, campo, valor) {
     setTutores(prev => ({ ...prev, [curso]: { ...(prev[curso] || {}), [campo]: valor } }));
@@ -1864,8 +1866,9 @@ function TutoriasGrupos({ cursos, tutores, setTutores, setAlumnos, profesores, s
           {!soloCurso && <div style={{ fontWeight: 700, color: C.dark, fontSize: 14 }}>{curso}</div>}
           <select aria-label={`Tutor/a de ${curso}`} value={tutores[curso]?.tutor || ""} onChange={e => cambiar(curso, "tutor", e.target.value)} style={inp}>
             <option value="">— Sin tutor/a —</option>
-            {[...new Set([...(profesores || []), tutores[curso]?.tutor].filter(Boolean))].sort().map(p => <option key={p} value={p}>{p}</option>)}
+            {[...new Set([...(profesores || []).filter(p => !sinTutoria(cuentas, p)), tutores[curso]?.tutor].filter(Boolean))].sort().map(p => <option key={p} value={p}>{p}{sinTutoria(cuentas, p) ? " (Jefatura de Estudios)" : ""}</option>)}
           </select>
+          {sinTutoria(cuentas, tutores[curso]?.tutor) && <div role="alert" style={{ gridColumn: "1 / -1", fontSize: 14, color: R.noche, background: R.crema, borderLeft: `5px solid ${R.mostaza}`, padding: "6px 10px" }}>⚠️ {tutores[curso].tutor} es Jefatura de Estudios y no tiene tutoría: elige otro tutor/a para {curso}.</div>}
           <input aria-label={`Correo del tutor/a de ${curso}`} type="email" placeholder="Correo del centro (opcional)" value={tutores[curso]?.email || ""} onChange={e => cambiar(curso, "email", e.target.value)} style={inp} />
         </div>
       ))}
@@ -4048,7 +4051,7 @@ function AyudaPantalla({ id, C }) {
 const GRUPOS_DEMO = [
   { curso: "1º ESO A", tutor: "Carmen López" },  { curso: "1º ESO B", tutor: "Jorge Ruiz" },
   { curso: "2º ESO A", tutor: "Laura Torres" },  { curso: "2º ESO B", tutor: "Pedro Sánchez" },
-  { curso: "3º ESO A", tutor: "Ana Jiménez" },   { curso: "3º ESO B", tutor: "Sofía Martín" },
+  { curso: "3º ESO A", tutor: "Raquel Serrano" },   { curso: "3º ESO B", tutor: "Sofía Martín" },
   { curso: "4º ESO A", tutor: "Pablo Díaz" },    { curso: "4º ESO C", tutor: "Luis García" },
 ];
 const correoDemo = nombre => nombre.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, ".") + "@ejemplo.es";
@@ -9439,7 +9442,7 @@ function AppInterna() {
       const a  = await sGet("alertas");   if (a)  setAlertas(a);
       const m  = await sGet("mensajes");  if (m)  setMensajes(m);
       const al = await sGet("alumnos");   if (al) setAlumnos(al);
-      const tu = await sGet("tutores");   if (tu) setTutores(tu);
+      const tu = await sGet("tutores");   if (tu) setTutores(MODO_DEMO && tu["3º ESO A"]?.tutor === "Ana Jiménez" ? { ...tu, "3º ESO A": TUTORES_DEMO["3º ESO A"] } : tu);
       const inf = await sGet("informes"); if (inf) setInformes(inf);
       // Primera visita a la demostración: se cargan partes, baños y alertas de ejemplo
       const me = await sGet("medidas"); if (me) setMedidas(me);
@@ -9620,7 +9623,7 @@ function AppInterna() {
 
   // Perfiles de quien está dentro: los de sus cargos y, si tiene una tutoría, el de Tutor/a
   const misGruposTutor = usuario ? gruposDeTutor(tutores, usuario) : [];
-  const misPerfiles = usuario ? [...perfilesPermitidos(cuentas, usuario), ...(misGruposTutor.length && cargoDe(cuentas, usuario).ids.includes("profesor") ? [perfilTutor(misGruposTutor)] : [])] : [];
+  const misPerfiles = usuario ? [...perfilesPermitidos(cuentas, usuario), ...(misGruposTutor.length && cargoDe(cuentas, usuario).ids.includes("profesor") && !sinTutoria(cuentas, usuario) ? [perfilTutor(misGruposTutor)] : [])] : [];
   function cambiarPerfil(id) {
     const p = misPerfiles.find(x => x.key === id) || misPerfiles.find(x => x.id === id);
     if (!p || (p.key && p.key === perfil?.key)) return;
@@ -11031,7 +11034,7 @@ function AppInterna() {
                     <input type="date" value={filtFechaHasta} onChange={e => setFiltFechaHasta(e.target.value)} style={{ ...inpStyle, fontSize: 14 }} />
                   </div>
                   {filtCurso
-                    ? <TutoriasGrupos soloCurso={filtCurso} cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
+                    ? <TutoriasGrupos soloCurso={filtCurso} cuentas={cuentas} cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
                     : <div style={{ fontSize: 14, color: C.gray, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icono nombre="tutor" tam={24} />El informe incluye el tutor/a de cada grupo. Elige un curso para ver o cambiar su tutor/a.</div>}
                   <div style={{ background: C.cream, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: C.dark }}>
                     El informe incluirá <strong>{partesFiltrados.length} parte(s)</strong>
@@ -11087,7 +11090,7 @@ function AppInterna() {
         {tab === "horarios_aulas" && fx.guardias && <HorariosAulas horarios={horarios} setHorarios={setHorarios} profesores={profesores} cursos={cursos} espacios={espaciosCentro} />}
         {/* Secretaría: alumnado y tutorías */}
         {tab === "admin_alumnos" && fx.secretaria && (
-          <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
+          <TutoriasGrupos cuentas={cuentas} cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
         {tab === "admin_alumnos" && fx.secretaria && (
           <AdminAlumnos alumnos={alumnos} setAlumnos={setAlumnos} inpStyle={inpStyle} C={C} />
@@ -11163,6 +11166,13 @@ function AppInterna() {
                                 const conserva = nuevos.some(id => CARGOS.find(x => x.id === id).perfiles.includes(perfil.id));
                                 if (p === usuario && perfil.id !== "profesor" && !conserva &&
                                     !window.confirm(`Vas a quitarte el acceso a ${perfil.id === "admin" ? "Secretaría" : "Jefatura"}. ¿Continuar?`)) return;
+                                // Jefatura de Estudios no tiene tutoría: al darle el cargo se le quita la que tuviera
+                                const susGrupos = !on && c.id === "jefatura" ? gruposDeTutor(tutores, p) : [];
+                                if (susGrupos.length && !window.confirm(`${p} es tutor/a de ${susGrupos.join(", ")}. Jefatura de Estudios no tiene tutoría: se le quitará y tendrás que elegir otro tutor/a. ¿Continuar?`)) return;
+                                if (susGrupos.length) {
+                                  setTutores(prev => { const n = { ...prev }; susGrupos.forEach(g => { n[g] = { ...n[g], tutor: "", email: "" }; }); return n; });
+                                  setAlumnos(prev => prev.map(a => susGrupos.includes(a.curso) ? { ...a, tutor: "" } : a));
+                                }
                                 setCuentas(prev => ({ ...prev, [p]: { ...(prev[p] || {}), cargos: nuevos, cargo: undefined } }));
                               }}
                               style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px 3px 4px", borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: fijo ? "default" : "pointer",
