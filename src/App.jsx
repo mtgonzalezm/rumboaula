@@ -292,6 +292,9 @@ const PERFILES = [
   { id: "conserjeria", label: "🔑 Conserjería" },
 ];
 const tabInicial = id => id === "jefatura" ? "dashboard" : id === "admin" ? "admin_panel" : id === "conserjeria" ? "llaves" : "partes";
+// Pantalla y módulo con los que se entra en un perfil (Coordinación TIC empieza en Material del centro)
+const inicioDe = p => p?.id === "admin" && !funcionesDe(p).secretaria ? { tab: "material_avisos", modulo: "material" }
+  : { tab: tabInicial(p?.id), modulo: p?.id === "admin" ? "centro" : "alumnos" };
 
 // ─── Cargos y acceso ─────────────────────────────────────────────────────────
 // Cada profesor tiene un cargo, y el cargo decide a qué perfiles puede entrar.
@@ -302,10 +305,11 @@ const CARGOS = [
   { id: "secretaria", label: "Secretaría",           perfiles: ["profesor", "admin"] },
   { id: "tic",        label: "Coordinación TIC",     perfiles: ["profesor", "admin"] },
   { id: "orientacion", label: "Orientación",         perfiles: ["profesor", "jefatura"] },
+  { id: "jefe_depto", label: "Jefatura de departamento", perfiles: ["profesor"] },
   { id: "conserjeria", label: "Conserjería",         perfiles: ["conserjeria"] },
 ];
 // Cargos de ejemplo (profesorado ficticio); el resto es Profesor/a
-const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Conserjería": { cargos: ["conserjeria"], noDocente: true } };
+const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Beatriz Navarro": { cargos: ["profesor", "secretaria"] }, "Conserjería": { cargos: ["conserjeria"], noDocente: true } };
 // Personal no docente (Conserjería): tiene cuenta y clave, pero no está en la lista del profesorado
 const personalNoDocente = cuentas => Object.keys(cuentas || {}).filter(n => cuentas[n]?.noDocente).sort((a, b) => a.localeCompare(b, "es"));
 // Una persona puede tener varios cargos a la vez (p. ej. Profesor/a + Coordinación TIC)
@@ -324,6 +328,23 @@ const perfilesPermitidos = (cuentas, nombre) => cargoDe(cuentas, nombre).ids.fla
   const ps = cid === "profesor" ? ["profesor"] : c.perfiles.filter(x => x !== "profesor");
   return ps.map(pid => ({ id: pid, key: `${cid}-${pid}`, cargo: cid, label: ps.length > 1 ? `${c.label} · ${NOMBRE_PERFIL[pid]}` : c.label }));
 });
+// Qué lleva cada cargo dentro de su perfil:
+// Secretaría: profesorado y cuentas, alumnado, datos del centro y material que hace falta.
+// Coordinación TIC: averías informáticas y aulas con puestos.
+// Jefatura de Estudios: guardias, cuadrante, zonas y horario, partes y convivencia. Orientación: convivencia.
+// Dirección: todo. (Las sesiones antiguas sin cargo se tratan como antes: Administración o Jefatura completas.)
+function funcionesDe(perfil) {
+  const c = perfil?.cargo, dir = c === "direccion" || (!c && perfil?.id === "admin");
+  return {
+    secretaria: dir || c === "secretaria",
+    tic: dir || c === "tic",
+    guardias: c === "direccion" || c === "jefatura" || (!c && perfil?.id === "jefatura"),
+    convivencia: ["direccion", "jefatura", "orientacion"].includes(c) || (!c && perfil?.id === "jefatura"),
+    direccion: c === "direccion",
+  };
+}
+// El perfil (con su cargo) con el que entra una persona
+const perfilDe = (cuentas, nombre, id) => perfilesPermitidos(cuentas, nombre).find(p => p.id === id) || PERFILES.find(p => p.id === id);
 const MIN_CLAVE = 6;
 // Las claves nunca se guardan tal cual: solo su huella SHA-256 (requiere conexión segura HTTPS).
 // En esta versión de demostración se guardan en el navegador; en el servidor del centro irán al servidor.
@@ -388,9 +409,10 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
   const perfilesDemo = [
     { txt: "👨‍🏫 Profesor/a", sub: `${nombreSugerido || "María Fernández"} · poner partes, guardias y RumboChat`, accion: () => onEntrar(nombreSugerido || "María Fernández", PERFILES[0]) },
     { txt: "🏫 Tutor/a de un grupo", sub: `${tutora.nombre} · tutoría de ${tutora.curso} y familias`, accion: () => onEntrar(tutora.nombre, PERFILES[0]) },
-    { txt: "📊 Jefatura y Dirección", sub: "Ana Jiménez · convivencia, guardias y ausencias", accion: () => onEntrar("Ana Jiménez", PERFILES[1]) },
-    { txt: "⚙️ Administración", sub: "Elena Vega · alumnado, profesorado y centro", accion: () => onEntrar("Elena Vega", PERFILES[2]) },
-    { txt: "🔑 Conserjería", sub: "Llaves de las aulas: quién las tiene", accion: () => onEntrar("Conserjería", PERFILES[3]) },
+    { txt: "📊 Jefatura de Estudios", sub: "Ana Jiménez · convivencia, guardias, horario y zonas", accion: () => onEntrar("Ana Jiménez", perfilDe(cuentas, "Ana Jiménez", "jefatura")) },
+    { txt: "🗂 Secretaría", sub: "Beatriz Navarro · profesorado, alumnado, centro y material", accion: () => onEntrar("Beatriz Navarro", perfilDe(cuentas, "Beatriz Navarro", "admin")) },
+    { txt: "💻 Coordinación TIC", sub: "Elena Vega · averías informáticas y aulas con puestos", accion: () => onEntrar("Elena Vega", perfilDe(cuentas, "Elena Vega", "admin")) },
+    { txt: "🔑 Conserjería", sub: "Llaves de las aulas: quién las tiene", accion: () => onEntrar("Conserjería", perfilDe(cuentas, "Conserjería", "conserjeria")) },
   ];
   const accesoDemo = MODO_DEMO ? (
     <div style={{ display: "grid", gap: 8 }}>
@@ -675,7 +697,7 @@ const ICONO_EMOJI = {
   "👨‍🏫": "profesorado", "🔑": "llave", "🖥": "ordenador", "🟡": "leve", "⚠": "grave", "🔴": "muy-grave",
   "🔍": "buscar", "⏰": "hora", "📂": "tipo-parte", "🎯": "gravedad-campo", "⚖": "tipificacion", "📝": "descripcion",
 };
-const ICONO_TEXTO = [[/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
+const ICONO_TEXTO = [[/^Secretaría/, "cargo-secretaria"], [/^Coordinación TIC/, "cargo-tic"], [/^Jefatura de Estudios/, "cargo-jefatura"], [/^Profesor\/a$/, "cargo-profesor"], [/^Tutor\/a de un grupo/, "tutor"], [/^Como tutor\/a/, "tutor"], [/^Como profesor\/a/, "cargo-profesor"], [/^Profesor responsable/, "profesor"], [/^Generar Parte/, "generar"], [/^Coordinación/, "eventos"], [/^Parte del Día/, "estado-general"], [/^Ver Guardias/, "horario"], [/^Ausencias de Profesores/, "profe-ausente"]];
 function iconoDe(texto) {
   const m = String(texto ?? "").match(/^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*\uFE0F?)\s*(.*)$/su);
   if (!m) return { icono: null, resto: texto };
@@ -5021,7 +5043,7 @@ function AvisosMensajes({ mensajes, usuario, onActualizar, onAbrir, C }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // RUMBOCHAT - MENSAJERÍA RÁPIDA
 // ═══════════════════════════════════════════════════════════════════════════
-const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave" };
+const ICONO_CARGO = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", direccion: "cargo-direccion", secretaria: "cargo-secretaria", tic: "cargo-tic", orientacion: "tutor", conserjeria: "llave", jefe_depto: "profesorado" };
 const ICONO_MENSAJE = { "Alumno enfermo": "alumno-enfermo", "Emergencia": "emergencia", "Urgencia en aula": "emergencia", "Falta material": "falta-material",
   "Alumno derivado": "alumno-derivado", "Cambio de guardia": "sustituto", "Falta un profesor": "profe-ausente", "Reunión importante": "eventos" };
 function RumboChat({ vistaInicial = "enviar", mensajes, setMensajes, usuario, esJefatura, profesores, horarios = {}, cursos = [], cuadrante = {}, apoyosGuardia = {}, sustitutosGuardia = {}, ausencias = [], coberturas = {}, C, inpStyle, selStyle, labelStyle }) {
@@ -6861,8 +6883,8 @@ function MaterialSesion({ aulas, sesiones = [], setSesiones, incidencias = [], s
     const al = alumnos.find(a => a.id === puestos[elegido]);
     const ant = usoAnterior(sesiones, aula.id, elegido, `${fecha}|${String(HORAS.indexOf(hora)).padStart(2, "0")}`, alumnos);
     setIncidencias(prev => [{ id: Date.now(), aulaId: aula.id, aula: aula.nombre, puesto: elegido, texto: texto.trim(), fecha, hora, anota: usuario, alumno: al?.nombre || null, grupo: al ? grupo : null, anterior: ant, estado: "abierta", ts: new Date().toISOString() }, ...prev]);
-    // Avisa a Coordinación TIC (aulas de informática) o a Jefatura (el resto)
-    const destino = responsablesMaterial(cuentas, profesores, aula.funcion === "Informática" ? "tic" : "jefatura").filter(d => d !== usuario);
+    // Avisa a Coordinación TIC (aulas de informática) o a Secretaría (el resto)
+    const destino = responsablesMaterial(cuentas, profesores, aula.funcion === "Informática" ? "tic" : "secretaria").filter(d => d !== usuario);
     if (setMensajes && destino.length) setMensajes(prev => [...destino.map((d, k) => mensajeRumbo(d, `⚠️ Incidencia en ${aula.nombre}, puesto ${elegido}: ${texto.trim()}. Avisa ${usuario}. Lo tienes en Material del centro › Incidencias de puestos.`, k)), ...prev]);
     setTexto(""); setHecho(`Incidencia anotada en ${elegido}.${destino.length ? ` Avisados: ${destino.join(", ")}.` : ""}`);
   };
@@ -7019,20 +7041,23 @@ function MaterialHistorial({ aulas, sesiones = [], incidencias = [], alumnos = [
 // Aviso: {id, tipo: "incidencia" | "necesidad", categoria, lugar, descripcion, cantidad, urgente, profesor, ts,
 //         estado: "pendiente" | "en_curso" | "resuelto", respuesta, respondido: {por, ts}, notificados, respuestaVista}
 const CATEGORIAS_MATERIAL = [
-  { id: "informatica", label: "Informática y audiovisuales", ejemplo: "ordenadores, proyectores, pizarras digitales, wifi", cargo: "tic" },
-  { id: "mobiliario", label: "Mobiliario y mantenimiento", ejemplo: "mesas, sillas, persianas, luz, calefacción", cargo: "secretaria" },
-  { id: "laboratorio", label: "Laboratorios y talleres", ejemplo: "reactivos, herramientas, material de prácticas", cargo: "jefatura" },
-  { id: "deportes", label: "Material deportivo", ejemplo: "balones, colchonetas, petos", cargo: "jefatura" },
-  { id: "papeleria", label: "Papelería y fotocopias", ejemplo: "folios, tóner, rotuladores de pizarra", cargo: "secretaria" },
-  { id: "otro", label: "Otro", ejemplo: "", cargo: "jefatura" },
+  { id: "informatica", label: "Informática y audiovisuales", ejemplo: "ordenadores, proyectores, pizarras digitales, wifi" },
+  { id: "mobiliario", label: "Mobiliario y mantenimiento", ejemplo: "mesas, sillas, persianas, luz, calefacción" },
+  { id: "laboratorio", label: "Laboratorios y talleres", ejemplo: "reactivos, herramientas, material de prácticas" },
+  { id: "deportes", label: "Material deportivo", ejemplo: "balones, colchonetas, petos" },
+  { id: "papeleria", label: "Papelería y fotocopias", ejemplo: "folios, tóner, rotuladores de pizarra" },
+  { id: "otro", label: "Otro", ejemplo: "" },
 ];
 const ESTADO_AVISO = { pendiente: { txt: "Pendiente", fondo: R.crema, borde: R.mostaza }, en_curso: { txt: "En curso", fondo: R.azulClaro, borde: R.azul }, resuelto: { txt: "Resuelto", fondo: R.verdeCaminoClaro, borde: R.verdeCamino } };
 const NOMBRE_CARGO = { tic: "Coordinación TIC", secretaria: "Secretaría", jefatura: "Jefatura de Estudios", direccion: "Dirección" };
-// Quién recibe el aviso: las personas con ese cargo; si no hay nadie, Jefatura de Estudios (y Dirección si es urgente)
+// Quién gestiona cada aviso: las averías informáticas, Coordinación TIC; el material que hace falta
+// y el resto de averías y mantenimiento, Secretaría (lleva las cuentas del centro)
+const cargoAviso = a => a.tipo === "incidencia" && a.categoria === "informatica" ? "tic" : "secretaria";
+// Quién recibe el aviso: las personas con ese cargo; si no hay nadie, Dirección (y también Dirección si es urgente)
 function responsablesMaterial(cuentas, profesores, cargo, urgente = false) {
   const con = c => profesores.filter(p => cargosIds(cuentas[p]).includes(c));
   let l = con(cargo);
-  if (!l.length) l = con("jefatura");
+  if (!l.length) l = con("direccion");
   if (urgente) l = [...l, ...con("direccion")];
   return [...new Set(l)];
 }
@@ -7041,9 +7066,9 @@ function avisosMaterialEjemplo(profesores, sugerido) {
   const p = i => profesores[i % profesores.length], hace = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString(); };
   return [
     { id: 7600, tipo: "incidencia", categoria: "informatica", lugar: "2º ESO B", descripcion: "El proyector se apaga solo a los diez minutos.", cantidad: "", urgente: true, profesor: sugerido || p(3), ts: hace(1), estado: "en_curso", respuesta: "Lo revisamos mañana a primera hora.", respondido: { por: "Elena Vega", ts: hace(0) }, notificados: ["Elena Vega", "Luis García"], respuestaVista: false },
-    { id: 7601, tipo: "necesidad", categoria: "papeleria", lugar: "Departamento de Lengua", descripcion: "Rotuladores de pizarra blanca (azul y negro).", cantidad: "10", urgente: false, profesor: p(8), ts: hace(2), estado: "pendiente", respuesta: "", notificados: ["Ana Jiménez"] },
-    { id: 7602, tipo: "incidencia", categoria: "mobiliario", lugar: "Laboratorio de Ciencias", descripcion: "La persiana de la ventana del fondo no sube.", cantidad: "", urgente: false, profesor: p(11), ts: hace(4), estado: "resuelto", respuesta: "Arreglada por mantenimiento.", respondido: { por: "Ana Jiménez", ts: hace(2) }, notificados: ["Ana Jiménez"], respuestaVista: true },
-    { id: 7603, tipo: "necesidad", categoria: "deportes", lugar: "Gimnasio", descripcion: "Balones de voleibol: los que hay están pinchados.", cantidad: "6", urgente: false, profesor: p(13), ts: hace(3), estado: "pendiente", respuesta: "", notificados: ["Ana Jiménez"] },
+    { id: 7601, tipo: "necesidad", categoria: "papeleria", lugar: "Departamento de Lengua", descripcion: "Rotuladores de pizarra blanca (azul y negro).", cantidad: "10", urgente: false, profesor: p(8), ts: hace(2), estado: "pendiente", respuesta: "", notificados: ["Beatriz Navarro"] },
+    { id: 7602, tipo: "incidencia", categoria: "mobiliario", lugar: "Laboratorio de Ciencias", descripcion: "La persiana de la ventana del fondo no sube.", cantidad: "", urgente: false, profesor: p(11), ts: hace(4), estado: "resuelto", respuesta: "Arreglada por mantenimiento.", respondido: { por: "Beatriz Navarro", ts: hace(2) }, notificados: ["Beatriz Navarro"], respuestaVista: true },
+    { id: 7603, tipo: "necesidad", categoria: "deportes", lugar: "Gimnasio", descripcion: "Balones de voleibol: los que hay están pinchados.", cantidad: "6", urgente: false, profesor: p(13), ts: hace(3), estado: "pendiente", respuesta: "", notificados: ["Beatriz Navarro"] },
   ];
 }
 function pdfAvisosMaterial(lista, titulo) {
@@ -7054,7 +7079,9 @@ function pdfAvisosMaterial(lista, titulo) {
     styles: { ...estiloTabla.styles, fontSize: 10 }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 24 }, 2: { cellWidth: 36 }, 3: { cellWidth: 34 }, 5: { cellWidth: 14 }, 6: { cellWidth: 32 }, 7: { cellWidth: 22 } } });
   guardarPDF(doc, `necesidades-material-${isoLocal(new Date())}.pdf`);
 }
-function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], usuario, gestion = false, cuentas = {}, profesores = [], setMensajes }) {
+// gestiona: función que dice qué avisos lleva quien mira (Coordinación TIC, Secretaría o Dirección); sin ella, solo los propios
+function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], usuario, gestiona = null, cuentas = {}, profesores = [], setMensajes }) {
+  const gestion = !!gestiona;
   const lugares = [...listaEspacios(espacios).filter(e => !e.oculta).map(e => e.nombre), ...cursos];
   const vacio = { tipo: "incidencia", categoria: "informatica", lugar: "", descripcion: "", cantidad: "", urgente: false };
   const [f, setF] = useState(vacio);
@@ -7062,7 +7089,8 @@ function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], us
   const [ver, setVer] = useState("abiertos");
   const [respuestas, setRespuestas] = useState({});
   const cat = CATEGORIAS_MATERIAL.find(c => c.id === f.categoria);
-  const destino = responsablesMaterial(cuentas, profesores, cat.cargo, f.urgente);
+  const cargoF = cargoAviso(f);
+  const destino = responsablesMaterial(cuentas, profesores, cargoF, f.urgente);
   // Al abrir la pantalla, las respuestas nuevas a mis avisos quedan vistas
   useEffect(() => {
     if (gestion || !avisos.some(a => a.profesor === usuario && a.respuesta && !a.respuestaVista)) return;
@@ -7083,7 +7111,7 @@ function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], us
     setAvisos(prev => prev.map(x => x.id === a.id ? { ...x, estado, respuesta, respondido: { por: usuario, ts: new Date().toISOString() }, respuestaVista: false } : x));
     if (setMensajes && a.profesor !== usuario) setMensajes(prev => [mensajeRumbo(a.profesor, `Tu aviso de material (${a.lugar}: ${a.descripcion.slice(0, 60)}${a.descripcion.length > 60 ? "…" : ""}) está ${estado === "resuelto" ? "RESUELTO" : "en curso"}.${respuesta ? ` Respuesta de ${usuario}: «${respuesta}»` : ""}`), ...prev]);
   };
-  const base = gestion ? avisos : avisos.filter(a => a.profesor === usuario);
+  const base = gestion ? avisos.filter(gestiona) : avisos.filter(a => a.profesor === usuario);
   const lista = base.filter(a => ver === "todos" || (ver === "abiertos" ? a.estado !== "resuelto" : a.estado === "resuelto"))
     .sort((a, b) => (a.estado === "resuelto") - (b.estado === "resuelto") || b.urgente - a.urgente || b.ts.localeCompare(a.ts));
   const campo = { width: "100%", minHeight: 44, padding: "0 10px", border: `2px solid ${R.turquesa}`, borderRadius: 6, fontSize: 16, color: R.noche, background: "#fff", fontFamily: "inherit", boxSizing: "border-box" };
@@ -7122,12 +7150,12 @@ function NecesidadesMaterial({ avisos = [], setAvisos, espacios, cursos = [], us
           Urgente: impide dar clase
         </label>
         <div style={{ fontSize: 14, color: R.petroleo }}>Se avisará por RumboChat a: <strong>{destino.length ? destino.join(", ") : "nadie todavía"}</strong>
-          {" "}({profesores.some(p => cargosIds(cuentas[p]).includes(cat.cargo)) ? NOMBRE_CARGO[cat.cargo] : `Jefatura de Estudios, porque nadie tiene el cargo de ${NOMBRE_CARGO[cat.cargo]}`}{f.urgente ? " y Dirección" : ""}).</div>
+          {" "}({profesores.some(p => cargosIds(cuentas[p]).includes(cargoF)) ? NOMBRE_CARGO[cargoF] : `Dirección, porque nadie tiene el cargo de ${NOMBRE_CARGO[cargoF]}`}{f.urgente ? " y Dirección" : ""}).</div>
         <button onClick={enviar} disabled={!f.descripcion.trim() || !f.lugar.trim()} style={{ minHeight: 52, border: "none", borderRadius: 6, background: f.descripcion.trim() && f.lugar.trim() ? R.azul : R.gris, color: f.descripcion.trim() && f.lugar.trim() ? "#fff" : R.petroleo, fontWeight: 700, fontSize: 17, cursor: f.descripcion.trim() && f.lugar.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Enviar aviso</button>
         {hecho && <div role="status" style={{ padding: "10px 14px", background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
-        <strong style={{ color: R.petroleo, fontSize: 17, marginRight: 6 }}>{gestion ? "Avisos del centro" : "Mis avisos"}</strong>
+        <strong style={{ color: R.petroleo, fontSize: 17, marginRight: 6 }}>{gestion ? "Avisos que gestionas" : "Mis avisos"}</strong>
         {chip(ver === "abiertos", `Abiertos (${base.filter(a => a.estado !== "resuelto").length})`, () => setVer("abiertos"))}
         {chip(ver === "resueltos", "Resueltos", () => setVer("resueltos"))}
         {chip(ver === "todos", "Todos", () => setVer("todos"))}
@@ -8332,7 +8360,7 @@ function AppInterna() {
           perfilesPermitidos(cuentasActuales, ses.usuario).some(p => p.id === ses.perfil.id)) {
         setUsuario(ses.usuario); setPerfil(ses.perfil);
         if ((pr || DEMO_PROFESORES).includes(ses.usuario)) setFProfesor(ses.usuario);
-        setTab(tabInicial(ses.perfil.id));
+        setTab(inicioDe(ses.perfil).tab); setModuloJefatura(inicioDe(ses.perfil).modulo);
       }
       setLoading(false);
     }
@@ -8446,8 +8474,8 @@ function AppInterna() {
     const p = perfilesPermitidos(cuentas, usuario).find(x => x.key === id || x.id === id);
     if (!p || (p.key && p.key === perfil?.key)) return;
     guardarSesion({ usuario, perfil: p });
-    setPerfil(p); setTab(tabInicial(p.id));
-    setModuloProfesor("alumnos"); setModuloJefatura("alumnos");
+    setPerfil(p); setTab(inicioDe(p).tab);
+    setModuloProfesor("alumnos"); setModuloJefatura(inicioDe(p).modulo);
     setShowParte(null); setShowAlerta(null);
     window.scrollTo(0, 0);
   }
@@ -8591,7 +8619,7 @@ function AppInterna() {
   const sinLeerMios = mensajes.filter(m => m.destinatario === usuario && !m.leido).length;
 
   const profeDemo = usuario || ultimoProfe;
-  const tutoraDemo = (() => { const t = Object.entries(tutores).filter(([, v]) => v?.tutor && profesores.includes(v.tutor) && v.tutor !== profeDemo && !["Ana Jiménez", "Elena Vega"].includes(v.tutor)).sort(([a], [b]) => a.localeCompare(b))[0]; return t ? { nombre: t[1].tutor, curso: t[0] } : null; })();
+  const tutoraDemo = (() => { const t = Object.entries(tutores).filter(([, v]) => v?.tutor && profesores.includes(v.tutor) && v.tutor !== profeDemo && !["Ana Jiménez", "Elena Vega", "Beatriz Navarro"].includes(v.tutor)).sort(([a], [b]) => a.localeCompare(b))[0]; return t ? { nombre: t[1].tutor, curso: t[0] } : null; })();
   if (!perfil) return (
     <PantallaEntrada profesores={profesores} cuentas={cuentas} setCuentas={setCuentas}
       nombreSugerido={profeDemo} onCargarEjemplo={cargarEjemploGuardias}
@@ -8599,11 +8627,14 @@ function AppInterna() {
       sinLeerPor={mensajes.filter(m => !m.leido).reduce((acc, m) => { const a = acc[m.destinatario] || { total: 0, urgentes: 0 }; a.total++; if (m.urgente) a.urgentes++; acc[m.destinatario] = a; return acc; }, {})}
       onEntrar={(nombre, p, opciones = {}) => {
         setUsuario(nombre); if (profesores.includes(nombre)) setFProfesor(nombre);
-        if (p.id === "profesor" && !opciones.otro && nombre !== tutoraDemo?.nombre && !["Ana Jiménez", "Elena Vega"].includes(nombre)) setUltimoProfe(nombre);
-        guardarSesion({ usuario: nombre, perfil: p }); setPerfil(p); setTab(tabInicial(p.id));
+        if (p.id === "profesor" && !opciones.otro && nombre !== tutoraDemo?.nombre && !["Ana Jiménez", "Elena Vega", "Beatriz Navarro"].includes(nombre)) setUltimoProfe(nombre);
+        guardarSesion({ usuario: nombre, perfil: p }); setPerfil(p); setTab(inicioDe(p).tab); setModuloJefatura(inicioDe(p).modulo);
       }} />
   );
 
+  const fx = funcionesDe(perfil);
+  // Avisos de material que lleva quien está dentro: Coordinación TIC, las averías informáticas; Secretaría, el resto
+  const gestionaAviso = a => perfil.id === "admin" && (cargoAviso(a) === "tic" ? fx.tic : fx.secretaria);
   const avisosPendientes = perfil.id === "profesor" && usuario ? alumnosParaAvisar({ partes, usuario, tutores, avisos: avisosFamilia }).lista.filter(x => x.pendiente).length : 0;
   // Número de la pestaña «Medidas»: las que hay que programar y las que tocan hoy
   const medidasHoy = medidas.filter(m => estadoMedida(m) === "sin_programar").length + medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
@@ -8661,6 +8692,7 @@ function AppInterna() {
           { id: "firmas_jef",    label: "✍️ Firmas y listas", color: "#06b6d4" },
           { id: "resumen_cob",   label: "📊 Coberturas y ausencias", color: R.morado },
           { id: "estadisticas",  label: "📈 Estadísticas", color: "#2B647E" },
+          { id: "horario_zonas", label: "⚙️ Horario y zonas", color: "#2B647E" },
         ]
       : moduloJefatura === "espacios"
       ? [
@@ -8671,7 +8703,6 @@ function AppInterna() {
       ? [
           { id: "material_sesion",      label: "🖥 Sesión en el aula", color: R.azul },
           { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
-          { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
           { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
         ]
       : [] // RumboChat no tiene tabs adicionales
@@ -8683,15 +8714,18 @@ function AppInterna() {
     : perfil.id === "admin" && moduloJefatura === "material"
     ? [
         { id: "material_avisos",      label: "📢 Necesidades y avisos", color: R.azul },
-        { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
-        { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
+        ...(fx.tic ? [
+          { id: "material_incidencias", label: "🔔 Incidencias de puestos", color: R.mostaza },
+          { id: "material_historial",   label: "🗂 Historial de puestos", color: R.azul },
+          { id: "admin_aulas",          label: "⚙️ Aulas con puestos", color: R.azul },
+        ] : []),
       ]
     : []; // El resto de Administración no tiene pestañas, solo módulos
 
   // Módulos de cada perfil (franja turquesa o menú lateral)
   const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
   const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : "mensajeria"); };
-  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "admin_panel" : id === "material" ? "material_avisos" : "admin_profesores"); };
+  const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
   const modulos = perfil.id === "profesor"
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
@@ -8703,15 +8737,18 @@ function AppInterna() {
     : perfil.id === "jefatura"
     ? [
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
-        { id: "guardias", label: "🔄 Guardias & Ausencias" },
+        ...(fx.guardias ? [{ id: "guardias", label: "🔄 Guardias & Ausencias" }] : []),
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
         { id: "rumbochat", label: "💬 RumboChat" },
       ].map(m => ({ ...m, ir: () => irJefatura(m.id) }))
     : perfil.id === "admin"
     ? [
-        { id: "alumnos",  label: "👥 Alumnos" },
-        { id: "guardias", label: "👨‍🏫 Profesores" },
+        ...(fx.secretaria ? [
+          { id: "centro",   label: "🏫 Centro" },
+          { id: "alumnos",  label: "👥 Alumnos" },
+          { id: "guardias", label: "👨‍🏫 Profesores" },
+        ] : []),
         { id: "material", label: "🖥 Material del centro" },
       ].map(m => ({ ...m, ir: () => irAdmin(m.id) }))
     : perfil.id === "conserjeria"
@@ -8749,9 +8786,13 @@ function AppInterna() {
       add(sinCubrir, sinCubrir === 1 ? "clase de hoy sin cubrir" : "clases de hoy sin cubrir", "guardias", "coordinacion", "hora-reloj");
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
       add(llavesFuera, llavesFuera === 1 ? "llave sin devolver" : "llaves sin devolver", "espacios", "llaves", "llave");
-      const incMat = incidenciasMaterial.filter(x => x.estado === "abierta").length;
-      add(incMat, incMat === 1 ? "incidencia de puesto sin resolver" : "incidencias de puestos sin resolver", "material", "material_incidencias", "ordenador");
-      const avPend = avisosMaterial.filter(a => a.estado === "pendiente").length;
+    } else if (perfil.id === "admin") {
+      add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en RumboChat" : "mensajes sin leer en RumboChat", "rumbochat", "mensajeria", "mensaje-sin-leer");
+      if (fx.tic) {
+        const incMat = incidenciasMaterial.filter(x => x.estado === "abierta").length;
+        add(incMat, incMat === 1 ? "incidencia de puesto sin resolver" : "incidencias de puestos sin resolver", "material", "material_incidencias", "ordenador");
+      }
+      const avPend = avisosMaterial.filter(a => a.estado === "pendiente" && gestionaAviso(a)).length;
       add(avPend, avPend === 1 ? "aviso de material pendiente" : "avisos de material pendientes", "material", "material_avisos", "mensaje-enviar");
     } else if (perfil.id === "conserjeria") {
       const llavesFuera = prestamosLlaves.filter(p => llaveSinDevolver(p)).length;
@@ -8842,11 +8883,11 @@ function AppInterna() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
           {perfilesPermitidos(cuentas, usuario).length > 1 && <SelectorPerfil perfiles={perfilesPermitidos(cuentas, usuario)} actual={perfil} onCambiar={cambiarPerfil} cargos={cargoDe(cuentas, usuario).label} />}
-          {perfil.id !== "admin" && <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />}
+          <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
-            setTab(tabInicial(perfil.id));
+            setTab(inicioDe(perfil).tab);
             if (perfil.id === "profesor") setModuloProfesor("alumnos");
-            if (perfil.id === "jefatura") setModuloJefatura("alumnos");
+            else setModuloJefatura(inicioDe(perfil).modulo);
           }}><Icono nombre="inicio" tam={52} /></button>
           <button className="gd-redondo" onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes" title="Preguntas frecuentes"><Icono nombre="como-se-usa" tam={52} /></button>
           <button className="gd-redondo" onClick={salir} aria-label="Salir" title="Salir"><Icono nombre="fuera-ahora" tam={52} /></button>
@@ -9569,10 +9610,10 @@ function AppInterna() {
         )}
         {tab === "material_avisos" && (
           <NecesidadesMaterial avisos={avisosMaterial} setAvisos={setAvisosMaterial} espacios={espaciosCentro} cursos={cursos}
-            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestion={perfil.id !== "profesor"} cuentas={cuentas} profesores={profesores} setMensajes={setMensajes} />
+            usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} gestiona={perfil.id === "admin" ? gestionaAviso : null} cuentas={cuentas} profesores={profesores} setMensajes={setMensajes} />
         )}
         {tab === "material_historial" && <MaterialHistorial aulas={aulasMaterial} sesiones={sesionesMaterial} incidencias={incidenciasMaterial} alumnos={alumnos} />}
-        {tab === "material_incidencias" && <MaterialIncidencias incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial} usuario={usuario} puedeResolver={perfil.id !== "profesor"} />}
+        {tab === "material_incidencias" && <MaterialIncidencias incidencias={incidenciasMaterial} setIncidencias={setIncidenciasMaterial} usuario={usuario} puedeResolver={perfil.id === "admin" && fx.tic} />}
 
         {tab === "reservas" && (
           <Reservas espacios={espaciosCentro} reservas={reservasEspacios} setReservas={setReservasEspacios} profesores={profesores} cursos={cursos}
@@ -9794,20 +9835,24 @@ function AppInterna() {
         )}
 
         {/* ── Admin Alumnos ── */}
-        {tab === "admin_panel" && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
-        {tab === "admin_panel" && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
-        {tab === "admin_panel" && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
-        {tab === "admin_panel" && <EspaciosCentro espacios={espaciosCentro} setEspacios={setEspaciosCentro} />}
-        {tab === "admin_panel" && <AulasMaterialCentro aulas={aulasMaterial} setAulas={setAulasMaterial} espacios={espaciosCentro} />}
-        {tab === "admin_panel" && (
+        {/* Secretaría: datos del centro y espacios */}
+        {tab === "admin_panel" && fx.secretaria && <DatosCentro datos={datosCentro} setDatos={setDatosCentro} />}
+        {tab === "admin_panel" && fx.secretaria && <EspaciosCentro espacios={espaciosCentro} setEspacios={setEspaciosCentro} />}
+        {/* Secretaría: alumnado y tutorías */}
+        {tab === "admin_alumnos" && fx.secretaria && (
           <TutoriasGrupos cursos={cursos} tutores={tutores} setTutores={setTutores} setAlumnos={setAlumnos} profesores={profesores} C={C} inpStyle={inpStyle} />
         )}
-        {tab === "admin_panel" && (
+        {tab === "admin_alumnos" && fx.secretaria && (
           <AdminAlumnos alumnos={alumnos} setAlumnos={setAlumnos} inpStyle={inpStyle} C={C} />
         )}
+        {/* Coordinación TIC: aulas con puestos */}
+        {tab === "admin_aulas" && fx.tic && <AulasMaterialCentro aulas={aulasMaterial} setAulas={setAulasMaterial} espacios={espaciosCentro} />}
+        {/* Jefatura de Estudios: horario de las clases y zonas de guardia */}
+        {tab === "horario_zonas" && fx.guardias && <HorarioCentro horario={horarioCentro} setHorario={setHorarioCentro} />}
+        {tab === "horario_zonas" && fx.guardias && <ZonasCentro zonas={zonasCentro} setZonas={setZonasCentro} />}
 
         {/* ── Admin Profesores ── */}
-        {tab === "admin_profesores" && (
+        {tab === "admin_profesores" && fx.secretaria && (
           <div>
             <div style={{ marginBottom: 16 }}><TituloBloque titulo="Gestión de Profesores" icono="perfil" /></div>
             <AvisoSoloFicticios que="del profesorado (nombres, correos)" />
@@ -9832,7 +9877,7 @@ function AppInterna() {
             <Card style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "12px 20px", background: C.cream, borderBottom: `1px solid #CDE9ED`, fontWeight: 600, fontSize: 14, color: C.dark, display: "flex", alignItems: "center", gap: 8 }}><Icono nombre="profesorado" tam={30} />{profesores.length} profesor(es)</div>
               <div style={{ padding: "10px 20px", fontSize: 14, color: C.gray, borderBottom: `1px solid ${C.cream}` }}>
-                Marca todos los cargos de cada persona (puede tener varios: por ejemplo Profesor/a + Coordinación TIC + Jefatura). Los cargos deciden a qué perfiles entra: Jefatura y Orientación abren «Jefatura y Dirección»; Dirección abre también Administración; Secretaría y Coordinación TIC abren Administración. Cambia de perfil en cualquier momento desde el botón de arriba a la derecha.
+                Marca todos los cargos de cada persona (puede tener varios: por ejemplo Profesor/a + Jefatura de departamento + Coordinación TIC). Cada cargo lleva sus funciones: Jefatura de Estudios, guardias, horario, zonas y convivencia; Orientación, convivencia; Secretaría, profesorado, cuentas, alumnado, datos del centro y material que hace falta; Coordinación TIC, averías informáticas y aulas con puestos; Dirección, todo. Cambia de perfil en cualquier momento desde el botón de arriba a la derecha.
               </div>
               {profesores.map((p, i) => {
                 const cuenta = cuentas[p] || {};

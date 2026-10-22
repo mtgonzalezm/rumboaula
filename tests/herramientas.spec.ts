@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import fs from 'fs'
-import { vigilarErrores, empezar, entrar, comoProfe, comoJefatura, comoAdmin, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
+import { vigilarErrores, empezar, entrar, comoProfe, comoJefatura, comoAdmin, comoSecretaria, comoTic, salir, leer, pestaña, sinFalloEnPantalla } from './ayuda'
 
 // ───────────────────────── PROFESORADO: partes ─────────────────────────
 test('Nuevo parte: se crea, aparece en Mis partes y en Jefatura, y el PDF se descarga', async ({ page }) => {
@@ -398,10 +398,12 @@ test('Datos del centro: Administración cambia el nombre y la localidad y salen 
   expect(errores).toEqual([])
 })
 
-test('Horario del centro: Administración cambia las horas de una franja y se usan en la app', async ({ page }) => {
+test('Horario del centro: Jefatura cambia las horas de una franja y se usan en la app', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
-  await comoAdmin(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Inicio de 1ª hora').fill('08:00')
   await page.getByLabel('Fin de 1ª hora').fill('08:55')
   expect((await leer(page, 'horario_centro'))['1ª hora']).toBe('8:00 – 8:55')
@@ -442,10 +444,12 @@ test('Logotipo del centro: Administración lo sube y sale en los PDF', async ({ 
   expect(errores).toEqual([])
 })
 
-test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cuadrante las usa', async ({ page }) => {
+test('Zonas de guardia: Jefatura renombra, oculta y añade zonas, y el cuadrante las usa', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
-  await comoAdmin(page)
+  await comoJefatura(page)
+  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  await pestaña(page, 'Horario y zonas')
   await page.getByLabel('Nombre de la zona Edificio A · Planta 0 · Pasillo').fill('Pasillo de la entrada')
   await page.locator('[data-zona="rec-maquina"]').getByRole('button', { name: 'Ocultar' }).click()
   await page.locator('#gd-zona-nueva').fill('Edificio D · Planta 0 · Pasillo')
@@ -457,10 +461,7 @@ test('Zonas de guardia: Administración renombra, oculta y añade zonas, y el cu
   expect(zonas.some((z: { label: string, edificio: string }) => z.label === 'Edificio D · Planta 0 · Pasillo' && z.edificio === 'D')).toBe(true)
   // Las zonas necesarias no se pueden ocultar
   await expect(page.locator('[data-zona="aula-conv"]').getByRole('button', { name: 'Ocultar' })).toHaveCount(0)
-  // Jefatura: el cuadrante ofrece la zona nueva y no la oculta; las guardias ya hechas muestran el nombre nuevo
-  await salir(page)
-  await comoJefatura(page)
-  await page.getByRole('button', { name: /Guardias & Ausencias/ }).click()
+  // El cuadrante ofrece la zona nueva y no la oculta; las guardias ya hechas muestran el nombre nuevo
   await pestaña(page, 'Cuadrante')
   await page.locator('select').filter({ hasText: 'Elige un profesor' }).first().selectOption({ index: 1 })
   await expect(page.locator('optgroup[label="── Edificio D"]').first()).toBeAttached()
@@ -477,7 +478,7 @@ test('Portada: entrar con nombre y clave (primera vez y después), y la ayuda', 
   const errores = vigilarErrores(page)
   await empezar(page)
   // En la demostración se ven los perfiles; el acceso real está en «Entrar con nombre y clave»
-  await expect(page.getByRole('button', { name: /Jefatura y Dirección/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Jefatura de Estudios/ })).toBeVisible()
   await page.getByRole('button', { name: 'Entrar con nombre y clave' }).click()
   // Nombre que no está en la lista
   await page.locator('#gd-nombre').fill('Nadie Inventado')
@@ -822,16 +823,15 @@ test('Material del centro: colocar al grupo, guardar la sesión, anotar una inci
   await expect(page.locator('[data-usos="PC02"]')).toContainText(delGrupo[1].nombre)
   await expect(page.locator('[data-usos="PC02"]')).toContainText('Carmen López')
   await salir(page)
-  // Jefatura la ve en la campana y la resuelve
-  await comoJefatura(page)
-  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  // Coordinación TIC la ve y la resuelve
+  await comoTic(page)
   await pestaña(page, 'Incidencias de puestos')
   await page.locator(`[data-incidencia="${inc.id}"]`).getByRole('button', { name: 'Marcar resuelta' }).click()
   expect((await leer(page, 'material_incidencias')).find((x: { id: number }) => x.id === inc.id).estado).toBe('resuelta')
   expect(errores).toEqual([])
 })
 
-test('Necesidades y avisos de material: el profe avisa, llega a Coordinación TIC, Jefatura responde y el profe lo ve', async ({ page }) => {
+test('Necesidades y avisos de material: la avería informática llega a Coordinación TIC y el material que hace falta a Secretaría', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)
   await comoProfe(page)
@@ -848,10 +848,26 @@ test('Necesidades y avisos de material: el profe avisa, llega a Coordinación TI
   const msjs = (await leer(page, 'mensajes')).filter((m: { texto: string }) => m.texto.includes('Prueba automática: la pizarra digital'))
   expect(msjs.map((m: { destinatario: string }) => m.destinatario).sort()).toEqual(['Elena Vega', 'Luis García'])
   await salir(page)
-  // Jefatura lo ve en su campana, responde y lo marca resuelto
-  await comoJefatura(page)
+  // El material que hace falta va a Secretaría
+  await comoProfe(page)
   await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
   await pestaña(page, 'Necesidades y avisos')
+  await page.getByRole('button', { name: /Material que hace falta/ }).click()
+  await page.locator('#gd-nec-categoria').selectOption('informatica')
+  await page.locator('#gd-nec-lugar').fill('Aula de Informática 2')
+  await page.locator('#gd-nec-descripcion').fill('Prueba automática: cables HDMI')
+  await page.getByRole('button', { name: 'Enviar aviso' }).click()
+  const nec = (await leer(page, 'material_avisos')).find((a: { descripcion: string }) => a.descripcion === 'Prueba automática: cables HDMI')
+  expect(nec.notificados).toEqual(['Beatriz Navarro'])
+  await salir(page)
+  // Secretaría ve la necesidad pero no la avería informática
+  await comoSecretaria(page)
+  await page.getByRole('button', { name: 'Material del centro', exact: true }).click()
+  await expect(page.locator(`[data-aviso-material="${nec.id}"]`)).toBeVisible()
+  await expect(page.locator(`[data-aviso-material="${av.id}"]`)).toHaveCount(0)
+  await salir(page)
+  // Coordinación TIC responde la avería y la marca resuelta
+  await comoTic(page)
   const tarjeta = page.locator(`[data-aviso-material="${av.id}"]`)
   await tarjeta.getByRole('textbox').fill('Cambiamos la lámpara el lunes.')
   await tarjeta.getByRole('button', { name: 'Resuelto' }).click()

@@ -23,7 +23,9 @@ export async function entrar(page: Page, texto: string | RegExp) {
 }
 export const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
 export const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · convivencia')
-export const comoAdmin = (page: Page) => entrar(page, 'Elena Vega · alumnado')
+export const comoAdmin = (page: Page) => entrar(page, 'Beatriz Navarro · profesorado')
+export const comoSecretaria = comoAdmin
+export const comoTic = (page: Page) => entrar(page, 'Elena Vega · averías')
 export async function salir(page: Page) {
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await expect(page.locator('#gd-otro-profe')).toBeVisible()

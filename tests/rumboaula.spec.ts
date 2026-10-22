@@ -55,7 +55,8 @@ test.describe('Todas las pantallas se abren sin fallos', () => {
     ['Profesor/a', 'poner partes, guardias'],
     ['Tutor/a', 'tutoría de'],
     ['Jefatura', 'Ana Jiménez · convivencia'],
-    ['Administración', 'Elena Vega · alumnado'],
+    ['Secretaría', 'Beatriz Navarro · profesorado'],
+    ['Coordinación TIC', 'Elena Vega · averías'],
     ['Conserjería', 'Llaves de las aulas'],
   ] as const) {
     test(perfil, async ({ page }) => {
