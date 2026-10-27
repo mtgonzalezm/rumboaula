@@ -383,7 +383,8 @@ const REFLEJO = "linear-gradient(to bottom, #000 0%, rgba(0,0,0,.45) 40%, transp
 function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEjemplo, nombreSugerido, tutoraDemo, sinLeerPor = {} }) {
   // Demostración: globo de bienvenida con los pasos, la primera vez en esta pestaña
   const [globo, setGlobo] = useState(() => { try { return MODO_DEMO && !sessionStorage.getItem("rumboaula:globo"); } catch { return MODO_DEMO; } });
-  const [ejemploListo, setEjemploListo] = useState(() => { try { return !!sessionStorage.getItem("rumboaula:ejemplo"); } catch { return false; } });
+  // En red, si el servidor ya tiene datos no se vuelve a cargar el ejemplo (borraría lo que han hecho los demás equipos)
+  const [ejemploListo, setEjemploListo] = useState(() => { try { return RED.conDatos || !!sessionStorage.getItem("rumboaula:ejemplo"); } catch { return RED.conDatos; } });
   const cerrarGlobo = () => { setGlobo(false); try { sessionStorage.setItem("rumboaula:globo", "1"); } catch { /* sin almacenamiento */ } };
   const cargarEjemplo = () => { onCargarEjemplo(); setEjemploListo(true); try { sessionStorage.setItem("rumboaula:ejemplo", "1"); } catch { /* sin almacenamiento */ } };
   const [paso, setPaso] = useState("nombre");
@@ -655,6 +656,7 @@ const AvisoDemo = ({ compacto }) => MODO_DEMO ? (
     ? { background: R.mostaza, color: R.noche, fontSize: 14, fontWeight: 700, lineHeight: 1.35, textAlign: "center", padding: "8px 16px" }
     : { background: "#FDF1D9", color: "#16333F", fontSize: 14, fontWeight: 600, borderRadius: 10, padding: "10px 12px", marginBottom: 20, border: "1px solid #F6C862", lineHeight: 1.4 }}>
     ⚠️ Versión de demostración: no introducir datos reales de alumnos ni familias.
+    {RED.activa && <> · <span style={{ whiteSpace: "nowrap" }}>En red: los equipos conectados comparten los datos.</span></>}
     {!compacto && <div style={{ marginTop: 6, fontWeight: 500 }}>Sigue los pasos <b>1</b> y <b>2</b> del recuadro verde de abajo. No necesitas nombre ni clave.</div>}
   </div>
 ) : null;
@@ -684,6 +686,79 @@ async function sGet(k) {
 async function sSet(k, v) {
   try { localStorage.setItem(PREFIJO + k, JSON.stringify(v)); }
   catch (e) { console.error("No se pudo guardar", k, e); }
+  if (RED.activa) subir(k, v);
+}
+
+// ─── Red del centro ──────────────────────────────────────────────────────────
+// Si la app se abre desde el servidor del centro (servidor/servidor.mjs), los datos se comparten entre
+// todos los equipos: se guardan también allí y cada 2 segundos llega lo que han cambiado los demás
+// (evento «rumbo:remoto»). Abierta desde la web de demostración no hay servidor y todo sigue en este navegador.
+const RED = { activa: false, conDatos: false, seq: 0, versiones: {}, ultimo: {}, cola: {}, pendientes: {} };
+async function conectarRed() {
+  try {
+    const est = await fetch("/api/estado", { cache: "no-store" }).then(r => r.ok ? r.json() : null);
+    if (!est?.servidor) return false;
+    const { datos, seq } = await fetch("/api/datos", { cache: "no-store" }).then(r => r.json());
+    for (const [k, { valor, version }] of Object.entries(datos || {})) {
+      const txt = JSON.stringify(valor);
+      localStorage.setItem(PREFIJO + k, txt);
+      RED.versiones[k] = version; RED.ultimo[k] = txt;
+    }
+    RED.conDatos = Object.keys(datos || {}).length > 0;
+    RED.seq = seq || 0; RED.activa = true;
+    setInterval(traerCambios, 2000);
+    return true;
+  } catch { return false; }
+}
+const avisarCambio = (clave, valor) => window.dispatchEvent(new CustomEvent("rumbo:remoto", { detail: { clave, valor } }));
+async function traerCambios() {
+  try {
+    const { seq, cambios } = await fetch(`/api/cambios?desde=${RED.seq}`, { cache: "no-store" }).then(r => r.json());
+    let hasta = seq || 0;
+    for (const c of cambios || []) {
+      // Lo que este equipo está enviando se deja para la siguiente vuelta, para no pisarlo
+      if (RED.pendientes[c.clave]) { hasta = Math.min(hasta, c.version - 1); continue; }
+      if (c.version <= (RED.versiones[c.clave] || 0)) continue;
+      RED.versiones[c.clave] = c.version;
+      const txt = JSON.stringify(c.valor);
+      if (txt === RED.ultimo[c.clave]) continue;
+      RED.ultimo[c.clave] = txt; localStorage.setItem(PREFIJO + c.clave, txt);
+      avisarCambio(c.clave, c.valor);
+    }
+    RED.seq = Math.max(RED.seq, hasta);
+  } catch { /* sin conexión con el servidor: se vuelve a intentar */ }
+}
+function subir(k, v) {
+  const txt = JSON.stringify(v);
+  if (txt === RED.ultimo[k]) return;
+  RED.ultimo[k] = txt;
+  RED.pendientes[k] = (RED.pendientes[k] || 0) + 1;
+  RED.cola[k] = (RED.cola[k] || Promise.resolve()).then(() => enviar(k, v)).finally(() => { RED.pendientes[k]--; });
+}
+// Si otro equipo ha guardado antes, se juntan las dos versiones: listas por id y objetos por clave
+function combinar(remoto, local) {
+  const conId = x => x && typeof x === "object" && "id" in x;
+  if (Array.isArray(remoto) && Array.isArray(local)) {
+    if (!local.every(conId) || !remoto.every(conId)) return local;
+    const ids = new Set(local.map(x => x.id));
+    return [...local, ...remoto.filter(x => !ids.has(x.id))];
+  }
+  if (remoto && local && typeof remoto === "object" && typeof local === "object" && !Array.isArray(remoto) && !Array.isArray(local)) return { ...remoto, ...local };
+  return local;
+}
+async function enviar(k, v, intento = 0) {
+  try {
+    const r = await fetch(`/api/datos/${k}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ valor: v, version: RED.versiones[k] || 0 }) });
+    if (r.status === 409 && intento < 3) {
+      const { valor, version } = await r.json();
+      RED.versiones[k] = version;
+      const junto = combinar(valor, v), txt = JSON.stringify(junto);
+      RED.ultimo[k] = txt; localStorage.setItem(PREFIJO + k, txt);
+      if (txt !== JSON.stringify(v)) avisarCambio(k, junto);
+      return enviar(k, junto, intento + 1);
+    }
+    if (r.ok) RED.versiones[k] = (await r.json()).version;
+  } catch { /* sin conexión: queda guardado en este navegador */ }
 }
 // Sesión: recuerda quién ha entrado y con qué perfil
 function leerSesion() {
@@ -9573,6 +9648,7 @@ function AppInterna() {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      await conectarRed();
       const p  = await sGet("partes");    if (p)  setPartes(p);
       const b  = await sGet("banos");     if (b)  setBanos(b);
       const pos = await sGet("positivas"); if (pos) setPositivas(pos);
@@ -9636,6 +9712,25 @@ function AppInterna() {
       setLoading(false);
     }
     load();
+  }, []);
+
+  // En red: lo que guardan los demás equipos llega aquí y se pone en pantalla
+  useEffect(() => {
+    const poner = {
+      partes: setPartes, medidas: setMedidas, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
+      notas_aula: setNotasAula, alertas_tempranas_vistas: setAlertasTempVistas, mensajes: setMensajes, alumnos: setAlumnos, tutores: setTutores,
+      informes: setInformes, profesores: setProfesores, guardias: setGuardias, cuadrante: setCuadrante, coberturas_clase: setCoberturas,
+      coberturas_propias: setCoberturasPropias, horarios_clase: setHorarios, ausencias: setAusencias, apoyos_guardia: setApoyosGuardia,
+      sustitutos_guardia: setSustitutosGuardia, profesores_guardia: setProfesoresGuardia, cuentas: setCuentas, firmas_guardia: setFirmas,
+      listas_guardia: setListas, avisos_familia: setAvisosFamilia, correos_centro: setCorreosCentro, datos_centro: setDatosCentro,
+      horario_centro: setHorarioCentro, zonas_centro: setZonasCentro, espacios_centro: setEspaciosCentro, reservas_espacios: setReservasEspacios,
+      espacios_novedades: setNovedadesEspacios, espacios_novedades_vistas: setVistasNovedades, llaves_prestamos: setPrestamosLlaves,
+      asistencia_alumnado: setAsistenciaAl, justificantes_alumnado: setJustificantesAl, asistencia_limites: v => setLimitesAsis({ ...LIMITES_ASISTENCIA, ...v }),
+      material_aulas: setAulasMaterial, material_sesiones: setSesionesMaterial, material_incidencias: setIncidenciasMaterial, material_avisos: setAvisosMaterial,
+    };
+    const h = e => { const f = poner[e.detail.clave]; if (f && e.detail.valor != null) f(e.detail.valor); };
+    window.addEventListener("rumbo:remoto", h);
+    return () => window.removeEventListener("rumbo:remoto", h);
   }, []);
 
   useEffect(() => { if (!loading) sSet("partes", partes); },     [partes, loading]);
