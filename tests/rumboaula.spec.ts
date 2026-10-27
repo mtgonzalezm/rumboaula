@@ -18,12 +18,15 @@ async function empezar(page: Page, hora = AHORA) {
   if (await empezarBtn.count()) await empezarBtn.first().click()
 }
 
-async function entrar(page: Page, texto: string | RegExp) {
+// Al entrar se abre el Escritorio; «modulo» lleva después al módulo con el que trabaja la prueba
+async function entrar(page: Page, texto: string | RegExp, modulo?: RegExp) {
   await page.getByRole('button').filter({ hasText: texto }).first().click()
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  if (modulo) await page.locator('.gd-modulos button').filter({ hasText: modulo }).first().click()
 }
-const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
-const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias')
+const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias', /^Partes/)
+const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias', /Partes & Alumnos/)
 async function salir(page: Page) {
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await expect(page.locator('#gd-otro-profe')).toBeVisible()
@@ -216,4 +219,24 @@ test('Manual de uso: enlazado desde la app y con sus imágenes', async ({ page }
     return r.filter(([, ok]) => !ok).map(([u]) => u)
   })
   expect(rotas).toEqual([])
+})
+
+test('Escritorio: al entrar se ven Avisos, Mensajes, Pendiente y Hoy, y cada línea lleva a su pantalla', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await entrar(page, 'poner partes, guardias')
+  for (const b of ['Avisos', 'Mensajes', 'Pendiente', 'Hoy']) await expect(page.getByRole('region', { name: b })).toBeVisible()
+  // Una guardia de hoy en «Hoy» lleva a «Mi guardia hoy»
+  await page.getByRole('region', { name: 'Hoy' }).getByRole('button', { name: /Guardia ·/ }).first().click()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toHaveCount(0)
+  // Y el menú vuelve al Escritorio
+  await page.locator('.gd-modulos button').filter({ hasText: /^Escritorio/ }).first().click()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  // Cambio de perfil en una ventana: un toque cambia al perfil Tutor/a
+  await page.getByRole('button', { name: /Cambiar de perfil|Profesor\/a/ }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Cambio de perfil' })).toBeVisible()
+  await page.getByRole('option', { name: /Tutor\/a de/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Cambio de perfil' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Mi tutoría/ }).first()).toBeVisible()
+  expect(errores).toEqual([])
 })

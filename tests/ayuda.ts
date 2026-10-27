@@ -17,15 +17,18 @@ export async function empezar(page: Page, hora = AHORA) {
   if (await empezarBtn.count()) await empezarBtn.first().click()
 }
 
-export async function entrar(page: Page, texto: string | RegExp) {
+// Al entrar se abre el Escritorio; «modulo» lleva después al módulo con el que trabaja la prueba
+export async function entrar(page: Page, texto: string | RegExp, modulo?: RegExp) {
   await page.getByRole('button').filter({ hasText: texto }).first().click()
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  if (modulo) await page.locator('.gd-modulos button').filter({ hasText: modulo }).first().click()
 }
-export const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias')
-export const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias')
-export const comoAdmin = (page: Page) => entrar(page, 'Beatriz Navarro · compras')
+export const comoProfe = (page: Page) => entrar(page, 'poner partes, guardias', /^Partes/)
+export const comoJefatura = (page: Page) => entrar(page, 'Ana Jiménez · guardias', /Partes & Alumnos/)
+export const comoAdmin = (page: Page) => entrar(page, 'Beatriz Navarro · compras', /^Centro/)
 export const comoSecretaria = comoAdmin
-export const comoTic = (page: Page) => entrar(page, 'Elena Vega · averías')
+export const comoTic = (page: Page) => entrar(page, 'Elena Vega · averías', /Material del centro/)
 export async function salir(page: Page) {
   await page.getByRole('button', { name: /Salir/ }).first().click()
   await expect(page.locator('#gd-otro-profe')).toBeVisible()

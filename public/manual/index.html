@@ -190,6 +190,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 <nav class="menu" aria-label="Apartados del manual">
   <div class="menu-in">
     <a href="#empezar">Primeros pasos</a>
+    <a href="#escritorio">Escritorio</a>
     <a href="#partes">Partes</a>
     <a href="#medidas">Medidas correctoras</a>
     <a href="#asistencia">Asistencia</a>
@@ -216,7 +217,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para todos</span>
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">RumboAula tiene seis módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="entrada">Al entrar, RumboAula abre el <b>Escritorio</b>, con el resumen de tu día. Además tiene seis módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
   <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la organización diaria entre Dirección, Jefatura, profesorado y Conserjería y, en algunos casos, con las familias: convivencia, guardias y ausencias, reservas de espacios y llaves, material del centro y avisos. No sustituye a Raíces: la complementa y da agilidad al día a día. Además, <b>ahorra papel</b>: lo que antes se imprimía o se fotocopiaba (partes, cuadrantes, hojas de reservas, libretas de llaves) se consulta en la pantalla, y el PDF se genera solo cuando hay que firmar o archivar. Mesas sin papeles y menos impacto ambiental. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
@@ -237,8 +238,8 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         <li><b>En la demostración</b>, pulsa uno de los seis perfiles: <b>Profesor/a</b>, <b>Tutor/a de un grupo</b>, <b>Jefatura de Estudios</b>, <b>Secretaría</b>, <b>Coordinación TIC</b> o <b>Conserjería</b>. Se cargan los datos de ejemplo y entras, sin nombre ni clave.</li>
         <li>Para ver cómo le llega un mensaje a un compañero, usa <b>«Entrar como otro profe del claustro…»</b>: arriba salen quienes tienen mensajes sin leer.</li>
         <li><b>En el centro</b>, cada docente pulsa <b>Entrar con nombre y clave</b>, escribe su nombre y su clave. La primera vez crea su clave; con <b>«Mostrar la clave»</b> puede comprobar que la ha escrito bien.</li>
-        <li>Dentro, cambia de módulo en la franja turquesa y de pantalla en las pestañas grises. En el ordenador, módulos y pestañas están en el menú de la izquierda.</li>
-        <li>Para cambiar de perfil, pulsa el botón redondo de salir, arriba a la derecha.</li>
+        <li>Dentro, lo primero que ves es el <b>Escritorio</b>. Cambia de módulo en la franja turquesa y de pantalla en las pestañas grises. En el ordenador, módulos y pestañas están en el menú de la izquierda.</li>
+        <li>Si tienes más de un perfil (por ejemplo, Profesor/a y Tutor/a), pulsa el botón con tu perfil, arriba a la derecha: se abre la ventana <b>Cambio de perfil</b>. Para entrar con otra persona, pulsa el botón redondo de salir.</li>
       </ol>
       <p class="nota ojo">Si alguien olvida su clave, pulsa <b>«¿Has olvidado tu clave?»</b>: Secretaría la restablece y la persona crea una nueva al entrar.</p>
     </div>
@@ -281,6 +282,47 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
     <figure>
       <button class="cap" data-ampliar="img/advertencias.webp" aria-label="Ampliar: campana de advertencias"><img src="img/advertencias.webp" alt="Campana con globito y la lista Tienes pendiente, cada aviso con su nivel: urgente, importante, pendiente e informativo" loading="lazy" width="740" height="1210"></button>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════ ESCRITORIO ═══════════ -->
+<section class="parte" id="escritorio">
+  <span class="etiqueta">Para todos</span>
+  <div class="titulo"><h2>Escritorio</h2><img src="/iconos/inicio.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Es la primera pantalla al entrar, en todos los perfiles. Reúne de un vistazo lo que te importa hoy, como el escritorio de Raíces. Para volver a él, pulsa <b>Escritorio</b> en el menú o el botón redondo de la casa.</p>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/inicio.svg" alt="">Cuatro bloques</h3>
+      <ul>
+        <li><b>Avisos</b> (franja mostaza): lo que requiere tu atención, ordenado de urgente a informativo, con el color y el dibujo de cada nivel.</li>
+        <li><b>Mensajes</b> (franja turquesa): tus mensajes de Rumbogram sin leer; los urgentes salen primero, en rojo.</li>
+        <li><b>Pendiente</b> (franja verde): lo que tienes que hacer o revisar, como guardias sin firmar, llaves sin devolver o compromisos por revisar.</li>
+        <li><b>Hoy</b>: tu agenda del día por horas. Al profesorado, sus guardias y zonas, las clases que cubre y sus reservas de espacios; a Jefatura, quién falta y cuántas horas quedan sin cubrir; a Conserjería, todas las reservas del día.</li>
+      </ul>
+      <p>Toca cualquier línea para ir directamente a esa pantalla, o <b>«Ver todos ▷»</b> para abrir el módulo.</p>
+      <p class="nota ok">En el móvil, los bloques salen uno debajo de otro.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/escritorio.webp" aria-label="Ampliar: Escritorio"><img src="img/escritorio.webp" alt="Escritorio con los bloques Avisos, Mensajes, Pendiente y Hoy" loading="lazy" width="1500" height="1080"></button>
+      <figcaption>El Escritorio de una profesora.</figcaption>
+    </figure>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/perfil.svg" alt="">Cambio de perfil</h3>
+      <p>Quien tiene varios perfiles (Profesor/a y Tutor/a, o un cargo como Jefatura, Secretaría o TIC) pulsa el botón con su perfil, arriba a la derecha.</p>
+      <ol>
+        <li>Se abre la ventana <b>Cambio de perfil</b>, con tus cargos y un botón por perfil.</li>
+        <li>El perfil en el que estás lleva <b>«✓ Ahora»</b>.</li>
+        <li>Toca otro perfil y entras en su Escritorio. Para no cambiar, pulsa <span class="btn g">Cerrar</span>.</li>
+      </ol>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/cambio-perfil.webp" aria-label="Ampliar: ventana de cambio de perfil"><img src="img/cambio-perfil.webp" alt="Ventana Cambio de perfil con la ilustración del camino y los perfiles Profesor/a y Tutor/a" loading="lazy" width="940" height="387"></button>
     </figure>
   </div>
 </section>

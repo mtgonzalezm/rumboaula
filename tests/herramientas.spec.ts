@@ -707,7 +707,7 @@ test('Llaves: el profe se la lleva y la devuelve, Conserjería anota por otro y 
   await expect(page.locator('[data-tabla="movimientos"]')).toContainText('Laboratorio de Ciencias')
   await salir(page)
   // Conserjería: anota que se la lleva otro profesor y marca devuelta la que seguía fuera desde ayer
-  await entrar(page, 'Entrega y recogida de llaves')
+  await entrar(page, 'Entrega y recogida de llaves', /Espacios/)
   const campana = page.getByRole('button', { name: /^Advertencias/ })
   const panel = page.getByRole('dialog', { name: 'Advertencias' })
   await campana.click()
@@ -756,7 +756,7 @@ test('Reservas de espacios: el profe reserva, no se puede reservar dos veces, Co
   await expect(page.getByRole('alert')).toContainText('Ya tienes reservado Sala de usos múltiples')
   await salir(page)
   // Conserjería ve la reserva y puede anularla
-  await entrar(page, 'Entrega y recogida de llaves')
+  await entrar(page, 'Entrega y recogida de llaves', /Espacios/)
   await pestaña(page, 'Reservas')
   await page.locator('#gd-espacio').selectOption('sum')
   await jueves()

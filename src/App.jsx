@@ -308,11 +308,8 @@ const PERFILES = [
   { id: "admin",    label: "🗂 Secretaría" },
   { id: "conserjeria", label: "🔑 Conserjería" },
 ];
-const tabInicial = id => id === "jefatura" ? "dashboard" : id === "admin" ? "admin_panel" : id === "conserjeria" ? "llaves" : "partes";
-// Pantalla y módulo con los que se entra en un perfil (Coordinación TIC empieza en Material del centro)
-const inicioDe = p => p?.cargo === "tutor" ? { tab: "resumen_tutoria", modulo: "tutoria" }
-  : p?.id === "admin" && !funcionesDe(p).secretaria ? { tab: "material_avisos", modulo: "material" }
-  : { tab: tabInicial(p?.id), modulo: p?.id === "admin" ? "centro" : "alumnos" };
+// Pantalla y módulo con los que se entra en cualquier perfil: el Escritorio, con el resumen del día (como en Raíces)
+const inicioDe = () => ({ tab: "escritorio", modulo: "escritorio" });
 
 // ─── Cargos y acceso ─────────────────────────────────────────────────────────
 // Cada profesor tiene un cargo, y el cargo decide a qué perfiles puede entrar.
@@ -479,7 +476,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
           ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura de Estudios, Secretaría, Coordinación TIC o Conserjería, en la tarjeta «Acceso». Solo tienes que pulsar: se cargan datos de ejemplo. No escribas nombre ni clave."],
-          ["Muévete con los botones de arriba", "Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
+          ["Muévete con los botones de arriba", "Empiezas en el Escritorio, con el resumen del día. Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
           ["Para cambiar de perfil, pulsa «Salir»", "Vuelves a esta pantalla y eliges otro."],
           ["Todo es ficticio", "Puedes poner partes, guardias y mensajes sin miedo: nada sale de este navegador."],
         ].map(([t, d], i) => (
@@ -755,37 +752,56 @@ function Ti({ children, tam = 20 }) {
   return <>{arr.map((ch, i) => (typeof ch === "string" ? <span key={i}>{partirEmojis(ch, tam)}</span> : ch))}</>;
 }
 
-// Icono de cada perfil de acceso y desplegable con iconos para cambiar de perfil
+// Icono de cada perfil de acceso y ventana con iconos para cambiar de perfil
 const PERFIL_ICONO_BASE = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", admin: "cargo-administracion" };
 const iconoPerfil = p => (p?.cargo && p.cargo !== "profesor" && ICONO_CARGO[p.cargo]) || PERFIL_ICONO_BASE[p?.id];
 const sinEmoji1 = t => iconoDe(t).resto;
+// Cambio de perfil: ventana como la de Raíces, con la ilustración del camino de la portada y una tarjeta con los perfiles
 function SelectorPerfil({ perfiles, actual, onCambiar, cargos = "" }) {
   const [abierto, setAbierto] = useState(false);
-  const ref = useRef(null);
+  const primero = useRef(null);
   useEffect(() => {
     if (!abierto) return;
-    const cerrar = e => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    primero.current?.focus();
     const esc = e => { if (e.key === "Escape") setAbierto(false); };
-    document.addEventListener("mousedown", cerrar); document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", cerrar); document.removeEventListener("keydown", esc); };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
   }, [abierto]);
   const igual = (p, q) => (p.key && q.key) ? p.key === q.key : (p.cargo === "tutor" || q.cargo === "tutor") ? p.cargo === q.cargo : p.id === q.id;
   const a = perfiles.find(p => igual(p, actual)) || perfiles.find(p => p.id === actual.id) || actual;
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={() => setAbierto(v => !v)} aria-haspopup="listbox" aria-expanded={abierto} title="Cambiar de perfil"
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setAbierto(true)} aria-haspopup="dialog" aria-expanded={abierto} title="Cambiar de perfil"
         style={{ display: "flex", alignItems: "center", gap: 8, background: R.azulClaro, border: "none", color: R.petroleo, borderRadius: 22, minHeight: 44, padding: "4px 14px 4px 6px", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>
         <Icono nombre={iconoPerfil(a)} tam={28} />{sinEmoji1(a.label)} <span style={{ fontSize: 13 }}>▼</span>
       </button>
       {abierto && (
-        <div role="listbox" style={{ position: "absolute", left: 0, maxWidth: "calc(100vw - 24px)", top: "calc(100% + 6px)", background: "#fff", borderRadius: 12, boxShadow: "0 12px 30px rgba(0,0,0,0.2)", padding: 6, zIndex: 300, minWidth: 240 }}>
-          {cargos && <div style={{ padding: "6px 10px 8px", fontSize: 13, color: "#2B647E", borderBottom: "1px solid #eef2f4", marginBottom: 4, maxWidth: 280 }}>Tus cargos: <b style={{ color: "#2C4A52" }}>{cargos}</b></div>}
-          {perfiles.map(p => (
-            <button key={p.key || p.id} role="option" aria-selected={igual(p, a)} onClick={() => { setAbierto(false); onCambiar(p.key || p.id); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "8px 10px", border: "none", borderRadius: 8, background: igual(p, a) ? "#DDF0F4" : "transparent", color: "#2C4A52", cursor: "pointer", fontSize: 14, fontWeight: igual(p, a) ? 700 : 500 }}>
-              <Icono nombre={iconoPerfil(p)} tam={34} /><span style={{ flex: 1, whiteSpace: "nowrap" }}>{sinEmoji1(p.label)}</span>{igual(p, a) ? "✓" : ""}
-            </button>
-          ))}
+        <div onClick={() => setAbierto(false)} style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(22,51,63,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <style>{`@media (max-width: 700px) { .gd-cambio-perfil { grid-template-columns: 1fr !important; } .gd-cambio-perfil-img { height: 150px !important; } }`}</style>
+          <div role="dialog" aria-modal="true" aria-labelledby="gd-cambio-perfil-titulo" onClick={e => e.stopPropagation()} className="gd-cambio-perfil"
+            style={{ width: "min(900px, 100%)", maxHeight: "calc(100vh - 32px)", overflowY: "auto", background: C.white, borderRadius: 16, boxShadow: "0 18px 50px rgba(0,0,0,.25)", display: "grid", gridTemplateColumns: "1.1fr 1fr" }}>
+            <img className="gd-cambio-perfil-img" src="/portada-ilustracion.jpg" alt="" style={{ width: "100%", height: "100%", minHeight: 150, objectFit: "cover", objectPosition: "35% 70%", display: "block" }} />
+            <div style={{ position: "relative", padding: "28px 28px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <button onClick={() => setAbierto(false)} aria-label="Cerrar ventana" title="Cerrar"
+                style={{ position: "absolute", top: 8, right: 8, width: 44, height: 44, border: "none", background: "none", color: R.petroleo, fontSize: 24, cursor: "pointer" }}>✕</button>
+              <h2 id="gd-cambio-perfil-titulo" style={{ margin: "0 40px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 30, lineHeight: 1.15, color: R.petroleo }}>Cambio de perfil</h2>
+              <div aria-hidden="true" style={{ height: 5, background: R.azul, width: "70%" }} />
+              {cargos && <div style={{ fontSize: 15, color: R.petroleo }}>Tus cargos: <b>{cargos}</b></div>}
+              <div role="listbox" aria-label="Perfiles" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {perfiles.map((p, i) => (
+                  <button key={p.key || p.id} ref={i === 0 ? primero : undefined} role="option" aria-selected={igual(p, a)} className="gd-pulsable"
+                    onClick={() => { setAbierto(false); onCambiar(p.key || p.id); }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 56, textAlign: "left", padding: "8px 12px", border: `3px solid ${R.turquesa}`, borderRadius: 10,
+                      background: igual(p, a) ? R.azulClaro : C.white, color: R.petroleo, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: igual(p, a) ? 700 : 500 }}>
+                    <Icono nombre={iconoPerfil(p)} tam={36} /><span style={{ flex: 1, minWidth: 0 }}>{sinEmoji1(p.label)}</span>
+                    {igual(p, a) && <span style={{ fontSize: 14, fontWeight: 700 }}>✓ Ahora</span>}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setAbierto(false)} className="gd-pulsable"
+                style={{ marginTop: 4, minHeight: 48, border: "none", borderRadius: 8, background: R.turquesa, color: R.noche, fontFamily: "inherit", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -3832,6 +3848,11 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 // Se abre sola la primera vez que se entra en una pantalla (en ese dispositivo)
 // y después queda recogida en el botón «Cómo se usa».
 const AYUDAS = {
+  escritorio: { titulo: "Escritorio", pasos: [
+    "Es lo primero que ves al entrar: tus avisos, tus mensajes de Rumbogram, lo que tienes pendiente y lo que te toca hoy.",
+    "Pulsa cualquier línea para ir directamente a esa pantalla, o «Ver todos» para abrir el módulo.",
+    "Para volver aquí desde cualquier sitio, pulsa «Escritorio» en el menú o el botón de inicio de arriba.",
+  ] },
   mis_estadisticas: { titulo: "Mis estadísticas e informes", pasos: [
     "Arriba verás los avisos: alumnado con 3 o más partes este trimestre (los tuyos y, si eres tutor/a, los de tu grupo). Pulsa «Avisar a la familia» y después «Ya he avisado».",
     "Arriba eliges cómo mirar: «Como tutor/a» (todos los partes de tu grupo; solo si tienes tutoría) o «Como profesor/a: mis partes» (los que has puesto tú y el alumnado que sale al baño en tus clases).",
@@ -8923,6 +8944,97 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// ESCRITORIO: pantalla de entrada con el resumen del día, como el escritorio de Raíces.
+// Cuatro bloques (Avisos, Mensajes, Pendiente y Hoy); cada línea lleva a su pantalla.
+// ════════════════════════════════════════════════════════════════════════════
+const VerTodos = ({ onClick, txt = "Ver todos" }) => (
+  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+    <button onClick={onClick} style={{ background: "none", color: R.azul, border: "none", minHeight: 44, padding: "0 4px", cursor: "pointer", fontSize: 18, display: "inline-flex", alignItems: "center", gap: 10 }}>{txt} <span aria-hidden="true" style={triangulo} /></button>
+  </div>
+);
+const filaEscritorio = (fondo, franja) => ({ display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 52, padding: "8px 14px", marginTop: 4,
+  background: fondo, border: "none", borderLeft: `8px solid ${franja}`, color: R.petroleo, fontFamily: "inherit", fontSize: 16, lineHeight: 1.35, textAlign: "left" });
+function BloqueEscritorio({ titulo, sub, icono, color, resumen, children, verTodos }) {
+  return (
+    <section aria-label={titulo} style={{ minWidth: 0 }}>
+      <TituloBloque titulo={titulo} sub={sub} icono={icono} />
+      <div style={{ background: color, color: R.noche, padding: "10px 14px", fontSize: 16, lineHeight: 1.4 }}>{resumen}</div>
+      {children}
+      {verTodos}
+    </section>
+  );
+}
+function Escritorio({ usuario, avisos, pendientes, mensajes, hoy, conMensajes, conHoy, onIr, onMensajes, onVerHoy }) {
+  const fecha = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const total = l => l.reduce((n, a) => n + a.n, 0);
+  const nAv = total(avisos), nPen = total(pendientes);
+  const porNivel = l => [...l].sort((a, b) => ORDEN_NIVEL.indexOf(nivelAviso(a)) - ORDEN_NIVEL.indexOf(nivelAviso(b)));
+  const sinLeer = mensajes.filter(m => m.destinatario === usuario && !m.leido)
+    .sort((a, b) => (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0) || String(b.ts).localeCompare(String(a.ts)));
+  const corto = t => { const s = String(t || "").replace(/\s+/g, " ").trim(); return s.length > 110 ? s.slice(0, 107) + "…" : s; };
+  const filaAviso = a => {
+    const nv = NIVEL[nivelAviso(a)];
+    return (
+      <button key={a.id} className="gd-pulsable" onClick={() => onIr(a)} style={{ ...filaEscritorio(nv.claro, nv.color), cursor: "pointer" }}>
+        <Icono nombre={nv.icono} tam={30} />
+        <span style={{ flex: 1, minWidth: 0 }}><b style={{ fontSize: 18 }}>{a.n}</b> {a.txt}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: R.petroleo, flexShrink: 0 }}>{nv.label}</span>
+      </button>
+    );
+  };
+  return (
+    <div>
+      <p style={{ margin: "0 0 20px", fontSize: 18, color: R.petroleo }}>Hoy es {fecha}.</p>
+      <div className="gd-escritorio" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "36px 40px", alignItems: "start" }}>
+        <BloqueEscritorio titulo="Avisos" sub="Lo que requiere tu atención" icono="alertas" color={R.mostaza}
+          resumen={nAv ? <>Hay <b style={{ fontSize: 20 }}>{nAv}</b> {nAv === 1 ? "aviso" : "avisos"}, del más urgente al informativo.</> : "No tienes avisos. Todo en orden."}>
+          {porNivel(avisos).slice(0, 6).map(filaAviso)}
+        </BloqueEscritorio>
+
+        {conMensajes && (
+          <BloqueEscritorio titulo="Mensajes" sub="Rumbogram" icono="mensajes" color={R.turquesa}
+            resumen={sinLeer.length ? <>Tienes <b style={{ fontSize: 20 }}>{sinLeer.length}</b> {sinLeer.length === 1 ? "mensaje sin leer" : "mensajes sin leer"}{sinLeer.some(m => m.urgente) ? ", alguno urgente" : ""}.</> : "No tienes mensajes sin leer."}
+            verTodos={<VerTodos onClick={onMensajes} />}>
+            {sinLeer.slice(0, 3).map(m => (
+              <button key={m.id} className="gd-pulsable" onClick={onMensajes}
+                style={{ ...filaEscritorio(m.urgente ? NIVEL.urgente.claro : R.azulClaro, m.urgente ? NIVEL.urgente.color : R.turquesa), cursor: "pointer" }}>
+                <Icono nombre={m.urgente ? "nivel-urgente" : "mensaje-sin-leer"} tam={30} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <b>{m.remitente}</b>{m.urgente ? " · Urgente" : ""}
+                  <span style={{ display: "block", fontSize: 15 }}>{corto(m.texto)}</span>
+                </span>
+              </button>
+            ))}
+          </BloqueEscritorio>
+        )}
+
+        <BloqueEscritorio titulo="Pendiente" sub="Para hacer o revisar" icono="tareas" color={R.verde}
+          resumen={nPen ? <>Tienes <b style={{ fontSize: 20 }}>{nPen}</b> {nPen === 1 ? "cosa pendiente" : "cosas pendientes"}.</> : "No tienes nada pendiente."}>
+          {pendientes.slice(0, 6).map(filaAviso)}
+        </BloqueEscritorio>
+
+        {conHoy && (
+          <BloqueEscritorio titulo="Hoy" sub="Lo que te toca hoy" icono="horario" color={R.azulClaro}
+            resumen={hoy.length ? <>Hoy tienes <b style={{ fontSize: 20 }}>{hoy.length}</b> {hoy.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}.</> : "Hoy no tienes nada en la agenda."}
+            verTodos={<VerTodos onClick={onVerHoy} />}>
+            {hoy.slice(0, 8).map((x, i) => {
+              const contenido = <>
+                <span style={{ width: 92, flexShrink: 0, fontWeight: 700, fontSize: 15, color: R.petroleo }}>{x.hora}</span>
+                <Icono nombre={x.icono} tam={28} />
+                <span style={{ flex: 1, minWidth: 0 }}>{x.txt}</span>
+              </>;
+              return x.tab
+                ? <button key={i} className="gd-pulsable" onClick={() => onIr(x)} style={{ ...filaEscritorio(R.gris, R.azul), cursor: "pointer" }}>{contenido}</button>
+                : <div key={i} style={filaEscritorio(R.gris, R.azul)}>{contenido}</div>;
+            })}
+          </BloqueEscritorio>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // GLOBITOS DE ADVERTENCIAS: número en azul noche en módulos, pestañas y cabecera
 // ════════════════════════════════════════════════════════════════════════════
 const Globito = ({ n, flota = false, urgente = false }) => n > 0
@@ -9276,7 +9388,8 @@ function InformarProblema() {
       style={{ position: "fixed", left: 12, bottom: 12, zIndex: 240, background: "#fff", color: C.dark, border: `1px solid ${C.light}`, borderRadius: 20, padding: "7px 12px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 3px 10px rgba(0,0,0,.12)", opacity: .92 }}>
       ⚠️ <span className="rumbo-informar-txt">Informar de un problema</span>
     </button>
-    <style>{`@media (max-width: 600px) { .rumbo-informar-txt, .gd-faq-txt { display: none; } }`}</style>
+    {/* En el móvil solo se ve el icono, más pequeño (el contenido deja sitio abajo, ver .gd-contenido) */}
+    <style>{`@media (max-width: 600px) { .rumbo-informar-txt, .gd-faq-txt { display: none; } .rumbo-informar { padding: 5px 8px !important; opacity: .8 !important; } }`}</style>
     {abierto && (
       <div role="dialog" aria-modal="true" aria-labelledby="rumbo-informar-titulo" onClick={() => setAbierto(false)}
         style={{ position: "fixed", inset: 0, zIndex: 2300, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -9518,8 +9631,7 @@ function AppInterna() {
           perfilesPermitidos(cuentasActuales, ses.usuario).some(p => p.id === ses.perfil.id)) {
         setUsuario(ses.usuario); setPerfil(ses.perfil);
         if ((pr || DEMO_PROFESORES).includes(ses.usuario)) setFProfesor(ses.usuario);
-        setTab(inicioDe(ses.perfil).tab); setModuloJefatura(inicioDe(ses.perfil).modulo);
-        if (ses.perfil.cargo === "tutor") setModuloProfesor("tutoria");
+        setTab(inicioDe(ses.perfil).tab); setModuloJefatura(inicioDe(ses.perfil).modulo); setModuloProfesor(inicioDe(ses.perfil).modulo);
       }
       setLoading(false);
     }
@@ -9658,7 +9770,7 @@ function AppInterna() {
     if (!p || (p.key && p.key === perfil?.key)) return;
     guardarSesion({ usuario, perfil: p });
     setPerfil(p); setTab(inicioDe(p).tab);
-    setModuloProfesor(p.cargo === "tutor" ? "tutoria" : "alumnos"); setModuloJefatura(inicioDe(p).modulo);
+    setModuloProfesor(inicioDe(p).modulo); setModuloJefatura(inicioDe(p).modulo);
     setShowParte(null); setShowAlerta(null);
     window.scrollTo(0, 0);
   }
@@ -9813,7 +9925,7 @@ function AppInterna() {
         setUsuario(nombre); if (profesores.includes(nombre)) setFProfesor(nombre);
         if (p.id === "profesor" && !opciones.otro && nombre !== tutoraDemo?.nombre && !["Ana Jiménez", "Elena Vega", "Beatriz Navarro"].includes(nombre)) setUltimoProfe(nombre);
         guardarSesion({ usuario: nombre, perfil: p }); setPerfil(p); setTab(inicioDe(p).tab); setModuloJefatura(inicioDe(p).modulo);
-        setModuloProfesor(p.cargo === "tutor" ? "tutoria" : "alumnos");
+        setModuloProfesor(inicioDe(p).modulo);
       }} />
   );
 
@@ -9825,7 +9937,8 @@ function AppInterna() {
   // Número de la pestaña «Medidas»: las que hay que programar y las que tocan hoy
   const medidasHoy = medidas.filter(m => estadoMedida(m) === "sin_programar").length + medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
   const esPerfilTutor = perfil.cargo === "tutor";
-  const tabs = perfil.id === "profesor"
+  const tabs = tab === "escritorio" ? [] // El Escritorio no tiene pestañas
+    : perfil.id === "profesor"
     ? esPerfilTutor && moduloProfesor === "tutoria"
       ? [
           { id: "resumen_tutoria",    label: "📑 Resumen de tutoría", color: R.azul },
@@ -9940,7 +10053,7 @@ function AppInterna() {
   const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : "mensajeria"); };
   const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
   const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
-  const modulos = perfil.id === "profesor" && esPerfilTutor
+  const modulosPerfil = perfil.id === "profesor" && esPerfilTutor
     ? [
         { id: "tutoria", label: "🏫 Mi tutoría" },
         { id: "rumbochat", label: "💬 Rumbogram" },
@@ -9974,7 +10087,10 @@ function AppInterna() {
     : perfil.id === "conserjeria"
     ? [{ id: "espacios", label: "🔑 Espacios", ir: () => setTab("llaves") }]
     : [];
-  const moduloActivo = perfil.id === "profesor" ? moduloProfesor : perfil.id === "conserjeria" ? "espacios" : moduloJefatura;
+  // Todos los perfiles empiezan por el Escritorio
+  const irEscritorio = () => { if (perfil.id === "profesor") setModuloProfesor("escritorio"); else setModuloJefatura("escritorio"); setTab("escritorio"); };
+  const modulos = [{ id: "escritorio", label: "Escritorio", ir: irEscritorio }, ...modulosPerfil];
+  const moduloActivo = tab === "escritorio" ? "escritorio" : perfil.id === "profesor" ? moduloProfesor : perfil.id === "conserjeria" ? "espacios" : moduloJefatura;
 
   // Advertencias pendientes: salen en el globito de la cabecera, de cada módulo y de cada pestaña
   const advertencias = (() => {
@@ -10048,6 +10164,35 @@ function AppInterna() {
     if (perfil.id === "profesor") setModuloProfesor(a.modulo); else setModuloJefatura(a.modulo);
     setTab(a.tab);
   };
+  // Escritorio: lo que toca hoy a quien está dentro (guardias, coberturas, reservas y ausencias), por orden de hora
+  const hoyEscritorio = (() => {
+    if (tab !== "escritorio") return [];
+    const hoy = isoLocal(), yo = fProfesor || usuario, l = [];
+    const nombreEspacio = r => (espaciosCentro || ESPACIOS_POR_DEFECTO).find(e => e.id === r.espacioId)?.nombre || r.espacio || r.espacioId;
+    if (perfil.id === "profesor" && !esPerfilTutor && yo) {
+      if (esLectivo(hoy)) guardiasDeProfesor({ fecha: hoy, profesor: yo, profesores, cuadrante, apoyos: apoyosGuardia, sustitutos: sustitutosGuardia, ausencias })
+        .forEach(g => l.push({ hora: g.hora, txt: `Guardia · ${g.zona}`, icono: "guardias", modulo: "guardias", tab: "mi_guardia" }));
+      Object.entries(coberturas).filter(([k, p]) => p === yo && k.startsWith(`${hoy}|`)).forEach(([k]) => {
+        const [, hora, id] = k.split("|"), a = ausencias.find(x => String(x.id) === id);
+        l.push({ hora, txt: `Cubres la clase de ${a?.profesor || "un compañero/a"}`, icono: "profe-ausente", modulo: "guardias", tab: "mis_coberturas" });
+      });
+      reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy)
+        .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)}${r.grupo ? ` · ${r.grupo}` : ""}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
+    } else if (perfil.id === "jefatura") {
+      ausencias.filter(a => isoLocal(a.fecha) === hoy).forEach(a => {
+        const horas = a.horas.filter(h => h !== "Recreo"), sin = horas.filter(h => !coberturas[claveCob(hoy, h, a.id)]).length;
+        l.push({ hora: horas[0] || a.horas[0], txt: `Falta ${a.profesor} (${horas.length} h) · ${sin ? `${sin} sin cubrir` : "todo cubierto"}`, icono: "profe-ausente",
+          ...(fx.guardias ? { modulo: "guardias", tab: "coordinacion" } : {}) });
+      });
+      const nRes = reservasEspacios.filter(r => r.fecha === hoy).length;
+      if (nRes) l.push({ hora: "Hoy", txt: `${nRes} ${nRes === 1 ? "reserva" : "reservas"} de espacios`, icono: "llave", modulo: "espacios", tab: "reservas" });
+    } else if (perfil.id === "conserjeria") {
+      reservasEspacios.filter(r => r.fecha === hoy)
+        .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)} · ${r.profesor}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
+    }
+    const pos = h => { const i = HORAS.indexOf(h); return i < 0 ? -1 : i; };
+    return l.sort((a, b) => pos(a.hora) - pos(b.hora));
+  })();
 
   return (
     <CorreosCentroCtx.Provider value={{ correos: correosCentro, setCorreos: setCorreosCentro, profes: profesores.map(p => ({ nombre: p, email: cuentas[p]?.email || (MODO_DEMO ? correoDemo(p) : "") })) }}>
@@ -10102,8 +10247,9 @@ function AppInterna() {
           .gd-modulos.cuatro { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
           .gd-modulos.cuatro .gd-modulo { min-height: 46px; border-bottom: 1px solid rgba(255,255,255,.7); }
           .gd-modulos.cuatro .gd-modulo:last-child:nth-child(odd) { grid-column: 1 / -1; }
-          .gd-contenido { padding: 16px 16px 32px !important; }
+          .gd-contenido { padding: 16px 16px 72px !important; }
           .gd-rejilla-3 { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .gd-escritorio { grid-template-columns: 1fr !important; gap: 28px !important; }
           .gd-bloque { padding: 16px !important; }
         }
       `}</style>
@@ -10127,7 +10273,7 @@ function AppInterna() {
           <PanelAdvertencias lista={advertencias} onIr={irAdvertencia} />
           <button className="gd-redondo" aria-label="Inicio" title="Inicio" onClick={() => {
             setTab(inicioDe(perfil).tab);
-            if (perfil.id === "profesor") setModuloProfesor("alumnos");
+            if (perfil.id === "profesor") setModuloProfesor(inicioDe(perfil).modulo);
             else setModuloJefatura(inicioDe(perfil).modulo);
           }}><Icono nombre="inicio" tam={52} /></button>
           <button className="gd-redondo" onClick={() => abrirPreguntas()} aria-label="Preguntas frecuentes" title="Preguntas frecuentes"><Icono nombre="como-se-usa" tam={52} /></button>
@@ -10165,7 +10311,7 @@ function AppInterna() {
       <div className="gd-contenido" style={{ width: "100%", maxWidth: 1100, margin: "0 auto", padding: "20px 24px 40px" }}>
 
         {/* Aviso al profesorado: alumnado con 3 o más partes para avisar a su familia */}
-        {perfil.id === "profesor" && avisosPendientes > 0 && tab !== "mis_estadisticas" && (
+        {perfil.id === "profesor" && avisosPendientes > 0 && tab !== "mis_estadisticas" && tab !== "escritorio" && (
           <div role="status" className="no-print" style={{ marginBottom: 28 }}>
             <TituloBloque titulo="Avisos" sub="Familias por avisar" icono="alertas" />
             <div style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontSize: 16, lineHeight: 1.4 }}>
@@ -10183,6 +10329,20 @@ function AppInterna() {
 
         {/* Ayuda de la pantalla */}
         <AyudaPantalla key={tab} id={tab} C={C} />
+
+        {/* ── Escritorio: resumen del día al entrar ── */}
+        {tab === "escritorio" && (() => {
+          // Los mensajes de Rumbogram tienen su propio bloque; quien no tiene Rumbogram los ve entre los avisos
+          const conMensajes = modulos.some(m => m.id === "rumbochat");
+          // Las reservas de hoy ya salen en el bloque «Hoy»
+          const conHoy = !esPerfilTutor && perfil.id !== "admin";
+          const lista = advertencias.filter(a => !(conMensajes && a.modulo === "rumbochat") && !(conHoy && a.id === "espacios-reservas"));
+          const verHoy = perfil.id === "profesor" ? { modulo: "guardias", tab: "mi_guardia" }
+            : perfil.id === "jefatura" && fx.guardias ? { modulo: "guardias", tab: "coordinacion" } : { modulo: "espacios", tab: "reservas" };
+          return <Escritorio usuario={usuario} conMensajes={conMensajes} conHoy={conHoy}
+            avisos={lista.filter(a => nivelAviso(a) !== "pendiente")} pendientes={lista.filter(a => nivelAviso(a) === "pendiente")}
+            mensajes={mensajes} hoy={hoyEscritorio} onIr={irAdvertencia} onMensajes={abrirMensajes} onVerHoy={() => irAdvertencia(verHoy)} />;
+        })()}
 
         {/* Alerta flotante */}
         {showAlerta && (
