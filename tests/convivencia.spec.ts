@@ -6,6 +6,9 @@ const comoOtroProfe = async (page: Page, nombre: string) => {
   await salir(page)
   await page.locator('#gd-otro-profe').selectOption(nombre)
   await expect(page.getByRole('button', { name: /Salir/ })).toBeVisible()
+  // Se entra por el Escritorio; las pruebas trabajan en Partes
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  await page.locator('.gd-modulos button').filter({ hasText: /^Partes/ }).first().click()
 }
 const buscarAlumno = async (page: Page, nombre: string) => {
   await page.getByPlaceholder('Nombre o curso…').first().fill(nombre)
@@ -174,16 +177,21 @@ test('Tutor/a: quien tiene una tutoría tiene los perfiles Profesor/a y Tutor/a'
   await page.getByRole('button', { name: /Cambiar de perfil|Profesor\/a/ }).first().click()
   await page.getByRole('option', { name: /Tutor\/a de 1º ESO A/ }).click()
   expect((await leer(page, 'sesion')).perfil).toMatchObject({ cargo: 'tutor', id: 'profesor' })
-  await expect(page.getByRole('button', { name: /Mi tutoría/ }).first()).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  await page.getByRole('button', { name: /Mi tutoría/ }).first().click()
   await expect(page.getByRole('heading', { name: 'Resumen de tutoría' })).toBeVisible()
   for (const t of ['Partes y familias', 'Asistencia del grupo', 'Notas de aula', 'Compromisos', 'Resumen de tutoría']) await pestaña(page, t)
   // Y vuelve al perfil Profesor/a, con Nuevo Parte
   await page.getByRole('button', { name: /Cambiar de perfil|Tutor\/a de/ }).first().click()
   await page.getByRole('option', { name: /^Profesor\/a/ }).click()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  await page.locator('.gd-modulos button').filter({ hasText: /^Partes/ }).first().click()
   await expect(page.getByPlaceholder(/Describe detalladamente/)).toBeVisible()
-  // Desde la portada, «Tutor/a de un grupo» entra directamente en su tutoría
+  // Desde la portada, «Tutor/a de un grupo» entra en su Escritorio, con «Mi tutoría» en el menú
   await salir(page)
   await page.getByRole('button').filter({ hasText: 'tutoría de' }).first().click()
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  await page.getByRole('button', { name: /Mi tutoría/ }).first().click()
   await expect(page.getByRole('heading', { name: 'Resumen de tutoría' })).toBeVisible()
   // Quien no tiene tutoría no tiene ese perfil
   await comoOtroProfe(page, 'Nuria Gil')
