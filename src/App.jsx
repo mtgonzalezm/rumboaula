@@ -476,7 +476,7 @@ function PantallaEntrada({ profesores, cuentas, setCuentas, onEntrar, onCargarEj
         <p style={{ color: C.gray, textAlign: "center", fontSize: 14, margin: "0 0 18px" }}>Todo es ficticio. Sigue estos pasos:</p>
         {[
           ["Elige qué quieres probar", "Profesor/a, Tutor/a, Jefatura de Estudios, Secretaría, Coordinación TIC o Conserjería, en la tarjeta «Acceso». Solo tienes que pulsar: se cargan datos de ejemplo. No escribas nombre ni clave."],
-          ["Muévete con los botones de arriba", "Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
+          ["Muévete con los botones de arriba", "Empiezas en el Escritorio, con el resumen del día. Los botones de colores cambian de pantalla. En cada una hay una ayuda «Cómo se usa»."],
           ["Para cambiar de perfil, pulsa «Salir»", "Vuelves a esta pantalla y eliges otro."],
           ["Todo es ficticio", "Puedes poner partes, guardias y mensajes sin miedo: nada sale de este navegador."],
         ].map(([t, d], i) => (
@@ -752,7 +752,7 @@ function Ti({ children, tam = 20 }) {
   return <>{arr.map((ch, i) => (typeof ch === "string" ? <span key={i}>{partirEmojis(ch, tam)}</span> : ch))}</>;
 }
 
-// Icono de cada perfil de acceso y desplegable con iconos para cambiar de perfil
+// Icono de cada perfil de acceso y ventana con iconos para cambiar de perfil
 const PERFIL_ICONO_BASE = { profesor: "cargo-profesor", jefatura: "cargo-jefatura", admin: "cargo-administracion" };
 const iconoPerfil = p => (p?.cargo && p.cargo !== "profesor" && ICONO_CARGO[p.cargo]) || PERFIL_ICONO_BASE[p?.id];
 const sinEmoji1 = t => iconoDe(t).resto;
