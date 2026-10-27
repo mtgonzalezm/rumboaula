@@ -1119,7 +1119,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
         </div>
         <div class="grupo-check">
           <h4><img src="/iconos/documentos.svg" alt="">Permisos</h4>
-          <ul class="check"><li>Autorización del equipo directivo.</li><li>Respuesta por escrito de la Consejería (CAU de EducaMadrid) sobre el uso de la red.</li><li>Consulta a la Delegación de Protección de Datos de la Consejería.</li></ul>
+          <ul class="check"><li>Autorización del equipo directivo.</li><li>Respuesta por escrito de la Consejería sobre el uso de la red (a través del CAU que indique vuestro TIC; para la red del centro, normalmente Madrid Digital, por FARO).</li><li>Consulta a la Delegación de Protección de Datos de la Consejería.</li></ul>
         </div>
         <div class="grupo-check">
           <h4><img src="/iconos/lista-completa.svg" alt="">Documentos</h4>
@@ -1293,10 +1293,11 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <div class="tarjeta sola">
     <div>
       <h3><img src="/iconos/mensajes.svg" alt="">Lo que hay que preguntar a la Consejería</h3>
-      <p>La red de los institutos suele gestionarla la Consejería, así que antes de nada conviene consultar, por ejemplo a través del <b>CAU de EducaMadrid</b>, y <b>pedir la respuesta por escrito</b>:</p>
+      <p>La red de los institutos suele gestionarla la Consejería, así que antes de nada conviene consultar y <b>pedir la respuesta por escrito</b>. Para la red y los equipos del centro suele ser el <b>CAU de Madrid Digital</b>, con la aplicación <b>FARO</b>; el <b>Portal CAU de EducaMadrid</b> es para los servicios de la plataforma (correo, aula virtual…). Coordinación TIC sabrá por dónde se pide en vuestro centro.</p>
       <ul>
         <li>¿Podemos tener un <b>servidor propio</b> conectado a la red del centro?</li>
         <li>¿Los dispositivos conectados a la <b>wifi del profesorado</b> pueden comunicarse con un equipo de la red del centro, o están aislados?</li>
+        <li>¿Podemos dejar el servidor <b>solo en la red del profesorado</b> (o en la red de administración del centro), de forma que <b>no se llegue a él desde la wifi del alumnado</b>?</li>
         <li>¿Nos pueden asignar una <b>IP fija interna</b> (del tipo 192.168.x.x o 10.x.x.x, por ejemplo con una reserva en el router) y, si hace falta, un <b>nombre interno</b> sencillo para el servidor, como <code>rumboaula.local</code>?</li>
         <li>¿Hay algún <b>cortafuegos</b> que bloquee el puerto del servidor, o algún aislamiento entre dispositivos de la wifi?</li>
         <li>¿Hay alguna <b>norma de seguridad</b> (antivirus, actualizaciones, inventario) que deba cumplir ese equipo?</li>
@@ -1388,7 +1389,7 @@ Gracias. Un saludo.</pre>
       <ol>
         <li><a href="#mensaje-equipo">Al equipo directivo</a>: propuesta de piloto.</li>
         <li><a href="#mensaje-tic">A Coordinación TIC</a>: qué hace falta en la red y el servidor.</li>
-        <li><a href="#mensaje-cau">Al CAU de EducaMadrid</a>: consulta sobre la red del centro, la envía la dirección.</li>
+        <li><a href="#mensaje-cau">Al CAU</a> (normalmente Madrid Digital, por FARO): consulta sobre la red del centro, la envía la dirección.</li>
         <li><a href="#mensaje-dpd">A la Delegación de Protección de Datos</a>: consulta antes de usar datos reales, la envía la dirección.</li>
         <li><a href="#mensaje-claustro">Al claustro</a>: cuando el piloto esté autorizado e instalado.</li>
         <li><a href="#mensaje-demo">A quien pruebe la demostración</a>: que no use datos reales.</li>
@@ -1413,7 +1414,7 @@ La propuesta es un piloto sin datos del alumnado. RumboAula sería una instalaci
 
 Para ponerlo en marcha haría falta:
 - Vuestra autorización para el piloto.
-- Consultar con Coordinación TIC y con el CAU de EducaMadrid el uso de la red del centro.
+- Consultar con Coordinación TIC y con el CAU que corresponda (para la red, normalmente Madrid Digital, por FARO) el uso de la red del centro.
 - Consultar a la Delegación de Protección de Datos de la Consejería.
 
 En el manual están preparados los mensajes para cada paso (https://rumboaula.vercel.app/manual/#mensajes). Si os parece bien, lo hablamos cuando podáis.
@@ -1446,8 +1447,8 @@ Gracias. Un saludo.</pre>
   </div>
   <div class="tarjeta sola" id="mensaje-cau">
     <div>
-      <h3><img src="/iconos/configuracion.svg" alt="">3. Al CAU de EducaMadrid: consulta sobre la red del centro</h3>
-      <p class="quien-envia">Lo envía: la dirección del centro. Cuándo: después de hablar con Coordinación TIC. Pide la respuesta por escrito.</p>
+      <h3><img src="/iconos/configuracion.svg" alt="">3. Al CAU: consulta sobre la red del centro</h3>
+      <p class="quien-envia">Lo envía: la dirección del centro. Cuándo: después de hablar con Coordinación TIC. Por dónde: para la red y los equipos del centro, normalmente el CAU de Madrid Digital, con FARO (confirmadlo con Coordinación TIC). Pide la respuesta por escrito.</p>
 <pre class="correo-tic" id="modelo-cau">Asunto: Consulta sobre la instalación de un servidor interno en la red del centro
 
 Desde el [nombre del centro], código de centro [código], queremos consultar si es posible instalar un servidor propio en la red del instituto para una aplicación interna de organización del centro (guardias, ausencias del profesorado, reserva de espacios y llaves, y avisos de material).
@@ -1456,7 +1457,7 @@ La aplicación se instalaría en un ordenador del propio centro y se usaría sol
 
 Les agradeceríamos que nos indicaran por escrito:
 1. Si podemos conectar un servidor propio a la red del centro.
-2. Si los dispositivos conectados a la wifi del profesorado pueden comunicarse con ese equipo o están aislados.
+2. Si los dispositivos conectados a la wifi del profesorado pueden comunicarse con ese equipo o están aislados, y si se puede dejar fuera del alcance de la wifi del alumnado.
 3. Si nos pueden asignar una IP fija interna y, si es posible, un nombre interno para el servidor.
 4. Si hay algún cortafuegos que bloquee el puerto del servidor.
 5. Qué normas de seguridad debe cumplir el equipo (antivirus, actualizaciones, inventario).
