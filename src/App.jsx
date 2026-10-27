@@ -48,6 +48,7 @@ const NIVEL = {
 const ORDEN_NIVEL = ["urgente", "importante", "pendiente", "informativo"];
 // Qué nivel tiene cada aviso de la campana
 function nivelAviso(a) {
+  if (a.nivel) return a.nivel;
   if (a.urgente || /sin cubrir/.test(a.txt)) return "urgente";
   if (/familia|alerta|absentismo|ausencias? de profesorado|medida/.test(a.txt)) return "importante";
   if (/sin firmar|llave|compromiso|pendiente|sin resolver/.test(a.txt)) return "pendiente";
@@ -355,6 +356,8 @@ function funcionesDe(perfil) {
     tic: dir || c === "tic",
     guardias: c === "direccion" || c === "jefatura" || (!c && perfil?.id === "jefatura"),
     convivencia: ["direccion", "jefatura", "orientacion"].includes(c) || (!c && perfil?.id === "jefatura"),
+    // Incidencias de hoy en directo: Jefatura de Estudios y Dirección
+    incidencias: c === "direccion" || c === "jefatura" || (!c && perfil?.id === "jefatura"),
     direccion: c === "direccion",
   };
 }
@@ -3925,6 +3928,11 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 // Se abre sola la primera vez que se entra en una pantalla (en ese dispositivo)
 // y después queda recogida en el botón «Cómo se usa».
 const AYUDAS = {
+  incidencias_hoy: { titulo: "Incidencias de hoy", pasos: [
+    "Aquí llegan solos los partes de hoy de todo el centro, el más reciente arriba. No hace falta recargar ni buscar.",
+    "Los nuevos llevan «Nuevo · sin leer». Pulsa «Marcar como leída» o abre el parte para verlo en grande; también puedes marcarlas todas a la vez.",
+    "Filtra por «Sin leer» o «Graves y muy graves». Cada persona de Jefatura y Dirección lleva sus propias lecturas.",
+  ] },
   escritorio: { titulo: "Escritorio", pasos: [
     "Es lo primero que ves al entrar: tus avisos, tus mensajes de Rumbogram, lo que tienes pendiente y lo que te toca hoy.",
     "Pulsa cualquier línea para ir directamente a esa pantalla, o «Ver todos» para abrir el módulo.",
@@ -9114,6 +9122,60 @@ function Escritorio({ usuario, avisos, pendientes, mensajes, hoy, conMensajes, c
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// INCIDENCIAS DE HOY: Jefatura y Dirección leen los partes del día según llegan,
+// sin buscarlos. Los nuevos salen arriba, sin leer, hasta que se marcan como leídos.
+// ════════════════════════════════════════════════════════════════════════════
+function IncidenciasHoy({ partes, leidas, medidas, enRed, onLeer, onVer, onPrint }) {
+  const [filtro, setFiltro] = useState("todas");
+  const sinLeer = partes.filter(p => !leidas[p.id]);
+  const graves = partes.filter(p => p.gravedad !== "leve");
+  const lista = filtro === "sin_leer" ? sinLeer : filtro === "graves" ? graves : partes;
+  const hora = ts => new Date(ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const chip = (id, txt, n) => (
+    <button key={id} onClick={() => setFiltro(id)} aria-pressed={filtro === id} className="gd-pulsable"
+      style={{ minHeight: 44, padding: "0 16px", borderRadius: 999, border: `3px solid ${R.turquesa}`, background: filtro === id ? R.turquesa : C.white,
+        color: R.noche, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{txt} ({n})</button>
+  );
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Incidencias de hoy" sub="Los partes del día van llegando solos, en cuanto se ponen" icono="alertas" /></div>
+      <div role="status" style={{ background: R.mostaza, color: R.noche, padding: "10px 14px", fontSize: 16, lineHeight: 1.4, display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center" }}>
+        <span>Hoy hay <b style={{ fontSize: 20 }}>{partes.length}</b> {partes.length === 1 ? "parte" : "partes"} · <b style={{ fontSize: 20 }}>{sinLeer.length}</b> sin leer{partes[0] ? ` · el último a las ${hora(partes[0].ts)}` : ""}.</span>
+        <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 700 }}>{enRed ? "● En directo con los demás equipos" : "● Se actualiza al momento"}</span>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "14px 0" }}>
+        {chip("todas", "Todas", partes.length)}
+        {chip("sin_leer", "Sin leer", sinLeer.length)}
+        {chip("graves", "Graves y muy graves", graves.length)}
+        {sinLeer.length > 0 && <button onClick={() => onLeer(sinLeer.map(p => p.id))} className="gd-pulsable"
+          style={{ marginLeft: "auto", minHeight: 44, padding: "0 16px", borderRadius: 8, border: "none", background: R.azul, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Marcar todas como leídas</button>}
+      </div>
+      {lista.length === 0
+        ? <Card style={{ textAlign: "center", color: R.petroleo }}>{partes.length === 0 ? "Hoy todavía no hay partes. Cuando alguien ponga uno, aparecerá aquí." : "No hay partes con este filtro."}</Card>
+        : lista.map(p => {
+          const nueva = !leidas[p.id];
+          return (
+            <div key={p.id} data-incidencia={p.id} style={{ marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "6px 0" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: R.petroleo }}>Llegó a las {hora(p.ts)}</span>
+                {nueva
+                  ? <>
+                      <span style={{ fontSize: 13, fontWeight: 700, background: NIVEL.informativo.color, color: NIVEL.informativo.texto, borderRadius: 999, padding: "2px 10px" }}>Nuevo · sin leer</span>
+                      <button onClick={() => onLeer([p.id])} style={{ marginLeft: "auto", background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>✓ Marcar como leída</button>
+                    </>
+                  : <span style={{ fontSize: 14, color: R.petroleo }}>✓ Leída</span>}
+              </div>
+              <div style={nueva ? { outline: `3px solid ${NIVEL.informativo.color}`, outlineOffset: -3, borderRadius: 4 } : undefined}>
+                <ParteCard parte={p} medidas={medidas.filter(m => m.parteId === p.id)} onVer={() => onVer(p)} onPrint={() => onPrint(p)} />
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // GLOBITOS DE ADVERTENCIAS: número en azul noche en módulos, pestañas y cabecera
 // ════════════════════════════════════════════════════════════════════════════
 const Globito = ({ n, flota = false, urgente = false }) => n > 0
@@ -9520,6 +9582,7 @@ function AppInterna() {
   const [profesores, setProfesores] = useState(DEMO_PROFESORES);
   const [partes, setPartes]       = useState([]);
   const [medidas, setMedidas]     = useState([]);
+  const [incLeidas, setIncLeidas] = useState({}); // { persona: { idParte: fecha } } — partes de hoy ya leídos en «Incidencias de hoy»
   DATOS_CENTRO.partes = partes;
   const [banos, setBanos]         = useState([]);
   // Conductas positivas: {id, alumnoId, alumno, curso, tipo, detalle, profesor, ts}
@@ -9668,6 +9731,7 @@ function AppInterna() {
       const inf = await sGet("informes"); if (inf) setInformes(inf);
       // Primera visita a la demostración: se cargan partes, baños y alertas de ejemplo
       const me = await sGet("medidas"); if (me) setMedidas(me);
+      const il = await sGet("incidencias_leidas"); if (il) setIncLeidas(il);
       if (MODO_DEMO && !p) {
         const ej = datosEjemploConvivencia(DEMO_PROFESORES);
         setAlumnos(ej.alumnos); setPartes(ej.partes); setBanos(ej.banos); setAlertas(ej.alertas); setInformes(ej.informes); setTutores(ej.tutores);
@@ -9721,7 +9785,7 @@ function AppInterna() {
   // En red: lo que guardan los demás equipos llega aquí y se pone en pantalla
   useEffect(() => {
     const poner = {
-      partes: setPartes, medidas: setMedidas, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
+      partes: setPartes, medidas: setMedidas, incidencias_leidas: setIncLeidas, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
       notas_aula: setNotasAula, alertas_tempranas_vistas: setAlertasTempVistas, mensajes: setMensajes, alumnos: setAlumnos, tutores: setTutores,
       informes: setInformes, profesores: setProfesores, guardias: setGuardias, cuadrante: setCuadrante, coberturas_clase: setCoberturas,
       coberturas_propias: setCoberturasPropias, horarios_clase: setHorarios, ausencias: setAusencias, apoyos_guardia: setApoyosGuardia,
@@ -9739,6 +9803,7 @@ function AppInterna() {
 
   useEffect(() => { if (!loading) sSet("partes", partes); },     [partes, loading]);
   useEffect(() => { if (!loading) sSet("medidas", medidas); },   [medidas, loading]);
+  useEffect(() => { if (!loading) sSet("incidencias_leidas", incLeidas); }, [incLeidas, loading]);
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
   useEffect(() => { POSITIVAS_PDF = positivas; if (!loading) sSet("positivas", positivas); }, [positivas, loading]);
   useEffect(() => { if (!loading) sSet("alertas", alertas); },   [alertas, loading]);
@@ -10036,6 +10101,10 @@ function AppInterna() {
   // Número de la pestaña «Medidas»: las que hay que programar y las que tocan hoy
   const medidasHoy = medidas.filter(m => estadoMedida(m) === "sin_programar").length + medidas.reduce((n, m) => n + (m.sesiones || []).filter(s => s.fecha === isoLocal() && s.estado === "pendiente").length, 0);
   const esPerfilTutor = perfil.cargo === "tutor";
+  // Incidencias de hoy (Jefatura y Dirección): partes de hoy y cuáles ha leído ya quien está dentro
+  const partesHoy = fx.incidencias ? partes.filter(x => x.ts && isoLocal(new Date(x.ts)) === isoLocal()).sort((a, b) => String(b.ts).localeCompare(String(a.ts))) : [];
+  const misLeidas = incLeidas[usuario] || {};
+  const marcarLeidas = ids => setIncLeidas(prev => { const yo = { ...(prev[usuario] || {}) }; ids.forEach(id => { if (!yo[id]) yo[id] = new Date().toISOString(); }); return { ...prev, [usuario]: yo }; });
   const tabs = tab === "escritorio" ? [] // El Escritorio no tiene pestañas
     : perfil.id === "profesor"
     ? esPerfilTutor && moduloProfesor === "tutoria"
@@ -10150,7 +10219,7 @@ function AppInterna() {
 
   // Módulos de cada perfil (franja turquesa o menú lateral)
   const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : "mensajeria"); };
-  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "incidencias" ? "incidencias_hoy" : id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
   const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
   const modulosPerfil = perfil.id === "profesor" && esPerfilTutor
     ? [
@@ -10168,6 +10237,7 @@ function AppInterna() {
       ].map(m => ({ ...m, ir: () => irProfesor(m.id) }))
     : perfil.id === "jefatura"
     ? [
+        ...(fx.incidencias ? [{ id: "incidencias", label: "Incidencias de hoy" }] : []),
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
         ...(fx.guardias ? [{ id: "guardias", label: "🔄 Guardias & Ausencias" }, { id: "organizacion", label: "🗓 Organización" }] : []),
         { id: "espacios", label: "🔑 Espacios" },
@@ -10217,6 +10287,11 @@ function AppInterna() {
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
       add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Rumbogram" : "mensajes sin leer en Rumbogram", "rumbochat", "mensajeria", "mensaje-sin-leer");
+      if (fx.incidencias) {
+        const sinLeer = partesHoy.filter(x => !misLeidas[x.id]), graves = sinLeer.filter(x => x.gravedad !== "leve").length, leves = sinLeer.length - graves;
+        if (graves) lista.push({ id: "incidencias-graves", n: graves, txt: graves === 1 ? "parte grave o muy grave de hoy sin leer" : "partes graves o muy graves de hoy sin leer", modulo: "incidencias", tab: "incidencias_hoy", icono: "grave", nivel: "importante" });
+        if (leves) lista.push({ id: "incidencias-leves", n: leves, txt: leves === 1 ? "parte leve de hoy sin leer" : "partes leves de hoy sin leer", modulo: "incidencias", tab: "incidencias_hoy", icono: "leve", nivel: "informativo" });
+      }
       add(alertasNoLeidas, alertasNoLeidas === 1 ? "alerta de convivencia sin leer" : "alertas de convivencia sin leer", "alumnos", "alertas", "alertas");
       add(medidasHoy, medidasHoy === 1 ? "medida correctora por programar o para hoy" : "medidas correctoras por programar o para hoy", "alumnos", "medidas", "tipificacion");
       const ausSinLeer = ausencias.filter(a => !a.leida && isoLocal(a.fecha) >= hoy).length;
@@ -10282,7 +10357,7 @@ function AppInterna() {
       const GRAV = { leve: "Parte leve", grave: "Parte grave", muy_grave: "Parte muy grave" };
       partes.filter(x => x.ts && isoLocal(new Date(x.ts)) === hoy).forEach(x => l.push({ hora: x.hora, icono: x.gravedad === "muy_grave" ? "muy-grave" : x.gravedad === "grave" ? "grave" : "leve",
         txt: `${GRAV[x.gravedad] || "Parte"} · ${x.alumno} (${x.curso}) · ${x.profesor}`, nuevo: Date.now() - new Date(x.ts).getTime() < 15 * 60 * 1000,
-        modulo: "alumnos", tab: "partes_todos" }));
+        ...(fx.incidencias ? { modulo: "incidencias", tab: "incidencias_hoy" } : { modulo: "alumnos", tab: "partes_todos" }) }));
       ausencias.filter(a => isoLocal(a.fecha) === hoy).forEach(a => {
         const horas = a.horas.filter(h => h !== "Recreo"), sin = horas.filter(h => !coberturas[claveCob(hoy, h, a.id)]).length;
         l.push({ hora: horas[0] || a.horas[0], txt: `Falta ${a.profesor} (${horas.length} h) · ${sin ? `${sin} sin cubrir` : "todo cubierto"}`, icono: "profe-ausente",
@@ -11004,6 +11079,12 @@ function AppInterna() {
         )}
 
         {/* ── Todos los Partes ── */}
+        {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}
+        {tab === "incidencias_hoy" && fx.incidencias && (
+          <IncidenciasHoy partes={partesHoy} leidas={misLeidas} medidas={medidas} enRed={RED.activa}
+            onLeer={ids => marcarLeidas(ids)} onVer={p => { marcarLeidas([p.id]); setShowParte(completar(p)); }} onPrint={p => pdfParte(completar(p))} />
+        )}
+
         {tab === "partes_todos" && (
           <div>
             <div style={{ marginBottom: 16 }}><TituloBloque titulo="Todos los Partes" icono="partes" /></div>

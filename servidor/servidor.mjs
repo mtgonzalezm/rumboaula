@@ -40,7 +40,7 @@ const CARGOS_ADMIN = ["direccion", "secretaria", "tic"];
 const DEMO = process.env.DEMO !== "0";
 
 // Solo se guardan estas claves (las que usa la aplicación; ver sSet en src/App.jsx)
-const CLAVES = new Set(["partes", "medidas", "banos", "positivas", "alertas", "compromisos", "notas_aula", "alertas_tempranas_vistas",
+const CLAVES = new Set(["partes", "medidas", "incidencias_leidas", "banos", "positivas", "alertas", "compromisos", "notas_aula", "alertas_tempranas_vistas",
   "mensajes", "alumnos", "tutores", "informes", "profesores", "guardias", "cuadrante", "coberturas_clase", "coberturas_propias",
   "horarios_clase", "ausencias", "apoyos_guardia", "sustitutos_guardia", "profesores_guardia", "planes_guardia", "cuentas",
   "firmas_guardia", "listas_guardia", "avisos_familia", "correos_centro", "datos_centro", "horario_centro", "zonas_centro",
