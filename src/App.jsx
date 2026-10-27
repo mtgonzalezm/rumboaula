@@ -695,6 +695,8 @@ async function sSet(k, v) {
 // (evento «rumbo:remoto»). Abierta desde la web de demostración no hay servidor y todo sigue en este navegador.
 const RED = { activa: false, conDatos: false, seq: 0, versiones: {}, ultimo: {}, cola: {}, pendientes: {} };
 async function conectarRed() {
+  // Solo la página que sirve el servidor del centro lleva esta marca; en la web de demostración no se pregunta nada
+  if (!document.querySelector('meta[name="rumboaula-servidor"]')) return false;
   try {
     const est = await fetch("/api/estado", { cache: "no-store" }).then(r => r.ok ? r.json() : null);
     if (!est?.servidor) return false;
@@ -9020,7 +9022,7 @@ function EstadisticasDocumentos({ avisos = {}, setAvisos, modo = "jefatura", usu
 
 // ════════════════════════════════════════════════════════════════════════════
 // ESCRITORIO: pantalla de entrada con el resumen del día, como el escritorio de Raíces.
-// Cuatro bloques (Avisos, Mensajes, Pendiente y Hoy); cada línea lleva a su pantalla.
+// Cuatro bloques (Avisos, Hoy, Pendiente y Mensajes); cada línea lleva a su pantalla.
 // ════════════════════════════════════════════════════════════════════════════
 const VerTodos = ({ onClick, txt = "Ver todos" }) => (
   <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -9066,6 +9068,29 @@ function Escritorio({ usuario, avisos, pendientes, mensajes, hoy, conMensajes, c
           {porNivel(avisos).slice(0, 6).map(filaAviso)}
         </BloqueEscritorio>
 
+        {conHoy && (
+          <BloqueEscritorio titulo="Hoy" sub="Lo que te toca hoy" icono="horario" color={R.azulClaro}
+            resumen={hoy.length ? <>Hoy tienes <b style={{ fontSize: 20 }}>{hoy.length}</b> {hoy.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}.</> : "Hoy no tienes nada en la agenda."}
+            verTodos={<VerTodos onClick={onVerHoy} />}>
+            {[...hoy.filter(x => x.nuevo), ...hoy.filter(x => !x.nuevo)].slice(0, 8).map((x, i) => {
+              const contenido = <>
+                <span style={{ width: 92, flexShrink: 0, fontWeight: 700, fontSize: 15, color: R.petroleo }}>{x.hora}</span>
+                <Icono nombre={x.icono} tam={28} />
+                <span style={{ flex: 1, minWidth: 0 }}>{x.txt}</span>
+                {x.nuevo && <span style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, background: NIVEL.informativo.color, color: NIVEL.informativo.texto, borderRadius: 999, padding: "2px 10px" }}>Nuevo</span>}
+              </>;
+              return x.tab
+                ? <button key={i} className="gd-pulsable" onClick={() => onIr(x)} style={{ ...filaEscritorio(R.gris, R.azul), cursor: "pointer" }}>{contenido}</button>
+                : <div key={i} style={filaEscritorio(R.gris, R.azul)}>{contenido}</div>;
+            })}
+          </BloqueEscritorio>
+        )}
+
+        <BloqueEscritorio titulo="Pendiente" sub="Para hacer o revisar" icono="tareas" color={R.verde}
+          resumen={nPen ? <>Tienes <b style={{ fontSize: 20 }}>{nPen}</b> {nPen === 1 ? "cosa pendiente" : "cosas pendientes"}.</> : "No tienes nada pendiente."}>
+          {pendientes.slice(0, 6).map(filaAviso)}
+        </BloqueEscritorio>
+
         {conMensajes && (
           <BloqueEscritorio titulo="Mensajes" sub="Rumbogram" icono="mensajes" color={R.turquesa}
             resumen={sinLeer.length ? <>Tienes <b style={{ fontSize: 20 }}>{sinLeer.length}</b> {sinLeer.length === 1 ? "mensaje sin leer" : "mensajes sin leer"}{sinLeer.some(m => m.urgente) ? ", alguno urgente" : ""}.</> : "No tienes mensajes sin leer."}
@@ -9083,27 +9108,6 @@ function Escritorio({ usuario, avisos, pendientes, mensajes, hoy, conMensajes, c
           </BloqueEscritorio>
         )}
 
-        <BloqueEscritorio titulo="Pendiente" sub="Para hacer o revisar" icono="tareas" color={R.verde}
-          resumen={nPen ? <>Tienes <b style={{ fontSize: 20 }}>{nPen}</b> {nPen === 1 ? "cosa pendiente" : "cosas pendientes"}.</> : "No tienes nada pendiente."}>
-          {pendientes.slice(0, 6).map(filaAviso)}
-        </BloqueEscritorio>
-
-        {conHoy && (
-          <BloqueEscritorio titulo="Hoy" sub="Lo que te toca hoy" icono="horario" color={R.azulClaro}
-            resumen={hoy.length ? <>Hoy tienes <b style={{ fontSize: 20 }}>{hoy.length}</b> {hoy.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}.</> : "Hoy no tienes nada en la agenda."}
-            verTodos={<VerTodos onClick={onVerHoy} />}>
-            {hoy.slice(0, 8).map((x, i) => {
-              const contenido = <>
-                <span style={{ width: 92, flexShrink: 0, fontWeight: 700, fontSize: 15, color: R.petroleo }}>{x.hora}</span>
-                <Icono nombre={x.icono} tam={28} />
-                <span style={{ flex: 1, minWidth: 0 }}>{x.txt}</span>
-              </>;
-              return x.tab
-                ? <button key={i} className="gd-pulsable" onClick={() => onIr(x)} style={{ ...filaEscritorio(R.gris, R.azul), cursor: "pointer" }}>{contenido}</button>
-                : <div key={i} style={filaEscritorio(R.gris, R.azul)}>{contenido}</div>;
-            })}
-          </BloqueEscritorio>
-        )}
       </div>
     </div>
   );
@@ -10274,6 +10278,11 @@ function AppInterna() {
       reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy)
         .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)}${r.grupo ? ` · ${r.grupo}` : ""}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
     } else if (perfil.id === "jefatura") {
+      // Partes de hoy; los de los últimos 15 minutos salen como «Nuevo»
+      const GRAV = { leve: "Parte leve", grave: "Parte grave", muy_grave: "Parte muy grave" };
+      partes.filter(x => x.ts && isoLocal(new Date(x.ts)) === hoy).forEach(x => l.push({ hora: x.hora, icono: x.gravedad === "muy_grave" ? "muy-grave" : x.gravedad === "grave" ? "grave" : "leve",
+        txt: `${GRAV[x.gravedad] || "Parte"} · ${x.alumno} (${x.curso}) · ${x.profesor}`, nuevo: Date.now() - new Date(x.ts).getTime() < 15 * 60 * 1000,
+        modulo: "alumnos", tab: "partes_todos" }));
       ausencias.filter(a => isoLocal(a.fecha) === hoy).forEach(a => {
         const horas = a.horas.filter(h => h !== "Recreo"), sin = horas.filter(h => !coberturas[claveCob(hoy, h, a.id)]).length;
         l.push({ hora: horas[0] || a.horas[0], txt: `Falta ${a.profesor} (${horas.length} h) · ${sin ? `${sin} sin cubrir` : "todo cubierto"}`, icono: "profe-ausente",

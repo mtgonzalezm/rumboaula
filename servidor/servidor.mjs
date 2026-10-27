@@ -283,6 +283,11 @@ function estatico(req, res, url) {
   if (!fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) archivo = path.join(APP, "index.html");
   if (!fs.existsSync(archivo)) { res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("Falta compilar la aplicación (npm run build)."); }
   const ext = path.extname(archivo);
+  // La página de la app lleva una marca para que sepa que está en el servidor del centro (y comparta los datos)
+  if (archivo === path.join(APP, "index.html")) {
+    res.writeHead(200, { ...CABECERAS, "Content-Type": TIPOS[".html"], "Cache-Control": "no-cache" });
+    return res.end(fs.readFileSync(archivo, "utf8").replace("<head>", '<head><meta name="rumboaula-servidor" content="1">'));
+  }
   res.writeHead(200, { ...CABECERAS, "Content-Type": TIPOS[ext] || "application/octet-stream",
     "Cache-Control": archivo.includes(`${path.sep}assets${path.sep}`) ? "public, max-age=31536000, immutable" : "no-cache" });
   fs.createReadStream(archivo).pipe(res);
