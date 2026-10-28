@@ -246,7 +246,7 @@ function horaEnCurso(ahora = new Date()) {
   return HORAS.find(h => { const [ini, fin] = HORARIO[h].split("–").map(x => aMin(x.trim())); return min >= ini && min < fin; }) || null;
 }
 const MODULOS = ["Módulo A", "Módulo B", "Módulo C"];
-const MOTIVOS = ["Enfermedad", "Asunto personal", "Formación", "Baja médica", "Otro"];
+const MOTIVOS = ["Enfermedad", "Asunto personal", "Formación", "Baja médica", "Salida o excursión", "Otro"];
 const ZONAS_GUARDIA = ["Patio A", "Patio B", "Pasillo Planta Baja", "Pasillo 1ª Planta", "Pasillo 2ª Planta", "Biblioteca", "Sala de Usos Múltiples", "Aula asignada", "Otra zona"];
 
 // ─── CSV import ──────────────────────────────────────────────────────────────
@@ -3928,6 +3928,11 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 // Se abre sola la primera vez que se entra en una pantalla (en ese dispositivo)
 // y después queda recogida en el botón «Cómo se usa».
 const AYUDAS = {
+  salidas: { titulo: "Salidas y excursiones", pasos: [
+    "Pulsa «Nueva salida»: actividad y lugar, día, horas, grupos y profesorado acompañante. Van todos los alumnos de los grupos; toca a quien no va.",
+    "Al guardar se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
+    "Quien haga la guardia ve en su consigna qué alumnos se quedan. El profesorado del grupo lo ve en su Escritorio y, al pasar lista, los que están de salida no cuentan como falta.",
+  ] },
   examenes_grupo: { titulo: "Calendario de exámenes", pasos: [
     "Elige el grupo y el mes. En verde salen los festivos y vacaciones; en coral, otros días no lectivos.",
     "Pulsa un día lectivo (o «Poner un examen») y rellena hora, materia y tipo. Si el grupo ya tiene examen ese día o se pasa del límite semanal, la app avisa; puedes guardarlo igualmente.",
@@ -6724,7 +6729,7 @@ function justificantesEjemplo(alumnos, profesores, hoy = new Date()) {
 }
 
 // Pasar lista en una clase: el grupo y la materia salen del horario del profesor/a
-function PasarListaClase({ alumnos = [], horarios = {}, asistencia = [], setAsistencia, justificantes = [], usuario, cursos = [] }) {
+function PasarListaClase({ alumnos = [], horarios = {}, asistencia = [], setAsistencia, justificantes = [], usuario, cursos = [], salidas = [] }) {
   const hoy = isoLocal(new Date());
   const [fecha, setFecha] = useState(hoy);
   const clases = clasesDelDia(horarios, usuario, fecha);
@@ -6743,10 +6748,14 @@ function PasarListaClase({ alumnos = [], horarios = {}, asistencia = [], setAsis
   }, [fecha, hora, grupo, existente?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setHecho(""); }, [fecha, hora, grupo]);
   const lista = alumnos.filter(a => a.curso === grupo).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  // Quien está en una salida a esa hora no puede tener falta
+  const enSalida = grupoEnSalida(salidas, alumnos, grupo, fecha, hora);
+  const deSalida = new Set((enSalida?.van || []).map(a => a.id));
   const siguiente = { undefined: "falta", falta: "retraso", retraso: undefined };
   const guardar = () => {
     const r = { id: existente?.id || Date.now(), fecha, hora, grupo, materia, profesor: usuario,
-      faltas: lista.filter(a => marcas[a.id] === "falta").map(a => a.id), retrasos: lista.filter(a => marcas[a.id] === "retraso").map(a => a.id), ts: new Date().toISOString() };
+      faltas: lista.filter(a => marcas[a.id] === "falta" && !deSalida.has(a.id)).map(a => a.id), retrasos: lista.filter(a => marcas[a.id] === "retraso" && !deSalida.has(a.id)).map(a => a.id),
+      ...(deSalida.size ? { deSalida: [...deSalida] } : {}), ts: new Date().toISOString() };
     setAsistencia(prev => [...prev.filter(x => x.id !== r.id), r]);
     setHecho(`Lista guardada: ${grupo} · ${hora} · ${r.faltas.length} ${r.faltas.length === 1 ? "falta" : "faltas"} y ${r.retrasos.length} ${r.retrasos.length === 1 ? "retraso" : "retrasos"}.`);
   };
@@ -6776,8 +6785,14 @@ function PasarListaClase({ alumnos = [], horarios = {}, asistencia = [], setAsis
         <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>{existente ? "Esta lista ya está guardada: puedes corregirla." : "Toca a quien falta: una vez, falta; dos veces, retraso; tres, vuelve a presente."} {nF} {nF === 1 ? "falta" : "faltas"} · {nR} {nR === 1 ? "retraso" : "retrasos"} · {lista.length} alumnos/as</div>
         {hecho && <div role="status" style={{ padding: "10px 14px", marginBottom: 10, background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))", gap: 6 }}>
+          {enSalida && <div role="note" style={{ gridColumn: "1 / -1", ...caja(R.mostaza), padding: "8px 12px", color: R.noche }}>🚌 {enSalida.van.length} de este grupo están en la salida «{enSalida.salida.titulo}» con {enSalida.salida.acompanantes.join(", ")}: no cuentan como falta.</div>}
           {lista.map(a => {
             const m = marcas[a.id], just = m === "falta" && justificada(a.id, fecha, justificantes);
+            if (deSalida.has(a.id)) return (
+              <div key={a.id} data-alumno-lista={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 48, padding: "8px 12px", fontSize: 15, border: `2px solid ${R.mostaza}`, background: R.crema, color: R.noche, borderRadius: 6 }}>
+                <span>{a.nombre}</span><strong style={{ fontSize: 13, whiteSpace: "nowrap" }}>🚌 De salida</strong>
+              </div>
+            );
             return (
               <button key={a.id} data-alumno-lista={a.id} aria-pressed={!!m} onClick={() => setMarcas(prev => ({ ...prev, [a.id]: siguiente[m] }))}
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 48, padding: "8px 12px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 15,
@@ -9465,6 +9480,190 @@ function CalendarioEscolarAdmin({ cal, setCal }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// SALIDAS Y EXCURSIONES: quién va, quién se queda y con quién.
+// Al guardar una salida se registra la ausencia del profesorado acompañante para que
+// sus clases y guardias se cubran; la consigna dice a la guardia qué alumnos se quedan.
+// ════════════════════════════════════════════════════════════════════════════
+// salida: { id, titulo, fecha, horas, grupos, noVan: [idAlumno], acompanantes, responsable, nota, ausencias: { profe: idAusencia }, ts }
+const alumnosSalida = (s, alumnos) => alumnos.filter(a => s.grupos.includes(a.curso) && !(s.noVan || []).includes(a.id));
+// Un grupo a una hora: qué salida hay, quién va y quién se queda
+function grupoEnSalida(salidas, alumnos, grupo, fecha, hora) {
+  const s = salidas.find(x => x.fecha === fecha && x.horas.includes(hora) && x.grupos.includes(grupo));
+  if (!s) return null;
+  const delGrupo = alumnos.filter(a => a.curso === grupo).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  const noVan = s.noVan || [];
+  return { salida: s, van: delGrupo.filter(a => !noVan.includes(a.id)), quedan: delGrupo.filter(a => noVan.includes(a.id)) };
+}
+const nombresCortos = l => l.map(a => a.nombre).join(", ");
+// Ausencias del profesorado acompañante: solo las horas en que tiene guardia o clase con alumnado que se queda
+function ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) {
+  return s.acompanantes.map((profe, k) => {
+    const clases = clasesDelDia(horarios, profe, s.fecha), sesiones = {}, horas = [];
+    ordenarHoras(s.horas).forEach(h => {
+      const c = clases[h], guardia = !!cuadrante[`${s.fecha}|${h}|${profe}`];
+      const enSalida = c ? grupoEnSalida([s], alumnos, c.grupo, s.fecha, h) : null;
+      if (c && enSalida && !enSalida.quedan.length) return;          // todo su grupo va a la salida: no hay clase que cubrir
+      if (!c && !guardia) return;                                    // hora libre
+      horas.push(h);
+      sesiones[h] = { grupo: c?.grupo || "", aula: c?.aula || "", edificio: c?.edificio || "", materia: c?.materia || "",
+        consigna: !c ? "" : enSalida
+          ? `${enSalida.van.length} alumnos están en la salida «${s.titulo}». Se quedan en clase ${enSalida.quedan.length}: ${nombresCortos(enSalida.quedan)}.`
+          : `${profe} está en la salida «${s.titulo}» con otros grupos. Trabajo autónomo del grupo.` };
+    });
+    if (!horas.length) return null;
+    const primera = sesiones[horas.find(h => h !== "Recreo")] || {};
+    return { id: s.ausencias?.[profe] || s.id + k + 1, profesor: profe, motivo: "Salida o excursión", fecha: s.fecha, horas, tarea: "", enlace: "", ubicacion: "",
+      aula: primera.grupo || "", asignatura: primera.materia || "", edificio: primera.edificio || "", sesiones, ts: s.ts, leida: false, salidaId: s.id, registradaPor: s.responsable };
+  }).filter(Boolean);
+}
+const ordenarHoras = hs => HORAS.filter(h => hs.includes(h));
+
+function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, setMensajes }) {
+  const hoy = isoLocal();
+  const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
+  const [form, setForm] = useState(null);
+  const [abierta, setAbierta] = useState(null);
+  const [hecho, setHecho] = useState("");
+  const horasClase = HORAS.filter(h => h !== "Recreo");
+  const campo = { width: "100%", minHeight: 44, padding: "8px 10px", border: `3px solid ${R.turquesa}`, borderRadius: 6, fontFamily: "inherit", fontSize: 16, color: R.noche, background: C.white };
+  const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 4 };
+  const chip = (activo, txt, onClick, key) => (
+    <button key={key ?? txt} type="button" aria-pressed={activo} onClick={onClick} className="gd-pulsable"
+      style={{ minHeight: 40, padding: "0 14px", borderRadius: 999, border: `3px solid ${R.turquesa}`, background: activo ? R.turquesa : C.white, color: R.noche, fontFamily: "inherit", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>{txt}</button>
+  );
+  const alterna = (l, x) => l.includes(x) ? l.filter(y => y !== x) : [...l, x];
+  // Comprobaciones del formulario
+  const avisos = [], bloquea = [];
+  if (form?.fecha) {
+    const info = infoDia(cal, form.fecha);
+    if (!info.lectivo) bloquea.push(`El ${fmtD(form.fecha)} no es lectivo${info.txt ? `: ${info.txt.toLowerCase()}` : ""}.`);
+    examenes.filter(e => e.fecha === form.fecha && form.grupos.includes(e.grupo) && (!form.horas.length || form.horas.includes(e.hora)))
+      .forEach(e => avisos.push(`${e.grupo} tiene ${tipoExamen(e.tipo).label.toLowerCase()} de ${e.materia} a ${e.hora}.`));
+  }
+  const borrador = form && form.fecha && form.horas.length ? { ...form, id: form.id || 1, ts: "" } : null;
+  const ausPrevias = borrador ? ausenciasDeSalida(borrador, { alumnos, horarios, cuadrante }) : [];
+  const listo = form && form.titulo.trim() && form.fecha && form.horas.length && form.grupos.length && form.acompanantes.length && !bloquea.length;
+  const guardar = () => {
+    if (!listo) return;
+    const s = { ...form, titulo: form.titulo.trim(), nota: form.nota.trim(), horas: ordenarHoras(form.horas), id: form.id || Date.now(), ts: new Date().toISOString() };
+    const aus = ausenciasDeSalida(s, { alumnos, horarios, cuadrante });
+    s.ausencias = Object.fromEntries(aus.map(a => [a.profesor, a.id]));
+    setSalidas(prev => [...prev.filter(x => x.id !== s.id), s]);
+    setAusencias(prev => [...aus, ...prev.filter(a => a.salidaId !== s.id)]);
+    // Aviso al profesorado acompañante (menos quien la registra)
+    const otros = s.acompanantes.filter(p => p !== usuario);
+    if (setMensajes && otros.length) setMensajes(prev => [...otros.map((p, k) => mensajeRumbo(p, `🚌 ${usuario} te ha incluido como acompañante en la salida «${s.titulo}» del ${fmtD(s.fecha)} (${s.horas.join(", ")}). Tu ausencia de esas horas queda registrada para cubrir tus clases.`, k)), ...prev]);
+    setHecho(`Salida guardada: «${s.titulo}» · ${fmtD(s.fecha)} · ${alumnosSalida(s, alumnos).length} alumnos. ${aus.length ? `Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
+    setTimeout(() => setHecho(""), 6000);
+    setForm(null); setAbierta(s.id);
+  };
+  const quitar = s => {
+    if (!window.confirm(`¿Anular la salida «${s.titulo}»? También se quitan las ausencias del profesorado acompañante.`)) return;
+    setSalidas(prev => prev.filter(x => x.id !== s.id));
+    setAusencias(prev => prev.filter(a => a.salidaId !== s.id));
+  };
+  const puedeEditar = s => puedeTodo || s.responsable === usuario;
+  const orden = (a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.horas[0]) - HORAS.indexOf(b.horas[0]);
+  const deHoy = salidas.filter(s => s.fecha === hoy).sort(orden), proximas = salidas.filter(s => s.fecha > hoy).sort(orden), pasadas = salidas.filter(s => s.fecha < hoy).sort((a, b) => -orden(a, b)).slice(0, 10);
+
+  const tarjeta = s => {
+    const van = alumnosSalida(s, alumnos), abiertaEsta = abierta === s.id;
+    return (
+      <div key={s.id} data-salida={s.id} style={{ ...caja(s.fecha === hoy ? R.mostaza : R.turquesa), padding: "12px 16px", marginTop: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "baseline" }}>
+          <span style={{ fontWeight: 700, color: R.petroleo }}>{fmtD(s.fecha)} · {s.horas.length === horasClase.length ? "toda la mañana" : s.horas.join(", ")}</span>
+          <span style={{ flex: 1, minWidth: 200, fontFamily: TITULO, fontSize: 20, color: R.petroleo }}>{s.titulo}</span>
+          <span style={{ fontWeight: 700, color: R.noche }}>{van.length} {van.length === 1 ? "alumno" : "alumnos"} · {s.grupos.join(", ")}</span>
+        </div>
+        <div style={{ fontSize: 15, color: R.petroleo, marginTop: 4 }}>Con {s.acompanantes.join(", ")}{s.nota ? ` · ${s.nota}` : ""}{s.responsable && !s.acompanantes.includes(s.responsable) ? ` · Organiza ${s.responsable}` : ""}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+          <button onClick={() => setAbierta(abiertaEsta ? null : s.id)} aria-expanded={abiertaEsta} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>{abiertaEsta ? "Ocultar" : "Quién va y quién se queda"}</button>
+          {puedeEditar(s) && <>
+            <button onClick={() => setForm({ ...s })} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Cambiar</button>
+            <button onClick={() => quitar(s)} style={{ background: "none", border: "none", color: NIVEL.urgente.color, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Anular</button>
+          </>}
+        </div>
+        {abiertaEsta && s.grupos.map(g => {
+          const info = grupoEnSalida([s], alumnos, g, s.fecha, s.horas[0]);
+          return (
+            <div key={g} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, marginTop: 8 }}>
+              <div style={{ background: R.azulClaro, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · van {info.van.length}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.van) || "Nadie"}</div></div>
+              <div style={{ background: R.crema, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · se quedan {info.quedan.length}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.quedan) || "Nadie: va todo el grupo"}</div></div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Salidas y excursiones" sub="Quién va, quién se queda y con quién" icono="edificio" /></div>
+      {hecho && <div role="status" style={{ ...caja(R.verde), padding: "10px 14px", marginBottom: 12, fontWeight: 700, color: R.noche }}>✅ {hecho}</div>}
+      {!form && <button onClick={() => setForm({ ...vacio })} className="gd-pulsable" style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>+ Nueva salida</button>}
+
+      {form && (
+        <Card style={{ background: R.azulClaro }}>
+          <h3 style={{ margin: "0 0 12px", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>{form.id ? "Cambiar la salida" : "Nueva salida"}</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            <label><span style={etiqueta}>Actividad y lugar</span><input id="gd-salida-titulo" value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Por ejemplo, Museo del Prado" style={campo} /></label>
+            <label><span style={etiqueta}>Día</span><input id="gd-salida-fecha" type="date" value={form.fecha} min={cal.inicio} max={cal.fin} onChange={e => setForm({ ...form, fecha: e.target.value })} style={campo} /></label>
+          </div>
+          <div style={{ marginTop: 12 }}><span style={etiqueta}>Horas</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {chip(form.horas.length === horasClase.length, "Toda la mañana", () => setForm({ ...form, horas: form.horas.length === horasClase.length ? [] : horasClase }), "todas")}
+              {horasClase.map(h => chip(form.horas.includes(h), h, () => setForm({ ...form, horas: alterna(form.horas, h) })))}
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}><span style={etiqueta}>Grupos que van</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{cursos.map(g => chip(form.grupos.includes(g), g, () => setForm({ ...form, grupos: alterna(form.grupos, g), noVan: form.noVan.filter(id => alumnos.find(a => a.id === id)?.curso !== g) })))}</div>
+          </div>
+          {form.grupos.map(g => {
+            const lista = alumnos.filter(a => a.curso === g).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+            const n = lista.filter(a => !form.noVan.includes(a.id)).length;
+            return (
+              <div key={g} style={{ marginTop: 12 }}>
+                <span style={etiqueta}>{g}: van {n} de {lista.length} · toca a quien no va</span>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 6 }}>
+                  {lista.map(a => { const va = !form.noVan.includes(a.id);
+                    return <button key={a.id} type="button" data-alumno-salida={a.id} aria-pressed={!va} onClick={() => setForm({ ...form, noVan: alterna(form.noVan, a.id) })}
+                      style={{ display: "flex", justifyContent: "space-between", gap: 8, minHeight: 44, padding: "6px 12px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 15, borderRadius: 6,
+                        border: `2px solid ${va ? R.turquesaClaro : R.noche}`, background: va ? C.white : R.crema, color: R.noche }}>
+                      <span>{a.nombre}</span><strong style={{ fontSize: 13, whiteSpace: "nowrap" }}>{va ? "🚌 Va" : "Se queda"}</strong></button>; })}
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ marginTop: 12 }}><span style={etiqueta}>Profesorado acompañante</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(p => chip(form.acompanantes.includes(p), p, () => setForm({ ...form, acompanantes: alterna(form.acompanantes, p) })))}</div>
+          </div>
+          <label style={{ display: "block", marginTop: 12 }}><span style={etiqueta}>Nota (opcional)</span><input value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} placeholder="Punto de encuentro, autobús, lo que tienen que llevar…" style={campo} /></label>
+          {bloquea.map(b => <div key={b} role="alert" style={{ ...caja(NIVEL.urgente.color), padding: "10px 14px", marginTop: 12, color: R.noche, fontWeight: 700 }}>⛔ {b} Elige otro día.</div>)}
+          {avisos.map(a => <div key={a} role="alert" style={{ ...caja(NIVEL.importante.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>⚠️ {a}</div>)}
+          {!bloquea.length && ausPrevias.length > 0 && (
+            <div style={{ ...caja(NIVEL.informativo.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>
+              ℹ️ Al guardar se registra la ausencia del profesorado acompañante para cubrir sus clases y guardias:
+              <ul style={{ margin: "6px 0 0", paddingLeft: 22 }}>{ausPrevias.map(a => <li key={a.profesor}><b>{a.profesor}</b>: {a.horas.join(", ")}</li>)}</ul>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+            <button onClick={guardar} disabled={!listo} className="gd-pulsable"
+              style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }}>Guardar salida</button>
+            <button onClick={() => setForm(null)} style={{ minHeight: 48, padding: "0 18px", border: `2px solid ${R.azul}`, borderRadius: 6, background: C.white, color: R.petroleo, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+          </div>
+        </Card>
+      )}
+
+      <h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Hoy</h3>
+      {deHoy.length ? deHoy.map(tarjeta) : <div style={{ padding: "10px 14px", color: R.petroleo, background: R.gris, marginTop: 8 }}>Hoy no hay salidas.</div>}
+      <h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Próximas</h3>
+      {proximas.length ? proximas.map(tarjeta) : <div style={{ padding: "10px 14px", color: R.petroleo, background: R.gris, marginTop: 8 }}>No hay salidas previstas.</div>}
+      {pasadas.length > 0 && <><h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Anteriores</h3>{pasadas.map(tarjeta)}</>}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // INCIDENCIAS DE HOY: Jefatura y Dirección leen los partes del día según llegan,
 // sin buscarlos. Los nuevos salen arriba, sin leer, hasta que se marcan como leídos.
 // ════════════════════════════════════════════════════════════════════════════
@@ -9927,6 +10126,7 @@ function AppInterna() {
   const [medidas, setMedidas]     = useState([]);
   const [incLeidas, setIncLeidas] = useState({});
   const [examenes, setExamenes]   = useState([]);   // calendario de exámenes por grupo
+  const [salidas, setSalidas]     = useState([]);   // salidas y excursiones
   const [calEscolar, setCalEscolar] = useState(null); // null = el calendario escolar de la Comunidad de Madrid
   const cal = calEscolar ? { ...CALENDARIO_ESCOLAR_DEFECTO, ...calEscolar, evaluaciones: calEscolar.evaluaciones || CALENDARIO_ESCOLAR_DEFECTO.evaluaciones } : CALENDARIO_ESCOLAR_DEFECTO; // { persona: { idParte: fecha } } — partes de hoy ya leídos en «Incidencias de hoy»
   DATOS_CENTRO.partes = partes;
@@ -10079,6 +10279,7 @@ function AppInterna() {
       const me = await sGet("medidas"); if (me) setMedidas(me);
       const il = await sGet("incidencias_leidas"); if (il) setIncLeidas(il);
       const ce = await sGet("calendario_escolar"); if (ce) setCalEscolar(ce);
+      const sal = await sGet("salidas"); if (sal) setSalidas(sal);
       const exa = await sGet("examenes");
       if (exa) setExamenes(exa);
       else if (MODO_DEMO) setExamenes(examenesEjemplo([...new Set((al || datosEjemploConvivencia(DEMO_PROFESORES).alumnos).map(a => a.curso))].sort(), DEMO_PROFESORES, ce || CALENDARIO_ESCOLAR_DEFECTO));
@@ -10135,7 +10336,7 @@ function AppInterna() {
   // En red: lo que guardan los demás equipos llega aquí y se pone en pantalla
   useEffect(() => {
     const poner = {
-      partes: setPartes, medidas: setMedidas, incidencias_leidas: setIncLeidas, examenes: setExamenes, calendario_escolar: setCalEscolar, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
+      partes: setPartes, medidas: setMedidas, incidencias_leidas: setIncLeidas, examenes: setExamenes, calendario_escolar: setCalEscolar, salidas: setSalidas, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
       notas_aula: setNotasAula, alertas_tempranas_vistas: setAlertasTempVistas, mensajes: setMensajes, alumnos: setAlumnos, tutores: setTutores,
       informes: setInformes, profesores: setProfesores, guardias: setGuardias, cuadrante: setCuadrante, coberturas_clase: setCoberturas,
       coberturas_propias: setCoberturasPropias, horarios_clase: setHorarios, ausencias: setAusencias, apoyos_guardia: setApoyosGuardia,
@@ -10155,6 +10356,7 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("medidas", medidas); },   [medidas, loading]);
   useEffect(() => { if (!loading) sSet("incidencias_leidas", incLeidas); }, [incLeidas, loading]);
   useEffect(() => { if (!loading) sSet("examenes", examenes); }, [examenes, loading]);
+  useEffect(() => { if (!loading) sSet("salidas", salidas); }, [salidas, loading]);
   useEffect(() => { if (!loading && calEscolar) sSet("calendario_escolar", calEscolar); }, [calEscolar, loading]);
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
   useEffect(() => { POSITIVAS_PDF = positivas; if (!loading) sSet("positivas", positivas); }, [positivas, loading]);
@@ -10578,8 +10780,8 @@ function AppInterna() {
     : []; // El resto de Secretaría no tiene pestañas, solo módulos
 
   // Módulos de cada perfil (franja turquesa o menú lateral)
-  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : id === "examenes" ? "examenes_grupo" : "mensajeria"); };
-  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "incidencias" ? "incidencias_hoy" : id === "examenes" ? "examenes_grupo" : id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
+  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : id === "examenes" ? "examenes_grupo" : id === "salidas" ? "salidas" : "mensajeria"); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "incidencias" ? "incidencias_hoy" : id === "examenes" ? "examenes_grupo" : id === "salidas" ? "salidas" : id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
   const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
   const modulosPerfil = perfil.id === "profesor" && esPerfilTutor
     ? [
@@ -10591,6 +10793,7 @@ function AppInterna() {
         { id: "alumnos",  label: "👨‍🎓 Partes" },
         { id: "asistencia", label: "✅ Asistencia" },
         { id: "examenes", label: "Exámenes" },
+        { id: "salidas", label: "Salidas" },
         { id: "guardias", label: "🔄 Guardias" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
@@ -10602,6 +10805,7 @@ function AppInterna() {
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
         ...(fx.guardias ? [{ id: "guardias", label: "🔄 Guardias & Ausencias" }, { id: "organizacion", label: "🗓 Organización" }] : []),
         { id: "examenes", label: "Exámenes" },
+        { id: "salidas", label: "Salidas" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
         { id: "rumbochat", label: "💬 Rumbogram" },
@@ -10714,6 +10918,13 @@ function AppInterna() {
       });
       reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy)
         .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)}${r.grupo ? ` · ${r.grupo}` : ""}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
+      salidas.filter(x => x.fecha === hoy && x.acompanantes.includes(yo))
+        .forEach(x => l.push({ hora: x.horas[0], txt: `Salida «${x.titulo}» con ${x.grupos.join(", ")}`, icono: "edificio", modulo: "salidas", tab: "salidas" }));
+      Object.entries(clasesDelDia(horarios, yo, hoy)).forEach(([h, c]) => {
+        const info = grupoEnSalida(salidas, alumnos, c.grupo, hoy, h);
+        if (info && !info.salida.acompanantes.includes(yo)) l.push({ hora: h, icono: "edificio", modulo: "salidas", tab: "salidas",
+          txt: info.quedan.length ? `${c.grupo}: ${info.van.length} de salida; se quedan ${info.quedan.length} contigo` : `${c.grupo}: todo el grupo está de salida` });
+      });
       examenes.filter(e => e.profesor === yo && e.fecha === hoy)
         .forEach(e => l.push({ hora: e.hora, txt: `${tipoExamen(e.tipo).label} de ${e.materia} · ${e.grupo}`, icono: "fecha", modulo: "examenes", tab: "mis_examenes" }));
     } else if (perfil.id === "jefatura") {
@@ -10727,6 +10938,8 @@ function AppInterna() {
         l.push({ hora: horas[0] || a.horas[0], txt: `Falta ${a.profesor} (${horas.length} h) · ${sin ? `${sin} sin cubrir` : "todo cubierto"}`, icono: "profe-ausente",
           ...(fx.guardias ? { modulo: "guardias", tab: "coordinacion" } : {}) });
       });
+      salidas.filter(x => x.fecha === hoy).forEach(x => l.push({ hora: x.horas[0], icono: "edificio", modulo: "salidas", tab: "salidas",
+        txt: `Salida «${x.titulo}» · ${x.grupos.join(", ")} · ${alumnosSalida(x, alumnos).length} alumnos con ${x.acompanantes.join(", ")}` }));
       const nRes = reservasEspacios.filter(r => r.fecha === hoy).length;
       if (nRes) l.push({ hora: "Hoy", txt: `${nRes} ${nRes === 1 ? "reserva" : "reservas"} de espacios`, icono: "llave", modulo: "espacios", tab: "reservas" });
     } else if (perfil.id === "conserjeria") {
@@ -11452,6 +11665,10 @@ function AppInterna() {
           <CalendarioExamenes key="mios" soloMios examenes={examenes} setExamenes={setExamenes} cal={cal} cursos={cursos} usuario={fProfesor || usuario} horarios={horarios} />
         )}
         {tab === "calendario_escolar" && fx.guardias && <CalendarioEscolarAdmin cal={cal} setCal={setCalEscolar} />}
+        {tab === "salidas" && (
+          <Salidas salidas={salidas} setSalidas={setSalidas} setAusencias={setAusencias} alumnos={alumnos} cursos={cursos} profesores={profesores} horarios={horarios}
+            cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} puedeTodo={perfil.id === "jefatura"} setMensajes={setMensajes} />
+        )}
 
         {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}
         {tab === "incidencias_hoy" && fx.incidencias && (
@@ -11576,7 +11793,7 @@ function AppInterna() {
 
         {/* ── Gestión Ausencias (Jefatura) ── */}
         {tab === "pasar_lista" && (
-          <PasarListaClase alumnos={alumnos} horarios={horarios} asistencia={asistenciaAl} setAsistencia={setAsistenciaAl} justificantes={justificantesAl} usuario={fProfesor || usuario} cursos={cursos} />
+          <PasarListaClase alumnos={alumnos} horarios={horarios} asistencia={asistenciaAl} setAsistencia={setAsistenciaAl} justificantes={justificantesAl} usuario={fProfesor || usuario} cursos={cursos} salidas={salidas} />
         )}
         {tab === "justificantes" && (
           <JustificantesAlumnado alumnos={alumnos} justificantes={justificantesAl} setJustificantes={setJustificantesAl} usuario={perfil.id === "profesor" ? (fProfesor || usuario) : usuario} tutores={tutores} setMensajes={setMensajes} cursos={cursos} />
