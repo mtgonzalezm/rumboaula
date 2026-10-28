@@ -13,6 +13,8 @@ export async function empezar(page: Page, hora = AHORA) {
   await page.clock.install({ time: hora })
   page.on('dialog', d => d.accept())
   await page.goto('/')
+  // La app mira primero si hay servidor del centro; se espera a la pantalla de entrada
+  await page.locator('#gd-otro-profe').waitFor()
   const empezarBtn = page.getByRole('button', { name: /Empezar/ })
   if (await empezarBtn.count()) await empezarBtn.first().click()
 }

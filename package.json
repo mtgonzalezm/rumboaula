@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "servidor": "npm run build && node --no-warnings=ExperimentalWarning servidor/servidor.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

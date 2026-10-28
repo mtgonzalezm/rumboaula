@@ -28,3 +28,6 @@ dist-ssr
 # Pruebas automáticas
 test-results/
 playwright-report/
+
+# Servidor del centro: base de datos y copias (no se suben)
+servidor/datos/
