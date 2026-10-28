@@ -228,7 +228,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <div class="perfil"><img src="/iconos/cargo-jefatura.svg" alt=""><h3>Jefatura de Estudios</h3><p>Convivencia, medidas correctoras, alertas, asistencia y absentismo, estadísticas; organiza las guardias de todo el profesorado (cuadrante, coberturas), los horarios y aulas, el horario, las zonas y los espacios; ausencias y justificantes del profesorado.</p></div>
     <div class="perfil"><img src="/iconos/cargo-secretaria.svg" alt=""><h3>Secretaría</h3><p>Las cuentas y las compras (el material que hace falta y su coste), profesorado, cargos y claves, personal de Conserjería, alumnado y tutorías, y datos del centro.</p></div>
     <div class="perfil"><img src="/iconos/cargo-tic.svg" alt=""><h3>Coordinación TIC</h3><p>Averías informáticas, incidencias de los puestos y configuración de las aulas con ordenadores.</p></div>
-    <div class="perfil"><img src="/iconos/cargo-direccion.svg" alt=""><h3>Dirección</h3><p>Todo lo anterior. Orientación lleva la convivencia y la orientación del alumnado y hace guardias como todo el profesorado, sin organizarlas; Jefatura de departamento, como el profesorado.</p></div>
+    <div class="perfil"><img src="/iconos/cargo-direccion.svg" alt=""><h3>Dirección</h3><p>Todo lo anterior. Orientación lleva la convivencia y la orientación del alumnado y hace guardias como todo el profesorado, sin organizarlas; Jefatura de departamento, como el profesorado; Actividades extraescolares, además, recibe y revisa todas las <a href="#salidas">salidas</a>.</p></div>
     <div class="perfil"><img src="/iconos/llave.svg" alt=""><h3>Conserjería</h3><p>Ve quién tiene cada llave y las reservas de los espacios, y anota quién coge y quién deja cada llave.</p></div>
   </div>
 
@@ -612,53 +612,72 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
 
 <!-- ═══════════ SALIDAS ═══════════ -->
 <section class="parte" id="salidas">
-  <span class="etiqueta">Profesorado y Jefatura</span>
+  <span class="etiqueta">Profesorado, Extraescolares, Jefatura y Dirección</span>
   <div class="titulo"><h2>Salidas y excursiones</h2><img src="/iconos/edificio.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">Quién va, quién se queda y con quién, sin listas en papel. Al registrar la salida, la app avisa a quien tiene que saberlo: el profesorado del grupo, quien hace la guardia y Jefatura.</p>
+  <p class="entrada">El profesor/a responsable prepara la salida y sus listas; Jefatura, Dirección y el Departamento de Actividades Extraescolares la conocen desde el primer momento, y Dirección la aprueba. Al aprobarse, la app avisa a quien tiene que saberlo: el profesorado del grupo (para pasar lista en Raíces), quien hace la guardia y quien acompaña.</p>
 
   <div class="tarjeta">
     <div>
       <h3><img src="/iconos/nuevo-parte.svg" alt="">Registrar una salida</h3>
       <ol>
-        <li>En el módulo <b>Salidas</b>, pulsa <span class="btn">+ Nueva salida</span>.</li>
-        <li>Escribe la actividad y el lugar, elige el día y las horas (o «Toda la mañana») y los grupos que van.</li>
-        <li>Salen todos los alumnos de esos grupos con «🚌 Va». Toca a quien <b>no va</b> y pasa a «Se queda».</li>
-        <li>Elige el profesorado acompañante y, si quieres, añade una nota: punto de encuentro, autobús, qué llevar…</li>
-        <li>Pulsa <span class="btn">Guardar salida</span>.</li>
+        <li>En el módulo <b>Salidas</b>, pulsa <span class="btn">+ Nueva salida</span>: actividad y lugar, día y horas (o «Toda la mañana»).</li>
+        <li><b>¿Quién va?</b>
+          <ul>
+            <li><b>Grupos completos</b>: eliges uno o varios grupos; van todos y tocas a quien <b>no</b> va.</li>
+            <li><b>Alumnos de varios grupos</b> (una optativa, el coro, un concurso…): buscas por nombre o grupo y tocas a quien <b>va</b>. La app deduce los grupos y que el resto de cada grupo se queda.</li>
+          </ul>
+        </li>
+        <li>Elige el <b>profesorado acompañante</b>. La app recomienda cuántos según el criterio del centro (por defecto, 2 hasta 20 alumnos y uno más por cada 20 alumnos más) y avisa si van menos; lo acuerdan Jefatura y Dirección según la actividad.</li>
+        <li>Si hay <b>pago</b>, escribe el importe por alumno. Añade una nota si quieres: punto de encuentro, autobús, qué llevar…</li>
+        <li>Pulsa <span class="btn">Enviar a Jefatura y Dirección</span>.</li>
       </ol>
-      <ul>
-        <li><b>En un día no lectivo no se puede.</b></li>
-        <li>Si alguno de los grupos tiene <b>un examen</b> a esas horas, la app avisa.</li>
-        <li>Los acompañantes reciben un aviso por Rumbogram.</li>
-      </ul>
+      <p>No se puede poner en un día no lectivo, y la app avisa si algún grupo tiene <b>examen</b> a esas horas.</p>
     </div>
     <figure>
-      <button class="cap" data-ampliar="img/salidas-nueva.webp" aria-label="Ampliar: nueva salida"><img src="img/salidas-nueva.webp" alt="Formulario de nueva salida con las horas, el grupo, quién va y quién se queda, y el profesorado acompañante" loading="lazy" width="1052" height="910"></button>
+      <button class="cap" data-ampliar="img/salidas-varios-grupos.webp" aria-label="Ampliar: nueva salida con alumnos de varios grupos"><img src="img/salidas-varios-grupos.webp" alt="Formulario de nueva salida con alumnos de tres grupos, profesorado acompañante y aviso de examen" loading="lazy" width="1052" height="1164"></button>
     </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/guardias.svg" alt="">Las clases de quien acompaña</h3>
-      <p>Al guardar, la app <b>registra la ausencia de cada acompañante</b> (motivo «Salida o excursión») en las horas en que tiene clase o guardia, para que se cubran como cualquier otra ausencia. Antes de guardar te dice qué horas serán.</p>
+      <h3><img src="/iconos/cargo-direccion.svg" alt="">Aprobación de Dirección</h3>
       <ul>
-        <li>Si un grupo se va entero, esa clase <b>no se pide cubrir</b>: no hay nadie.</li>
-        <li><b>Quien hace la guardia</b> lo ve en su consigna: cuántos alumnos están en la salida y quiénes se quedan en clase, con sus nombres.</li>
-        <li>Si cambias la salida, las ausencias se actualizan; si la anulas, se quitan.</li>
+        <li>Al enviarla queda <b>«Pendiente de aprobación»</b>. Jefatura, Dirección y quien tenga el cargo <b>Actividades extraescolares</b> reciben un aviso por Rumbogram; a Dirección le sale en la campana como «salida por aprobar».</li>
+        <li>Dirección pulsa <span class="btn">✓ Aprobar</span> o <b>No aprobar</b> (con el motivo, si quiere). Quien la organiza, los acompañantes, Jefatura y Extraescolares reciben la respuesta.</li>
+        <li><b>Mientras está pendiente no cuenta</b>: no se piden coberturas ni se avisa al grupo. Si se cambia una salida aprobada, vuelve a quedar pendiente. Si la registra Dirección, queda aprobada.</li>
       </ul>
     </div>
+    <figure>
+      <button class="cap" data-ampliar="img/salidas-aprobacion.webp" aria-label="Ampliar: salida pendiente de aprobación"><img src="img/salidas-aprobacion.webp" alt="Salida pendiente de aprobación con los botones Aprobar y No aprobar" loading="lazy" width="1052" height="173"></button>
+    </figure>
   </div>
 
   <div class="tarjeta">
     <div>
-      <h3><img src="/iconos/pasar-lista.svg" alt="">El profesorado del grupo</h3>
+      <h3><img src="/iconos/documentos.svg" alt="">Autorizaciones, pagos y listados</h3>
+      <p><b>Sin autorización firmada ningún alumno puede salir del centro.</b> El profesor/a responsable las recoge y las guarda durante la salida. En <b>Autorizaciones y pagos</b>:</p>
       <ul>
-        <li>En tu <a href="#escritorio">Escritorio</a>, en «Hoy», ves tus clases con grupos de salida: cuántos van y cuántos se quedan contigo.</li>
-        <li>Al <b>pasar lista</b>, los que están de salida salen como <b>«🚌 De salida»</b> y no cuentan como falta.</li>
-        <li>En cada salida, <b>«Quién va y quién se queda»</b> muestra las dos listas de cada grupo.</li>
+        <li>Marca a cada alumno que entrega la <b>autorización</b> y, si hay pago, quién ha <b>pagado</b>. La salida muestra cuántas faltan; en tu campana salen las que quedan por recoger la semana antes.</li>
+        <li><span class="btn">Quitar de la salida a quien no tiene autorización</span> los pasa a «se quedan» y vuelve a enviar las listas para Raíces.</li>
+        <li><span class="btn">Entregar a Secretaría</span> avisa a Secretaría con la cantidad y deja constancia en la salida.</li>
+        <li><b>Listado para Extraescolares (PDF)</b>: por grupo, quién va con su autorización y su pago, y quién se queda en el centro.</li>
       </ul>
-      <p>Jefatura ve en su Escritorio las salidas del día, y puede cambiar o anular cualquiera.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/salidas-autorizaciones.webp" aria-label="Ampliar: autorizaciones y pagos"><img src="img/salidas-autorizaciones.webp" alt="Autorizaciones y pagos de cada alumno, con los botones para quitar a quien no tiene autorización y entregar a Secretaría" loading="lazy" width="1052" height="720"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/pasar-lista.svg" alt="">Al aprobarse: grupo, guardias y Raíces</h3>
+      <ul>
+        <li><b>El profesorado que tiene clase con esos grupos</b> a esas horas recibe, en nombre de Jefatura, quién está de salida y quién se queda, <b>para pasar lista en Raíces</b> sin poner falta a quien se ha ido. También lo ve en su <a href="#escritorio">Escritorio</a>.</li>
+        <li>Se registra la <b>ausencia de cada acompañante</b> (motivo «Salida o excursión») en las horas en que tiene clase o guardia, para que se cubran. Si un grupo se va entero, esa clase no se pide cubrir.</li>
+        <li><b>Quien hace la guardia</b> ve en su consigna qué alumnos se quedan en clase, con sus nombres.</li>
+        <li>Al <b>pasar lista</b> en RumboAula, los que están de salida salen como «🚌 De salida» y no cuentan como falta.</li>
+      </ul>
     </div>
     <figure>
       <button class="cap" data-ampliar="img/salidas-quien.webp" aria-label="Ampliar: quién va y quién se queda"><img src="img/salidas-quien.webp" alt="Salida al Museo del Prado: van cuatro alumnos de 2º ESO B y se queda uno" loading="lazy" width="1052" height="238"></button>
