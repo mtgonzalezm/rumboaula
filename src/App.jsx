@@ -3933,7 +3933,8 @@ const AYUDAS = {
   salidas: { titulo: "Salidas y excursiones", pasos: [
     "Pulsa «Nueva salida»: actividad y lugar, día, horas y profesorado acompañante. Con «Grupos completos» van todos los de los grupos que elijas y tocas a quien no va; con «Alumnos de varios grupos» buscas y tocas a quien va.",
     "Al enviarla, Jefatura, Dirección y el Departamento de Actividades Extraescolares reciben el aviso y queda «Pendiente de aprobación». Dirección la aprueba o no; quien la organiza recibe la respuesta por Rumbogram.",
-    "Con «Listado para Extraescolares (PDF)» sacas las listas de cada grupo: quién va y quién se queda.",
+    "En «Autorizaciones» marcas quién la ha entregado (y quién ha pagado, si hay pago). Sin autorización nadie sale del centro: con un botón pasan a «se quedan» y se reenvían las listas para Raíces. El dinero se entrega a Secretaría con «Entregar a Secretaría».",
+    "Con «Listado para Extraescolares (PDF)» sacas las listas de cada grupo: quién va, autorización, pago y quién se queda.",
     "Cuando se aprueba, se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
     "Al aprobarse, el profesorado que tiene clase con esos grupos recibe las listas para pasar lista en Raíces. Quien haga la guardia ve en su consigna qué alumnos se quedan.",
   ] },
@@ -9510,6 +9511,14 @@ function grupoEnSalida(salidas, alumnos, grupo, fecha, hora) {
   return s ? repartoGrupo(s, alumnos, grupo) : null;
 }
 const nombresCortos = l => l.map(a => a.nombre).join(", ");
+// Autorizaciones y pagos que recoge el profesor/a responsable (sin autorización firmada ningún alumno sale del centro)
+const sinAutorizacion = (s, alumnos) => alumnosSalida(s, alumnos).filter(a => !(s.autorizaciones || []).includes(a.id));
+const pagados = (s, alumnos) => alumnosSalida(s, alumnos).filter(a => (s.pagos || []).includes(a.id));
+const euros = n => `${(Math.round(n * 100) / 100).toLocaleString("es-ES")} €`;
+// Acompañantes que recomienda el criterio del centro: el mínimo hasta «cada» alumnos y uno más por cada «cada» alumnos más.
+// Es una orientación: lo acuerdan Jefatura y Dirección según la actividad
+const CRITERIO_ACOMPANANTES = { minimo: 2, cada: 20 };
+const acompanantesRecomendados = (n, c = CRITERIO_ACOMPANANTES) => n ? c.minimo + Math.floor(Math.max(0, n - 1) / Math.max(1, c.cada)) : 0;
 // Ausencias del profesorado acompañante: solo las horas en que tiene guardia o clase con alumnado que se queda
 function ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) {
   return s.acompanantes.map((profe, k) => {
@@ -9540,28 +9549,35 @@ function pdfListadoSalida(s, alumnos) {
   autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", columnStyles: { 0: { fontStyle: "bold", cellWidth: 55, fillColor: [238, 245, 248] } },
     body: [["Organiza", s.responsable || "-"], ["Profesorado acompañante", s.acompanantes.join(", ")], ["Grupos", s.grupos.join(", ")],
       ["Alumnado que va", String(alumnosSalida(s, alumnos).length)], ["Estado", `${ESTADO_SALIDA[s.estado || "aprobada"].label}${s.revision?.por ? ` (${s.revision.por}, ${fmtD(s.revision.ts)})` : ""}`],
+      ["Autorizaciones", `${alumnosSalida(s, alumnos).length - sinAutorizacion(s, alumnos).length} de ${alumnosSalida(s, alumnos).length}. Las guarda el profesor/a responsable durante la salida.`],
+      ...(Number(s.importe) ? [["Pago", `${euros(Number(s.importe))} por alumno · han pagado ${pagados(s, alumnos).length} · recaudado ${euros(pagados(s, alumnos).length * Number(s.importe))}${s.entregaSecretaria ? ` · entregado a Secretaría el ${fmtD(s.entregaSecretaria.ts)}` : ""}`]] : []),
       ...(s.nota ? [["Nota", s.nota]] : [])] });
+  const conPago = !!Number(s.importe);
   s.grupos.forEach(g => {
-    const r = repartoGrupo(s, alumnos, g), filas = Math.max(r.van.length, r.quedan.length);
+    const r = repartoGrupo(s, alumnos, g);
     y = doc.lastAutoTable.finalY + 8;
-    autoTable(doc, { ...estiloTabla, startY: y, head: [[`${g} · van ${r.van.length}`, `${g} · se quedan ${r.quedan.length}`]],
-      body: Array.from({ length: Math.max(filas, 1) }, (_, i) => [r.van[i]?.nombre || (i === 0 && !r.van.length ? "Nadie" : ""), r.quedan[i]?.nombre || (i === 0 && !r.quedan.length ? "Nadie: va todo el grupo" : "")]) });
+    autoTable(doc, { ...estiloTabla, startY: y, head: [[`${g} · van ${r.van.length}`, "Autorización", ...(conPago ? ["Pago"] : [])]],
+      body: r.van.length ? r.van.map(a => [a.nombre, (s.autorizaciones || []).includes(a.id) ? "Entregada" : "FALTA", ...(conPago ? [(s.pagos || []).includes(a.id) ? "Pagado" : "Pendiente"] : [])]) : [["Nadie", "", ...(conPago ? [""] : [])]] });
+    y = doc.lastAutoTable.finalY + 2;
+    autoTable(doc, { ...estiloTabla, startY: y, head: [[`${g} · se quedan en el centro ${r.quedan.length}`]], body: [[r.quedan.length ? nombresCortos(r.quedan) : "Nadie: va todo el grupo"]] });
   });
   guardarPDF(doc, `salida-${s.fecha}-${s.titulo.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}.pdf`);
 }
 // Al aprobarse, el profesorado que tiene clase con esos grupos a esas horas recibe las listas para pasar lista en Raíces
-function avisosPasarLista(s, { alumnos, horarios, profesores }) {
+function avisosPasarLista(s, { alumnos, horarios, profesores }, actualizada = false) {
   const dia = DIAS_ES[parseISO(s.fecha).getDay()], porProfe = {};
   profesores.forEach(p => s.horas.forEach(h => {
     const c = horarios[`${dia}|${h}|${p}`];
     if (!c || !s.grupos.includes(c.grupo) || s.acompanantes.includes(p)) return;
     (porProfe[p] = porProfe[p] || []).push({ hora: h, ...repartoGrupo(s, alumnos, c.grupo), grupo: c.grupo });
   }));
-  return Object.entries(porProfe).map(([p, clases]) => [p, `📋 Jefatura de Estudios · Salida «${s.titulo}» del ${fmtD(s.fecha)}. Para pasar lista en Raíces: ` +
+  return Object.entries(porProfe).map(([p, clases]) => [p, `📋 Jefatura de Estudios · ${actualizada ? "Lista actualizada de la salida" : "Salida"} «${s.titulo}» del ${fmtD(s.fecha)}. Para pasar lista en Raíces: ` +
     clases.map(c => `${c.hora}, ${c.grupo}: están de salida ${c.van.length} (no son falta)${c.quedan.length ? `; se quedan en clase ${c.quedan.length}: ${nombresCortos(c.quedan)}` : "; no se queda nadie"}`).join(". ") + "."]);
 }
 
-function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], extraescolares = [], setMensajes }) {
+function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, setCal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], extraescolares = [], secretaria = [], setMensajes }) {
+  const criterio = { ...CRITERIO_ACOMPANANTES, ...(cal.criterioSalidas || {}) };
+  const [abiertaAut, setAbiertaAut] = useState(null);
   const hoy = isoLocal();
   const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], modo: "grupos", acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
   const [form, setForm] = useState(null);
@@ -9592,8 +9608,8 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     const l = [...new Set(destinos)].filter(p => p && p !== usuario);
     if (setMensajes && l.length) setMensajes(prev => [...l.map((p, k) => mensajeRumbo(p, texto, desde + k)), ...prev]);
   };
-  const avisarPasarLista = (s, desde) => {
-    const l = avisosPasarLista(s, { alumnos, horarios, profesores });
+  const avisarPasarLista = (s, desde, actualizada = false) => {
+    const l = avisosPasarLista(s, { alumnos, horarios, profesores }, actualizada);
     if (setMensajes && l.length) setMensajes(prev => [...l.map(([p, t], k) => mensajeRumbo(p, t, desde + k)), ...prev]);
   };
   // Aprobada: se registran las ausencias del profesorado acompañante; si no, se quitan
@@ -9645,6 +9661,26 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     setAusencias(prev => prev.filter(a => a.salidaId !== s.id));
   };
   const puedeEditar = s => puedeTodo || s.responsable === usuario;
+  // Autorizaciones y pagos: los lleva el profesor/a responsable (y quien acompaña)
+  const llevaListas = s => puedeEditar(s) || s.acompanantes.includes(usuario);
+  const cambiarSalida = (id, fn) => setSalidas(prev => prev.map(x => x.id === id ? fn(x) : x));
+  const marcar = (s, campo, idA) => cambiarSalida(s.id, x => { const l = x[campo] || []; return { ...x, [campo]: l.includes(idA) ? l.filter(y => y !== idA) : [...l, idA] }; });
+  const quitarSinAutorizacion = s => {
+    const faltan = sinAutorizacion(s, alumnos);
+    if (!faltan.length || !window.confirm(`${faltan.length === 1 ? "Este alumno no tiene" : `Estos ${faltan.length} alumnos no tienen`} autorización: ${nombresCortos(faltan)}. Sin autorización no pueden salir del centro: ¿pasan a «se quedan»?`)) return;
+    const n = { ...s, noVan: [...new Set([...(s.noVan || []), ...faltan.map(a => a.id)])] };
+    if (aprobada(n)) { aplicar(n); avisarPasarLista(n, 300, true); }
+    setSalidas(prev => prev.map(x => x.id === n.id ? n : x));
+    avisar([...jefaturaDireccion, ...extraescolares], `🚌 Salida «${n.titulo}» del ${fmtD(n.fecha)}: se quedan en el centro por no tener autorización ${nombresCortos(faltan)}.`, 400);
+    setHecho(`Se quedan en el centro por no tener autorización: ${nombresCortos(faltan)}.${aprobada(n) ? " Las listas para Raíces se han enviado de nuevo." : ""}`); setTimeout(() => setHecho(""), 6000);
+  };
+  const entregarSecretaria = s => {
+    const p = pagados(s, alumnos), total = p.length * Number(s.importe || 0);
+    if (!total || !window.confirm(`¿Entregas a Secretaría ${euros(total)} (${p.length} × ${euros(Number(s.importe))}) de la salida «${s.titulo}»?`)) return;
+    cambiarSalida(s.id, x => ({ ...x, entregaSecretaria: { ts: new Date().toISOString(), importe: total, alumnos: p.length, por: usuario } }));
+    avisar(secretaria, `💶 ${usuario} entrega a Secretaría ${euros(total)} de la salida «${s.titulo}» del ${fmtD(s.fecha)} (${p.length} alumnos × ${euros(Number(s.importe))}).`);
+    setHecho(`Entregados a Secretaría ${euros(total)}. Secretaría ha recibido el aviso.`); setTimeout(() => setHecho(""), 6000);
+  };
   const orden = (a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.horas[0]) - HORAS.indexOf(b.horas[0]);
   const pendientes = salidas.filter(s => s.estado === "pendiente" && s.fecha >= hoy).sort(orden);
   const deHoy = salidas.filter(s => s.fecha === hoy && s.estado !== "pendiente").sort(orden), proximas = salidas.filter(s => s.fecha > hoy && s.estado !== "pendiente").sort(orden), pasadas = salidas.filter(s => s.fecha < hoy).sort((a, b) => -orden(a, b)).slice(0, 10);
@@ -9664,8 +9700,20 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
           <span style={{ fontWeight: 700, color: R.noche }}>{van.length} {van.length === 1 ? "alumno" : "alumnos"} · {s.grupos.join(", ")}</span>
         </div>
         <div style={{ fontSize: 15, color: R.petroleo, marginTop: 4 }}>Con {s.acompanantes.join(", ")}{s.nota ? ` · ${s.nota}` : ""}{s.responsable && !s.acompanantes.includes(s.responsable) ? ` · Organiza ${s.responsable}` : ""}</div>
+        {(() => {
+          const faltan = sinAutorizacion(s, alumnos).length, rec = acompanantesRecomendados(van.length, criterio), urge = s.fecha <= isoLocal(sumarDias(hoy, 1));
+          const pill = (color, txt, attr) => <span {...attr} style={{ fontSize: 14, fontWeight: 700, color: R.noche, background: C.white, border: `2px solid ${color}`, borderRadius: 999, padding: "2px 10px" }}>{txt}</span>;
+          return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+              {pill(faltan ? (urge ? NIVEL.urgente.color : NIVEL.pendiente.color) : NIVEL.resuelto.color, `Autorizaciones ${van.length - faltan} de ${van.length}${faltan ? ` · faltan ${faltan}` : " ✓"}`, { "data-autorizaciones": `${van.length - faltan}/${van.length}` })}
+              {!!Number(s.importe) && pill(s.entregaSecretaria ? NIVEL.resuelto.color : NIVEL.pendiente.color, `Pagos ${pagados(s, alumnos).length} de ${van.length} · ${euros(pagados(s, alumnos).length * Number(s.importe))}${s.entregaSecretaria ? ` · entregado a Secretaría el ${fmtD(s.entregaSecretaria.ts)}` : ""}`)}
+              {s.acompanantes.length < rec && pill(NIVEL.importante.color, `Acompañantes ${s.acompanantes.length}: el criterio recomienda ${rec}`)}
+            </div>
+          );
+        })()}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           <button onClick={() => setAbierta(abiertaEsta ? null : s.id)} aria-expanded={abiertaEsta} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>{abiertaEsta ? "Ocultar" : "Quién va y quién se queda"}</button>
+          {llevaListas(s) && <button onClick={() => setAbiertaAut(abiertaAut === s.id ? null : s.id)} aria-expanded={abiertaAut === s.id} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>{Number(s.importe) ? "Autorizaciones y pagos" : "Autorizaciones"}</button>}
           {(puedeEditar(s) || s.acompanantes.includes(usuario)) && <button onClick={() => pdfListadoSalida(s, alumnos)} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Listado para Extraescolares (PDF)</button>}
           {puedeAprobar && s.estado !== "aprobada" && s.fecha >= hoy && <button onClick={() => revisar(s, true)} className="gd-pulsable" style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 6, background: NIVEL.resuelto.color, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>✓ Aprobar</button>}
           {puedeAprobar && s.estado !== "rechazada" && s.fecha >= hoy && <button onClick={() => revisar(s, false)} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${NIVEL.urgente.color}`, borderRadius: 6, background: C.white, color: NIVEL.urgente.color, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>No aprobar</button>}
@@ -9674,6 +9722,32 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
             <button onClick={() => quitar(s)} style={{ background: "none", border: "none", color: NIVEL.urgente.color, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Anular</button>
           </>}
         </div>
+        {abiertaAut === s.id && (() => {
+          const conPago = !!Number(s.importe), faltan = sinAutorizacion(s, alumnos), total = pagados(s, alumnos).length * Number(s.importe || 0);
+          const marca = (on, txt, onClick, attr) => <button type="button" {...attr} aria-pressed={on} onClick={onClick}
+            style={{ minHeight: 40, padding: "0 10px", borderRadius: 6, border: `2px solid ${on ? NIVEL.resuelto.color : R.turquesaClaro}`, background: on ? NIVEL.resuelto.claro : C.white, color: R.noche, fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>{on ? "✓ " : ""}{txt}</button>;
+          return (
+            <div style={{ marginTop: 10, background: R.azulClaro, padding: "12px 14px" }}>
+              <p style={{ margin: "0 0 8px", fontSize: 15, color: R.noche }}>Sin autorización firmada ningún alumno puede salir del centro. Las autorizaciones las guarda el profesor/a responsable durante la salida.{conPago ? ` Pago: ${euros(Number(s.importe))} por alumno; el dinero se entrega a Secretaría.` : ""}</p>
+              {s.grupos.map(g => (
+                <div key={g} style={{ marginTop: 8 }}>
+                  <b style={{ color: R.petroleo }}>{g}</b>
+                  {repartoGrupo(s, alumnos, g).van.map(a => (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "4px 0", borderBottom: `1px solid ${R.turquesaClaro}` }}>
+                      <span style={{ flex: 1, minWidth: 160, color: R.noche }}>{a.nombre}</span>
+                      {marca((s.autorizaciones || []).includes(a.id), "Autorización", () => marcar(s, "autorizaciones", a.id), { "data-aut": a.id })}
+                      {conPago && marca((s.pagos || []).includes(a.id), "Pagado", () => marcar(s, "pagos", a.id), { "data-pago": a.id })}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                {faltan.length > 0 && <button onClick={() => quitarSinAutorizacion(s)} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${NIVEL.urgente.color}`, borderRadius: 6, background: C.white, color: R.noche, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700 }}>Quitar de la salida a quien no tiene autorización ({faltan.length})</button>}
+                {conPago && total > 0 && !s.entregaSecretaria && <button onClick={() => entregarSecretaria(s)} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700 }}>Entregar a Secretaría ({euros(total)})</button>}
+              </div>
+            </div>
+          );
+        })()}
         {abiertaEsta && s.grupos.map(g => {
           const info = repartoGrupo(s, alumnos, g);
           return (
@@ -9692,6 +9766,16 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
       <div style={{ marginBottom: 16 }}><TituloBloque titulo="Salidas y excursiones" sub="Quién va, quién se queda y con quién" icono="edificio" /></div>
       {hecho && <div role="status" style={{ ...caja(R.verde), padding: "10px 14px", marginBottom: 12, fontWeight: 700, color: R.noche }}>✅ {hecho}</div>}
       {!form && <button onClick={() => setForm({ ...vacio })} className="gd-pulsable" style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>+ Nueva salida</button>}
+      {puedeTodo && setCal && !form && (
+        <details style={{ margin: "4px 0 10px", color: R.petroleo }}>
+          <summary style={{ cursor: "pointer", fontWeight: 700, minHeight: 44, display: "flex", alignItems: "center" }}>Criterio de profesorado acompañante: mínimo {criterio.minimo} y uno más por cada {criterio.cada} alumnos</summary>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", padding: "6px 0" }}>
+            <label><span style={etiqueta}>Mínimo de acompañantes</span><input id="gd-criterio-minimo" type="number" min={1} max={10} value={criterio.minimo} onChange={e => setCal({ ...cal, criterioSalidas: { ...criterio, minimo: Math.max(1, Number(e.target.value) || 1) } })} style={{ ...campo, width: 140 }} /></label>
+            <label><span style={etiqueta}>Uno más por cada … alumnos</span><input type="number" min={5} max={60} value={criterio.cada} onChange={e => setCal({ ...cal, criterioSalidas: { ...criterio, cada: Math.max(5, Number(e.target.value) || 20) } })} style={{ ...campo, width: 140 }} /></label>
+            <span style={{ fontSize: 14, maxWidth: 420 }}>Es una orientación: la app avisa si van menos, pero lo acuerdan Jefatura y Dirección según la actividad.</span>
+          </div>
+        </details>
+      )}
 
       {form && (
         <Card style={{ background: R.azulClaro }}>
@@ -9760,6 +9844,11 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
           <div style={{ marginTop: 12 }}><span style={etiqueta}>Profesorado acompañante</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(p => chip(form.acompanantes.includes(p), p, () => setForm({ ...form, acompanantes: alterna(form.acompanantes, p) })))}</div>
           </div>
+          {(() => { const n = alumnosSalida(form, alumnos).length, rec = acompanantesRecomendados(n, criterio);
+            return n > 0 && <div style={{ ...caja(form.acompanantes.length < rec ? NIVEL.importante.color : R.turquesa), padding: "8px 12px", marginTop: 10, color: R.noche, fontSize: 15 }} {...(form.acompanantes.length < rec ? { role: "alert" } : {})}>
+              {form.acompanantes.length < rec ? "⚠️ " : "ℹ️ "}Para {n} {n === 1 ? "alumno" : "alumnos"}, el criterio del centro recomienda {rec} acompañantes (mínimo {criterio.minimo} y uno más por cada {criterio.cada} alumnos); vais {form.acompanantes.length}. Es una orientación: lo acuerdan Jefatura y Dirección según la actividad.</div>; })()}
+          <label style={{ display: "block", marginTop: 12, maxWidth: 320 }}><span style={etiqueta}>Pago por alumno (opcional)</span>
+            <input id="gd-salida-importe" type="number" min="0" step="0.5" inputMode="decimal" value={form.importe ?? ""} onChange={e => setForm({ ...form, importe: e.target.value === "" ? null : Number(e.target.value) })} placeholder="Por ejemplo, 12 (€)" style={campo} /></label>
           <label style={{ display: "block", marginTop: 12 }}><span style={etiqueta}>Nota (opcional)</span><input value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} placeholder="Punto de encuentro, autobús, lo que tienen que llevar…" style={campo} /></label>
           {bloquea.map(b => <div key={b} role="alert" style={{ ...caja(NIVEL.urgente.color), padding: "10px 14px", marginTop: 12, color: R.noche, fontWeight: 700 }}>⛔ {b} Elige otro día.</div>)}
           {avisos.map(a => <div key={a} role="alert" style={{ ...caja(NIVEL.importante.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>⚠️ {a}</div>)}
@@ -10976,6 +11065,14 @@ function AppInterna() {
       add(tempranas, tempranas === 1 ? "alerta temprana en tu tutoría" : "alertas tempranas en tu tutoría", "alumnos", "resumen_tutoria", "alertas");
       const porRevisar = compromisos.filter(c => c.estado === "en_proceso" && c.revisar && c.revisar <= hoy && verCompromiso(c, yo, tutores, false)).length;
       add(porRevisar, porRevisar === 1 ? "compromiso por revisar" : "compromisos por revisar", "alumnos", "compromisos", "tareas");
+      // Salidas que organiza: autorizaciones por recoger en los próximos 7 días y dinero por entregar a Secretaría
+      const en7 = isoLocal(sumarDias(hoy, 7)), manana = isoLocal(sumarDias(hoy, 1));
+      const misSal = salidas.filter(x => x.responsable === yo && x.estado !== "rechazada");
+      const porAut = misSal.filter(x => x.fecha >= hoy && x.fecha <= en7).reduce((n, x) => n + sinAutorizacion(x, alumnos).length, 0);
+      if (porAut) lista.push({ id: "salidas-autorizaciones", n: porAut, txt: porAut === 1 ? "autorización de salida por recoger" : "autorizaciones de salidas por recoger", modulo: "salidas", tab: "salidas", icono: "documentos",
+        nivel: misSal.some(x => x.fecha >= hoy && x.fecha <= manana && sinAutorizacion(x, alumnos).length) ? "importante" : "pendiente" });
+      const porEntregar = misSal.filter(x => Number(x.importe) && pagados(x, alumnos).length && !x.entregaSecretaria).length;
+      add(porEntregar, porEntregar === 1 ? "pago de salida pendiente de entregar a Secretaría" : "pagos de salidas pendientes de entregar a Secretaría", "salidas", "salidas", "documentos");
       const misReservas = reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy && !horaTerminada(hoy, r.hora)).length;
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
@@ -11801,7 +11898,8 @@ function AppInterna() {
             cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} setMensajes={setMensajes}
             puedeTodo={perfil.id === "jefatura" || cargosIds(cuentas[fProfesor || usuario]).includes("extraescolares")}
             puedeAprobar={fx.direccion} jefaturaDireccion={profesores.filter(p => cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"))}
-            extraescolares={profesores.filter(p => cargosIds(cuentas[p]).includes("extraescolares"))} />
+            extraescolares={profesores.filter(p => cargosIds(cuentas[p]).includes("extraescolares"))}
+            secretaria={profesores.filter(p => cargosIds(cuentas[p]).includes("secretaria"))} setCal={setCalEscolar} />
         )}
 
         {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}
