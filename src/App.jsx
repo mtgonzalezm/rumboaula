@@ -322,10 +322,11 @@ const CARGOS = [
   { id: "tic",        label: "Coordinación TIC",     perfiles: ["profesor", "admin"], funciones: "La tecnología del centro: averías informáticas y audiovisuales, incidencias de los puestos y aulas con ordenadores." },
   { id: "orientacion", label: "Orientación",         perfiles: ["profesor", "jefatura"], funciones: "Convivencia y orientación del alumnado: partes, medidas, alertas, asistencia y estadísticas. Hace sus guardias como el resto del profesorado, pero no las organiza: eso es de Jefatura de Estudios." },
   { id: "jefe_depto", label: "Jefatura de departamento", perfiles: ["profesor"], funciones: "De momento, lo mismo que el profesorado." },
+  { id: "extraescolares", label: "Actividades extraescolares", perfiles: ["profesor"], funciones: "Lo mismo que el profesorado y, además, recibe el aviso de cada salida o excursión, ve todas y puede revisarlas y sacar sus listados." },
   { id: "conserjeria", label: "Conserjería",         perfiles: ["conserjeria"], funciones: "Entrega y recogida de llaves y consulta de las reservas de los espacios. Sus cuentas van aparte del profesorado." },
 ];
 // Cargos de ejemplo (profesorado ficticio); el resto es Profesor/a
-const CUENTAS_DEMO = { "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Beatriz Navarro": { cargos: ["profesor", "secretaria"] }, "Conserjería": { cargos: ["conserjeria"], noDocente: true } };
+const CUENTAS_DEMO = { "Sofía Martín": { cargos: ["profesor", "extraescolares"] }, "Luis García": { cargos: ["profesor", "direccion"] }, "Ana Jiménez": { cargos: ["profesor", "jefatura"] }, "Elena Vega": { cargos: ["profesor", "tic"] }, "Beatriz Navarro": { cargos: ["profesor", "secretaria"] }, "Conserjería": { cargos: ["conserjeria"], noDocente: true } };
 // Personal no docente (Conserjería): tiene cuenta y clave, pero no está en la lista del profesorado
 const personalNoDocente = cuentas => Object.keys(cuentas || {}).filter(n => cuentas[n]?.noDocente).sort((a, b) => a.localeCompare(b, "es"));
 // Una persona puede tener varios cargos a la vez (p. ej. Profesor/a + Coordinación TIC)
@@ -979,7 +980,8 @@ export function VisorDocumentos() {
   if (!pdf && !excel) return null;
   const barra = { position: "sticky", top: 0, zIndex: 2, background: R.azul, color: "#fff", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" };
   const bb = { background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: 14 };
-  const fondo = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "2vh 2vw", fontFamily: "system-ui,sans-serif" };
+  // Por encima de los avisos emergentes de Rumbogram (2100), que si no tapan los botones
+  const fondo = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2200, display: "flex", alignItems: "stretch", justifyContent: "center", padding: "2vh 2vw", fontFamily: "system-ui,sans-serif" };
   const caja = { background: C.white, borderRadius: 14, width: "100%", maxWidth: 1200, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" };
 
   if (pdf) return (
@@ -3930,9 +3932,10 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 const AYUDAS = {
   salidas: { titulo: "Salidas y excursiones", pasos: [
     "Pulsa «Nueva salida»: actividad y lugar, día, horas, grupos y profesorado acompañante. Van todos los alumnos de los grupos; toca a quien no va.",
-    "Al enviarla, Jefatura y Dirección reciben el aviso y queda «Pendiente de aprobación». Dirección la aprueba o no; quien la organiza recibe la respuesta por Rumbogram.",
+    "Al enviarla, Jefatura, Dirección y el Departamento de Actividades Extraescolares reciben el aviso y queda «Pendiente de aprobación». Dirección la aprueba o no; quien la organiza recibe la respuesta por Rumbogram.",
+    "Con «Listado para Extraescolares (PDF)» sacas las listas de cada grupo: quién va y quién se queda.",
     "Cuando se aprueba, se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
-    "Quien haga la guardia ve en su consigna qué alumnos se quedan. El profesorado del grupo lo ve en su Escritorio y, al pasar lista, los que están de salida no cuentan como falta.",
+    "Al aprobarse, el profesorado que tiene clase con esos grupos recibe las listas para pasar lista en Raíces. Quien haga la guardia ve en su consigna qué alumnos se quedan.",
   ] },
   examenes_grupo: { titulo: "Calendario de exámenes", pasos: [
     "Elige el grupo y el mes. En verde salen los festivos y vacaciones; en coral, otros días no lectivos.",
@@ -6786,7 +6789,7 @@ function PasarListaClase({ alumnos = [], horarios = {}, asistencia = [], setAsis
         <div style={{ fontSize: 14, color: R.petroleo, marginBottom: 8 }}>{existente ? "Esta lista ya está guardada: puedes corregirla." : "Toca a quien falta: una vez, falta; dos veces, retraso; tres, vuelve a presente."} {nF} {nF === 1 ? "falta" : "faltas"} · {nR} {nR === 1 ? "retraso" : "retrasos"} · {lista.length} alumnos/as</div>
         {hecho && <div role="status" style={{ padding: "10px 14px", marginBottom: 10, background: R.verdeCaminoClaro, borderLeft: `5px solid ${R.verdeCamino}`, color: R.verdeOscuro, fontWeight: 700 }}>✅ {hecho}</div>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))", gap: 6 }}>
-          {enSalida && <div role="note" style={{ gridColumn: "1 / -1", ...caja(R.mostaza), padding: "8px 12px", color: R.noche }}>🚌 {enSalida.van.length} de este grupo están en la salida «{enSalida.salida.titulo}» con {enSalida.salida.acompanantes.join(", ")}: no cuentan como falta.</div>}
+          {enSalida && <div role="note" style={{ gridColumn: "1 / -1", ...caja(R.mostaza), padding: "8px 12px", color: R.noche }}>🚌 {enSalida.van.length} de este grupo están en la salida «{enSalida.salida.titulo}» con {enSalida.salida.acompanantes.join(", ")}: no cuentan como falta. En Raíces, tampoco les pongas falta.</div>}
           {lista.map(a => {
             const m = marcas[a.id], just = m === "falta" && justificada(a.id, fecha, justificantes);
             if (deSalida.has(a.id)) return (
@@ -9530,7 +9533,35 @@ function ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) {
 }
 const ordenarHoras = hs => HORAS.filter(h => hs.includes(h));
 
-function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], setMensajes }) {
+// Listado de una salida para el Departamento de Actividades Extraescolares: quién va y quién se queda en cada grupo
+function pdfListadoSalida(s, alumnos) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  let y = cabeceraPDF(doc, `Salida: ${s.titulo}`, `${parseISO(s.fecha).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${s.horas.join(", ")}`);
+  autoTable(doc, { ...estiloTabla, startY: y, theme: "grid", columnStyles: { 0: { fontStyle: "bold", cellWidth: 55, fillColor: [238, 245, 248] } },
+    body: [["Organiza", s.responsable || "-"], ["Profesorado acompañante", s.acompanantes.join(", ")], ["Grupos", s.grupos.join(", ")],
+      ["Alumnado que va", String(alumnosSalida(s, alumnos).length)], ["Estado", `${ESTADO_SALIDA[s.estado || "aprobada"].label}${s.revision?.por ? ` (${s.revision.por}, ${fmtD(s.revision.ts)})` : ""}`],
+      ...(s.nota ? [["Nota", s.nota]] : [])] });
+  s.grupos.forEach(g => {
+    const r = repartoGrupo(s, alumnos, g), filas = Math.max(r.van.length, r.quedan.length);
+    y = doc.lastAutoTable.finalY + 8;
+    autoTable(doc, { ...estiloTabla, startY: y, head: [[`${g} · van ${r.van.length}`, `${g} · se quedan ${r.quedan.length}`]],
+      body: Array.from({ length: Math.max(filas, 1) }, (_, i) => [r.van[i]?.nombre || (i === 0 && !r.van.length ? "Nadie" : ""), r.quedan[i]?.nombre || (i === 0 && !r.quedan.length ? "Nadie: va todo el grupo" : "")]) });
+  });
+  guardarPDF(doc, `salida-${s.fecha}-${s.titulo.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}.pdf`);
+}
+// Al aprobarse, el profesorado que tiene clase con esos grupos a esas horas recibe las listas para pasar lista en Raíces
+function avisosPasarLista(s, { alumnos, horarios, profesores }) {
+  const dia = DIAS_ES[parseISO(s.fecha).getDay()], porProfe = {};
+  profesores.forEach(p => s.horas.forEach(h => {
+    const c = horarios[`${dia}|${h}|${p}`];
+    if (!c || !s.grupos.includes(c.grupo) || s.acompanantes.includes(p)) return;
+    (porProfe[p] = porProfe[p] || []).push({ hora: h, ...repartoGrupo(s, alumnos, c.grupo), grupo: c.grupo });
+  }));
+  return Object.entries(porProfe).map(([p, clases]) => [p, `📋 Jefatura de Estudios · Salida «${s.titulo}» del ${fmtD(s.fecha)}. Para pasar lista en Raíces: ` +
+    clases.map(c => `${c.hora}, ${c.grupo}: están de salida ${c.van.length} (no son falta)${c.quedan.length ? `; se quedan en clase ${c.quedan.length}: ${nombresCortos(c.quedan)}` : "; no se queda nadie"}`).join(". ") + "."]);
+}
+
+function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], extraescolares = [], setMensajes }) {
   const hoy = isoLocal();
   const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
   const [form, setForm] = useState(null);
@@ -9560,6 +9591,10 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     const l = [...new Set(destinos)].filter(p => p && p !== usuario);
     if (setMensajes && l.length) setMensajes(prev => [...l.map((p, k) => mensajeRumbo(p, texto, desde + k)), ...prev]);
   };
+  const avisarPasarLista = (s, desde) => {
+    const l = avisosPasarLista(s, { alumnos, horarios, profesores });
+    if (setMensajes && l.length) setMensajes(prev => [...l.map(([p, t], k) => mensajeRumbo(p, t, desde + k)), ...prev]);
+  };
   // Aprobada: se registran las ausencias del profesorado acompañante; si no, se quitan
   const aplicar = s => {
     const aus = aprobada(s) ? ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) : [];
@@ -9576,11 +9611,12 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     setSalidas(prev => [...prev.filter(x => x.id !== s.id), s]);
     const cuando = `del ${fmtD(s.fecha)} (${s.horas.join(", ")})`;
     if (s.estado === "pendiente") {
-      avisar(jefaturaDireccion, `🚌 ${form.id ? "Salida modificada" : "Nueva salida"} pendiente de aprobación: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, ${alumnosSalida(s, alumnos).length} alumnos, con ${s.acompanantes.join(", ")}. Organiza ${s.responsable}.`);
+      avisar([...jefaturaDireccion, ...extraescolares], `🚌 ${form.id ? "Salida modificada" : "Nueva salida"} pendiente de aprobación: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, ${alumnosSalida(s, alumnos).length} alumnos, con ${s.acompanantes.join(", ")}. Organiza ${s.responsable}.`);
       avisar(s.acompanantes.filter(p => !jefaturaDireccion.includes(p)), `🚌 ${usuario} te ha incluido como acompañante en la salida «${s.titulo}» ${cuando}. Está pendiente de que la apruebe Dirección.`, 100);
       setHecho(`Salida enviada a Jefatura y Dirección: «${s.titulo}» · ${fmtD(s.fecha)}. Cuando Dirección la apruebe se registrarán las ausencias del profesorado acompañante.`);
     } else {
-      avisar([...jefaturaDireccion, ...s.acompanantes], `🚌 Salida aprobada por Dirección: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, con ${s.acompanantes.join(", ")}.`);
+      avisar([...jefaturaDireccion, ...extraescolares, ...s.acompanantes], `🚌 Salida aprobada por Dirección: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, con ${s.acompanantes.join(", ")}.`);
+      avisarPasarLista(s, 200);
       setHecho(`Salida aprobada: «${s.titulo}» · ${fmtD(s.fecha)} · ${alumnosSalida(s, alumnos).length} alumnos. ${aus.length ? `Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
     }
     setTimeout(() => setHecho(""), 6000);
@@ -9593,10 +9629,11 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     setSalidas(prev => prev.map(x => x.id === n.id ? n : x));
     const cuando = `del ${fmtD(n.fecha)}`;
     if (si) {
-      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion], `✅ Dirección ha aprobado la salida «${n.titulo}» ${cuando}.${aus.length ? ` Queda registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
+      avisarPasarLista(n, 200);
+      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion, ...extraescolares], `✅ Dirección ha aprobado la salida «${n.titulo}» ${cuando}.${aus.length ? ` Queda registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
       setHecho(`Salida aprobada: «${n.titulo}».${aus.length ? ` Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")}.` : ""}`);
     } else {
-      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion], `❌ Dirección no ha aprobado la salida «${n.titulo}» ${cuando}.${motivo ? ` Motivo: ${motivo}` : ""}`);
+      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion, ...extraescolares], `❌ Dirección no ha aprobado la salida «${n.titulo}» ${cuando}.${motivo ? ` Motivo: ${motivo}` : ""}`);
       setHecho(`Salida no aprobada: «${n.titulo}».`);
     }
     setTimeout(() => setHecho(""), 6000);
@@ -9628,6 +9665,7 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
         <div style={{ fontSize: 15, color: R.petroleo, marginTop: 4 }}>Con {s.acompanantes.join(", ")}{s.nota ? ` · ${s.nota}` : ""}{s.responsable && !s.acompanantes.includes(s.responsable) ? ` · Organiza ${s.responsable}` : ""}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           <button onClick={() => setAbierta(abiertaEsta ? null : s.id)} aria-expanded={abiertaEsta} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>{abiertaEsta ? "Ocultar" : "Quién va y quién se queda"}</button>
+          {(puedeEditar(s) || s.acompanantes.includes(usuario)) && <button onClick={() => pdfListadoSalida(s, alumnos)} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Listado para Extraescolares (PDF)</button>}
           {puedeAprobar && s.estado !== "aprobada" && s.fecha >= hoy && <button onClick={() => revisar(s, true)} className="gd-pulsable" style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 6, background: NIVEL.resuelto.color, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>✓ Aprobar</button>}
           {puedeAprobar && s.estado !== "rechazada" && s.fecha >= hoy && <button onClick={() => revisar(s, false)} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${NIVEL.urgente.color}`, borderRadius: 6, background: C.white, color: NIVEL.urgente.color, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>No aprobar</button>}
           {puedeEditar(s) && <>
@@ -11727,8 +11765,10 @@ function AppInterna() {
         {tab === "calendario_escolar" && fx.guardias && <CalendarioEscolarAdmin cal={cal} setCal={setCalEscolar} />}
         {tab === "salidas" && (
           <Salidas salidas={salidas} setSalidas={setSalidas} setAusencias={setAusencias} alumnos={alumnos} cursos={cursos} profesores={profesores} horarios={horarios}
-            cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} puedeTodo={perfil.id === "jefatura"} setMensajes={setMensajes}
-            puedeAprobar={fx.direccion} jefaturaDireccion={profesores.filter(p => cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"))} />
+            cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} setMensajes={setMensajes}
+            puedeTodo={perfil.id === "jefatura" || cargosIds(cuentas[fProfesor || usuario]).includes("extraescolares")}
+            puedeAprobar={fx.direccion} jefaturaDireccion={profesores.filter(p => cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"))}
+            extraescolares={profesores.filter(p => cargosIds(cuentas[p]).includes("extraescolares"))} />
         )}
 
         {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}

@@ -47,7 +47,7 @@ test('Salidas: Dirección la aprueba; entonces se registra la ausencia del acomp
   // Pendiente: todavía no hay ausencia del acompañante; Jefatura y Dirección tienen el aviso
   expect((await leer(page, 'ausencias')).some((a: { salidaId?: number }) => a.salidaId === salida.id)).toBe(false)
   const avisos = (await leer(page, 'mensajes')).filter((m: { texto: string }) => /pendiente de aprobación: «Museo del Prado»/.test(m.texto)).map((m: { destinatario: string }) => m.destinatario)
-  expect(avisos).toEqual(expect.arrayContaining(['Ana Jiménez', 'Luis García']))
+  expect(avisos).toEqual(expect.arrayContaining(['Ana Jiménez', 'Luis García', 'Sofía Martín']))   // Jefatura, Dirección y Extraescolares
 
   // Dirección (Luis García) la aprueba
   await comoOtro(page, 'Luis García', /Dirección · Convivencia/)
@@ -56,6 +56,16 @@ test('Salidas: Dirección la aprueba; entonces se registra la ausencia del acomp
   await page.getByRole('button', { name: '✓ Aprobar' }).first().click()
   salida = (await leer(page, 'salidas'))[0]
   expect(salida).toMatchObject({ estado: 'aprobada', revision: expect.objectContaining({ por: 'Luis García' }) })
+  // Carmen, que tiene clase con el grupo, recibe las listas para pasar lista en Raíces
+  const paraRaices = (await leer(page, 'mensajes')).find((m: { destinatario: string, texto: string }) => m.destinatario === 'Carmen López' && /pasar lista en Raíces/.test(m.texto))
+  expect(paraRaices.texto).toMatch(new RegExp(`${hora}, ${grupo}: están de salida`))
+  // El listado para Extraescolares se descarga en PDF
+  await page.getByRole('button', { name: 'Listado para Extraescolares (PDF)' }).first().click()
+  await expect(page.getByText(/salida-2026-10-07-museo-del-prado\.pdf/)).toBeVisible()
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Descargar PDF/ }).last().click()
+  expect((await descarga).suggestedFilename()).toMatch(/\.pdf$/)
+  await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
   // Ausencia del acompañante, con la consigna para la guardia
   const aus = (await leer(page, 'ausencias')).find((a: { salidaId?: number }) => a.salidaId === salida.id)
   expect(aus).toMatchObject({ profesor: acompanante, motivo: 'Salida o excursión', horas: [hora] })
