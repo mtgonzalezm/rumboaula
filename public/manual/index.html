@@ -195,6 +195,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#medidas">Medidas correctoras</a>
     <a href="#asistencia">Asistencia</a>
     <a href="#examenes">Exámenes</a>
+    <a href="#salidas">Salidas</a>
     <a href="#guardias">Guardias</a>
     <a href="#espacios">Espacios</a>
     <a href="#material">Material</a>
@@ -218,7 +219,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para todos</span>
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">Al entrar, RumboAula abre el <b>Escritorio</b>, con el resumen de tu día. Además tiene siete módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Exámenes</b> (calendario por grupo), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="entrada">Al entrar, RumboAula abre el <b>Escritorio</b>, con el resumen de tu día. Además tiene ocho módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Exámenes</b> (calendario por grupo), <b>Salidas</b> (excursiones: quién va y quién se queda), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
   <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la organización diaria entre Dirección, Jefatura, profesorado y Conserjería y, en algunos casos, con las familias: convivencia, guardias y ausencias, reservas de espacios y llaves, material del centro y avisos. No sustituye a Raíces: la complementa y da agilidad al día a día. Además, <b>ahorra papel</b>: lo que antes se imprimía o se fotocopiaba (partes, cuadrantes, hojas de reservas, libretas de llaves) se consulta en la pantalla, y el PDF se genera solo cuando hay que firmar o archivar. Mesas sin papeles y menos impacto ambiental. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
@@ -605,6 +606,62 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <figure>
       <button class="cap" data-ampliar="img/examenes-eval.webp" aria-label="Ampliar: por evaluaciones"><img src="img/examenes-eval.webp" alt="Las tres evaluaciones con sus fechas, días lectivos y exámenes del grupo" loading="lazy" width="1100" height="1015"></button>
       <figcaption>Vista por evaluaciones.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════ SALIDAS ═══════════ -->
+<section class="parte" id="salidas">
+  <span class="etiqueta">Profesorado y Jefatura</span>
+  <div class="titulo"><h2>Salidas y excursiones</h2><img src="/iconos/edificio.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Quién va, quién se queda y con quién, sin listas en papel. Al registrar la salida, la app avisa a quien tiene que saberlo: el profesorado del grupo, quien hace la guardia y Jefatura.</p>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/nuevo-parte.svg" alt="">Registrar una salida</h3>
+      <ol>
+        <li>En el módulo <b>Salidas</b>, pulsa <span class="btn">+ Nueva salida</span>.</li>
+        <li>Escribe la actividad y el lugar, elige el día y las horas (o «Toda la mañana») y los grupos que van.</li>
+        <li>Salen todos los alumnos de esos grupos con «🚌 Va». Toca a quien <b>no va</b> y pasa a «Se queda».</li>
+        <li>Elige el profesorado acompañante y, si quieres, añade una nota: punto de encuentro, autobús, qué llevar…</li>
+        <li>Pulsa <span class="btn">Guardar salida</span>.</li>
+      </ol>
+      <ul>
+        <li><b>En un día no lectivo no se puede.</b></li>
+        <li>Si alguno de los grupos tiene <b>un examen</b> a esas horas, la app avisa.</li>
+        <li>Los acompañantes reciben un aviso por Rumbogram.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/salidas-nueva.webp" aria-label="Ampliar: nueva salida"><img src="img/salidas-nueva.webp" alt="Formulario de nueva salida con las horas, el grupo, quién va y quién se queda, y el profesorado acompañante" loading="lazy" width="1052" height="910"></button>
+    </figure>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/guardias.svg" alt="">Las clases de quien acompaña</h3>
+      <p>Al guardar, la app <b>registra la ausencia de cada acompañante</b> (motivo «Salida o excursión») en las horas en que tiene clase o guardia, para que se cubran como cualquier otra ausencia. Antes de guardar te dice qué horas serán.</p>
+      <ul>
+        <li>Si un grupo se va entero, esa clase <b>no se pide cubrir</b>: no hay nadie.</li>
+        <li><b>Quien hace la guardia</b> lo ve en su consigna: cuántos alumnos están en la salida y quiénes se quedan en clase, con sus nombres.</li>
+        <li>Si cambias la salida, las ausencias se actualizan; si la anulas, se quitan.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/pasar-lista.svg" alt="">El profesorado del grupo</h3>
+      <ul>
+        <li>En tu <a href="#escritorio">Escritorio</a>, en «Hoy», ves tus clases con grupos de salida: cuántos van y cuántos se quedan contigo.</li>
+        <li>Al <b>pasar lista</b>, los que están de salida salen como <b>«🚌 De salida»</b> y no cuentan como falta.</li>
+        <li>En cada salida, <b>«Quién va y quién se queda»</b> muestra las dos listas de cada grupo.</li>
+      </ul>
+      <p>Jefatura ve en su Escritorio las salidas del día, y puede cambiar o anular cualquiera.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/salidas-quien.webp" aria-label="Ampliar: quién va y quién se queda"><img src="img/salidas-quien.webp" alt="Salida al Museo del Prado: van cuatro alumnos de 2º ESO B y se queda uno" loading="lazy" width="1052" height="238"></button>
     </figure>
   </div>
 </section>
