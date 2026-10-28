@@ -194,6 +194,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     <a href="#partes">Partes</a>
     <a href="#medidas">Medidas correctoras</a>
     <a href="#asistencia">Asistencia</a>
+    <a href="#examenes">Exámenes</a>
     <a href="#guardias">Guardias</a>
     <a href="#espacios">Espacios</a>
     <a href="#material">Material</a>
@@ -217,7 +218,7 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
   <span class="etiqueta">Para todos</span>
   <div class="titulo"><h2>Primeros pasos</h2><img src="/iconos/como-se-usa.svg" alt=""></div>
   <div class="linea" aria-hidden="true"></div>
-  <p class="entrada">Al entrar, RumboAula abre el <b>Escritorio</b>, con el resumen de tu día. Además tiene seis módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
+  <p class="entrada">Al entrar, RumboAula abre el <b>Escritorio</b>, con el resumen de tu día. Además tiene siete módulos: <b>Partes</b> (convivencia y medidas correctoras), <b>Asistencia</b> (pasar lista y justificantes), <b>Exámenes</b> (calendario por grupo), <b>Guardias</b>, <b>Espacios</b> (reservas de aulas y llaves), <b>Material del centro</b> (puestos de las aulas de informática, averías y material que hace falta) y <b>Rumbogram</b> (mensajes rápidos). Lo que ves depende de tu perfil.</p>
   <p class="nota ok"><b>Raíces es la plataforma oficial</b> para las notas, la matrícula, el expediente y las gestiones con la Administración. RumboAula es una <b>herramienta interna</b> para la organización diaria entre Dirección, Jefatura, profesorado y Conserjería y, en algunos casos, con las familias: convivencia, guardias y ausencias, reservas de espacios y llaves, material del centro y avisos. No sustituye a Raíces: la complementa y da agilidad al día a día. Además, <b>ahorra papel</b>: lo que antes se imprimía o se fotocopiaba (partes, cuadrantes, hojas de reservas, libretas de llaves) se consulta en la pantalla, y el PDF se genera solo cuando hay que firmar o archivar. Mesas sin papeles y menos impacto ambiental. Lo que tenga que constar oficialmente se sigue registrando en Raíces.</p>
 
   <div class="perfiles">
@@ -542,6 +543,68 @@ dialog button { position: fixed; top: 14px; right: 14px; background: #fff; color
     </div>
     <figure>
       <button class="cap limitada" data-ampliar="img/asistencia-jefatura.webp" aria-label="Ampliar: asistencia del alumnado"><img src="img/asistencia-jefatura.webp" alt="Resumen de asistencia con límites, roscos y alumnado en riesgo" loading="lazy" width="1200" height="1619"></button>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════ EXÁMENES ═══════════ -->
+<section class="parte" id="examenes">
+  <span class="etiqueta">Profesorado, Tutoría y Jefatura</span>
+  <div class="titulo"><h2>Calendario de exámenes</h2><img src="/iconos/fecha.svg" alt=""></div>
+  <div class="linea" aria-hidden="true"></div>
+  <p class="entrada">Cada grupo tiene su calendario de exámenes sobre el calendario escolar del curso. Así nadie pone un examen en un festivo y se ve enseguida si un grupo ya tiene demasiados exámenes esa semana.</p>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/fecha.svg" alt="">Tres formas de verlo</h3>
+      <p>En el módulo <b>Exámenes › Calendario por grupo</b>, elige el grupo (los tuyos salen con «das clase») y una vista:</p>
+      <ul>
+        <li><b>Mes</b>: el calendario grande, de lunes a viernes, con los exámenes del grupo. En verde, los festivos y vacaciones; en coral, otros días no lectivos; y marcado el día en que termina cada evaluación.</li>
+        <li><b>Curso completo</b>: de septiembre a junio de un vistazo. Los días con examen salen en azul; pulsa un mes para verlo en grande.</li>
+        <li><b>Por evaluaciones</b>: la 1ª, la 2ª y la 3ª con sus fechas, sus días lectivos y los exámenes del grupo en cada una.</li>
+      </ul>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/examenes-curso.webp" aria-label="Ampliar: curso completo"><img src="img/examenes-curso.webp" alt="Los meses del curso de septiembre a junio con los exámenes del grupo marcados" loading="lazy" width="1100" height="1430"></button>
+      <figcaption>Curso completo de un grupo.</figcaption>
+    </figure>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/nuevo-parte.svg" alt="">Poner un examen</h3>
+      <ol>
+        <li>Pulsa un día lectivo en la vista de mes, o <span class="btn">+ Poner un examen</span>.</li>
+        <li>Elige la hora, el grupo, la materia y el tipo: examen, recuperación, entrega de trabajo o exposición oral. Puedes añadir una nota, como los temas.</li>
+        <li>Pulsa <span class="btn">Guardar examen</span>.</li>
+      </ol>
+      <ul>
+        <li><b>En un día no lectivo no se puede</b>: la app lo dice y no deja guardar.</li>
+        <li><b>Si el grupo ya tiene examen ese día o se pasa del límite de la semana</b>, la app avisa. Puedes elegir otro día o pulsar <span class="btn">Guardar igualmente</span>.</li>
+        <li>Las entregas de trabajos y las exposiciones no cuentan para el límite.</li>
+      </ul>
+      <p>En <b>Mis exámenes</b> ves los que has puesto tú y puedes cambiarlos o quitarlos. Los de hoy salen también en tu <a href="#escritorio">Escritorio</a>, en «Hoy». En el perfil Tutor/a, la pestaña <b>Exámenes del grupo</b> muestra los de tu tutoría.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/examenes-form.webp" aria-label="Ampliar: poner un examen"><img src="img/examenes-form.webp" alt="Formulario para poner un examen con el aviso de que el 12 de octubre no es lectivo" loading="lazy" width="1052" height="368"></button>
+      <figcaption>El 12 de octubre no es lectivo: no deja guardarlo.</figcaption>
+    </figure>
+  </div>
+
+  <div class="tarjeta">
+    <div>
+      <h3><img src="/iconos/cargo-jefatura.svg" alt="">Jefatura: el calendario escolar</h3>
+      <p>En <b>Organización › Calendario escolar</b> viene cargado el calendario 2026-2027 de la Comunidad de Madrid para Secundaria, Bachillerato y FP. Jefatura puede:</p>
+      <ul>
+        <li><b>Añadir las fiestas locales</b> del municipio, que el calendario de la Comunidad no incluye (las publica el BOCM).</li>
+        <li><b>Fijar las fechas de las evaluaciones.</b> Vienen propuestas: la 1ª hasta Navidad, la 2ª hasta Semana Santa y la 3ª hasta final de curso.</li>
+        <li><b>Fijar el límite de exámenes</b> por día y por semana para cada grupo. Por defecto, 1 al día y 3 a la semana.</li>
+      </ul>
+      <p>Jefatura ve los exámenes de todos los grupos y puede cambiar o quitar cualquiera.</p>
+    </div>
+    <figure>
+      <button class="cap" data-ampliar="img/examenes-eval.webp" aria-label="Ampliar: por evaluaciones"><img src="img/examenes-eval.webp" alt="Las tres evaluaciones con sus fechas, días lectivos y exámenes del grupo" loading="lazy" width="1100" height="1015"></button>
+      <figcaption>Vista por evaluaciones.</figcaption>
     </figure>
   </div>
 </section>
