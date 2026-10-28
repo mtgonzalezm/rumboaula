@@ -3930,7 +3930,8 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 const AYUDAS = {
   salidas: { titulo: "Salidas y excursiones", pasos: [
     "Pulsa «Nueva salida»: actividad y lugar, día, horas, grupos y profesorado acompañante. Van todos los alumnos de los grupos; toca a quien no va.",
-    "Al guardar se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
+    "Al enviarla, Jefatura y Dirección reciben el aviso y queda «Pendiente de aprobación». Dirección la aprueba o no; quien la organiza recibe la respuesta por Rumbogram.",
+    "Cuando se aprueba, se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
     "Quien haga la guardia ve en su consigna qué alumnos se quedan. El profesorado del grupo lo ve en su Escritorio y, al pasar lista, los que están de salida no cuentan como falta.",
   ] },
   examenes_grupo: { titulo: "Calendario de exámenes", pasos: [
@@ -9484,15 +9485,26 @@ function CalendarioEscolarAdmin({ cal, setCal }) {
 // Al guardar una salida se registra la ausencia del profesorado acompañante para que
 // sus clases y guardias se cubran; la consigna dice a la guardia qué alumnos se quedan.
 // ════════════════════════════════════════════════════════════════════════════
-// salida: { id, titulo, fecha, horas, grupos, noVan: [idAlumno], acompanantes, responsable, nota, ausencias: { profe: idAusencia }, ts }
+// salida: { id, titulo, fecha, horas, grupos, noVan: [idAlumno], acompanantes, responsable, nota, ausencias: { profe: idAusencia }, ts,
+//           estado: pendiente | aprobada | rechazada, revision: { por, ts, motivo } }
+// Hasta que Dirección la aprueba no cuenta: ni ausencias del acompañante, ni avisos al grupo, ni «De salida» al pasar lista
+const aprobada = s => (s.estado || "aprobada") === "aprobada";
+const ESTADO_SALIDA = {
+  pendiente: { label: "Pendiente de aprobación", nivel: "pendiente" },
+  aprobada:  { label: "Aprobada", nivel: "resuelto" },
+  rechazada: { label: "No aprobada", nivel: "urgente" },
+};
 const alumnosSalida = (s, alumnos) => alumnos.filter(a => s.grupos.includes(a.curso) && !(s.noVan || []).includes(a.id));
-// Un grupo a una hora: qué salida hay, quién va y quién se queda
-function grupoEnSalida(salidas, alumnos, grupo, fecha, hora) {
-  const s = salidas.find(x => x.fecha === fecha && x.horas.includes(hora) && x.grupos.includes(grupo));
-  if (!s) return null;
+// Quién va y quién se queda de un grupo en una salida
+function repartoGrupo(s, alumnos, grupo) {
   const delGrupo = alumnos.filter(a => a.curso === grupo).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
   const noVan = s.noVan || [];
   return { salida: s, van: delGrupo.filter(a => !noVan.includes(a.id)), quedan: delGrupo.filter(a => noVan.includes(a.id)) };
+}
+// Un grupo a una hora: la salida aprobada que tiene, quién va y quién se queda
+function grupoEnSalida(salidas, alumnos, grupo, fecha, hora) {
+  const s = salidas.find(x => aprobada(x) && x.fecha === fecha && x.horas.includes(hora) && x.grupos.includes(grupo));
+  return s ? repartoGrupo(s, alumnos, grupo) : null;
 }
 const nombresCortos = l => l.map(a => a.nombre).join(", ");
 // Ausencias del profesorado acompañante: solo las horas en que tiene guardia o clase con alumnado que se queda
@@ -9501,7 +9513,7 @@ function ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) {
     const clases = clasesDelDia(horarios, profe, s.fecha), sesiones = {}, horas = [];
     ordenarHoras(s.horas).forEach(h => {
       const c = clases[h], guardia = !!cuadrante[`${s.fecha}|${h}|${profe}`];
-      const enSalida = c ? grupoEnSalida([s], alumnos, c.grupo, s.fecha, h) : null;
+      const enSalida = c && s.grupos.includes(c.grupo) ? repartoGrupo(s, alumnos, c.grupo) : null;
       if (c && enSalida && !enSalida.quedan.length) return;          // todo su grupo va a la salida: no hay clase que cubrir
       if (!c && !guardia) return;                                    // hora libre
       horas.push(h);
@@ -9518,7 +9530,7 @@ function ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) {
 }
 const ordenarHoras = hs => HORAS.filter(h => hs.includes(h));
 
-function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, setMensajes }) {
+function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], setMensajes }) {
   const hoy = isoLocal();
   const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
   const [form, setForm] = useState(null);
@@ -9540,22 +9552,54 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
     examenes.filter(e => e.fecha === form.fecha && form.grupos.includes(e.grupo) && (!form.horas.length || form.horas.includes(e.hora)))
       .forEach(e => avisos.push(`${e.grupo} tiene ${tipoExamen(e.tipo).label.toLowerCase()} de ${e.materia} a ${e.hora}.`));
   }
-  const borrador = form && form.fecha && form.horas.length ? { ...form, id: form.id || 1, ts: "" } : null;
+  const borrador = form && form.fecha && form.horas.length ? { ...form, id: form.id || 1, ts: "", grupos: form.grupos } : null;
   const ausPrevias = borrador ? ausenciasDeSalida(borrador, { alumnos, horarios, cuadrante }) : [];
   const listo = form && form.titulo.trim() && form.fecha && form.horas.length && form.grupos.length && form.acompanantes.length && !bloquea.length;
+  // «desde» separa los identificadores cuando se envían dos avisos a la vez
+  const avisar = (destinos, texto, desde = 0) => {
+    const l = [...new Set(destinos)].filter(p => p && p !== usuario);
+    if (setMensajes && l.length) setMensajes(prev => [...l.map((p, k) => mensajeRumbo(p, texto, desde + k)), ...prev]);
+  };
+  // Aprobada: se registran las ausencias del profesorado acompañante; si no, se quitan
+  const aplicar = s => {
+    const aus = aprobada(s) ? ausenciasDeSalida(s, { alumnos, horarios, cuadrante }) : [];
+    if (aus.length) s.ausencias = Object.fromEntries(aus.map(a => [a.profesor, a.id]));
+    setAusencias(prev => [...aus, ...prev.filter(a => a.salidaId !== s.id)]);
+    return aus;
+  };
   const guardar = () => {
     if (!listo) return;
-    const s = { ...form, titulo: form.titulo.trim(), nota: form.nota.trim(), horas: ordenarHoras(form.horas), id: form.id || Date.now(), ts: new Date().toISOString() };
-    const aus = ausenciasDeSalida(s, { alumnos, horarios, cuadrante });
-    s.ausencias = Object.fromEntries(aus.map(a => [a.profesor, a.id]));
+    // Si la registra o la cambia Dirección queda aprobada; si no, pendiente de aprobación
+    const s = { ...form, titulo: form.titulo.trim(), nota: form.nota.trim(), horas: ordenarHoras(form.horas), id: form.id || Date.now(), ts: new Date().toISOString(),
+      estado: puedeAprobar ? "aprobada" : "pendiente", revision: puedeAprobar ? { por: usuario, ts: new Date().toISOString() } : null };
+    const aus = aplicar(s);
     setSalidas(prev => [...prev.filter(x => x.id !== s.id), s]);
-    setAusencias(prev => [...aus, ...prev.filter(a => a.salidaId !== s.id)]);
-    // Aviso al profesorado acompañante (menos quien la registra)
-    const otros = s.acompanantes.filter(p => p !== usuario);
-    if (setMensajes && otros.length) setMensajes(prev => [...otros.map((p, k) => mensajeRumbo(p, `🚌 ${usuario} te ha incluido como acompañante en la salida «${s.titulo}» del ${fmtD(s.fecha)} (${s.horas.join(", ")}). Tu ausencia de esas horas queda registrada para cubrir tus clases.`, k)), ...prev]);
-    setHecho(`Salida guardada: «${s.titulo}» · ${fmtD(s.fecha)} · ${alumnosSalida(s, alumnos).length} alumnos. ${aus.length ? `Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
+    const cuando = `del ${fmtD(s.fecha)} (${s.horas.join(", ")})`;
+    if (s.estado === "pendiente") {
+      avisar(jefaturaDireccion, `🚌 ${form.id ? "Salida modificada" : "Nueva salida"} pendiente de aprobación: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, ${alumnosSalida(s, alumnos).length} alumnos, con ${s.acompanantes.join(", ")}. Organiza ${s.responsable}.`);
+      avisar(s.acompanantes.filter(p => !jefaturaDireccion.includes(p)), `🚌 ${usuario} te ha incluido como acompañante en la salida «${s.titulo}» ${cuando}. Está pendiente de que la apruebe Dirección.`, 100);
+      setHecho(`Salida enviada a Jefatura y Dirección: «${s.titulo}» · ${fmtD(s.fecha)}. Cuando Dirección la apruebe se registrarán las ausencias del profesorado acompañante.`);
+    } else {
+      avisar([...jefaturaDireccion, ...s.acompanantes], `🚌 Salida aprobada por Dirección: «${s.titulo}» ${cuando}, ${s.grupos.join(", ")}, con ${s.acompanantes.join(", ")}.`);
+      setHecho(`Salida aprobada: «${s.titulo}» · ${fmtD(s.fecha)} · ${alumnosSalida(s, alumnos).length} alumnos. ${aus.length ? `Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
+    }
     setTimeout(() => setHecho(""), 6000);
     setForm(null); setAbierta(s.id);
+  };
+  const revisar = (s, si) => {
+    const motivo = si ? "" : (window.prompt("¿Por qué no se aprueba? (lo verá quien la organiza)", "") || "").trim();
+    const n = { ...s, estado: si ? "aprobada" : "rechazada", revision: { por: usuario, ts: new Date().toISOString(), ...(motivo ? { motivo } : {}) } };
+    const aus = aplicar(n);
+    setSalidas(prev => prev.map(x => x.id === n.id ? n : x));
+    const cuando = `del ${fmtD(n.fecha)}`;
+    if (si) {
+      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion], `✅ Dirección ha aprobado la salida «${n.titulo}» ${cuando}.${aus.length ? ` Queda registrada la ausencia de ${aus.map(a => a.profesor).join(", ")} para cubrir sus clases.` : ""}`);
+      setHecho(`Salida aprobada: «${n.titulo}».${aus.length ? ` Registrada la ausencia de ${aus.map(a => a.profesor).join(", ")}.` : ""}`);
+    } else {
+      avisar([n.responsable, ...n.acompanantes, ...jefaturaDireccion], `❌ Dirección no ha aprobado la salida «${n.titulo}» ${cuando}.${motivo ? ` Motivo: ${motivo}` : ""}`);
+      setHecho(`Salida no aprobada: «${n.titulo}».`);
+    }
+    setTimeout(() => setHecho(""), 6000);
   };
   const quitar = s => {
     if (!window.confirm(`¿Anular la salida «${s.titulo}»? También se quitan las ausencias del profesorado acompañante.`)) return;
@@ -9564,12 +9608,18 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
   };
   const puedeEditar = s => puedeTodo || s.responsable === usuario;
   const orden = (a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.horas[0]) - HORAS.indexOf(b.horas[0]);
-  const deHoy = salidas.filter(s => s.fecha === hoy).sort(orden), proximas = salidas.filter(s => s.fecha > hoy).sort(orden), pasadas = salidas.filter(s => s.fecha < hoy).sort((a, b) => -orden(a, b)).slice(0, 10);
+  const pendientes = salidas.filter(s => s.estado === "pendiente" && s.fecha >= hoy).sort(orden);
+  const deHoy = salidas.filter(s => s.fecha === hoy && s.estado !== "pendiente").sort(orden), proximas = salidas.filter(s => s.fecha > hoy && s.estado !== "pendiente").sort(orden), pasadas = salidas.filter(s => s.fecha < hoy).sort((a, b) => -orden(a, b)).slice(0, 10);
 
   const tarjeta = s => {
-    const van = alumnosSalida(s, alumnos), abiertaEsta = abierta === s.id;
+    const van = alumnosSalida(s, alumnos), abiertaEsta = abierta === s.id, est = ESTADO_SALIDA[s.estado || "aprobada"], nv = NIVEL[est.nivel];
     return (
-      <div key={s.id} data-salida={s.id} style={{ ...caja(s.fecha === hoy ? R.mostaza : R.turquesa), padding: "12px 16px", marginTop: 8 }}>
+      <div key={s.id} data-salida={s.id} style={{ ...caja(s.estado === "pendiente" ? nv.color : s.fecha === hoy ? R.mostaza : R.turquesa), padding: "12px 16px", marginTop: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+          <span data-estado-salida={s.estado || "aprobada"} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, background: nv.claro, color: R.noche, border: `2px solid ${nv.color}`, borderRadius: 999, padding: "2px 10px" }}>
+            <Icono nombre={nv.icono} tam={20} />{est.label}</span>
+          {s.revision?.por && <span style={{ fontSize: 14, color: R.petroleo }}>{s.estado === "aprobada" ? "Aprobada" : "Revisada"} por {s.revision.por} el {fmtD(s.revision.ts)}{s.revision.motivo ? ` · Motivo: ${s.revision.motivo}` : ""}</span>}
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "baseline" }}>
           <span style={{ fontWeight: 700, color: R.petroleo }}>{fmtD(s.fecha)} · {s.horas.length === horasClase.length ? "toda la mañana" : s.horas.join(", ")}</span>
           <span style={{ flex: 1, minWidth: 200, fontFamily: TITULO, fontSize: 20, color: R.petroleo }}>{s.titulo}</span>
@@ -9578,13 +9628,15 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
         <div style={{ fontSize: 15, color: R.petroleo, marginTop: 4 }}>Con {s.acompanantes.join(", ")}{s.nota ? ` · ${s.nota}` : ""}{s.responsable && !s.acompanantes.includes(s.responsable) ? ` · Organiza ${s.responsable}` : ""}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           <button onClick={() => setAbierta(abiertaEsta ? null : s.id)} aria-expanded={abiertaEsta} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>{abiertaEsta ? "Ocultar" : "Quién va y quién se queda"}</button>
+          {puedeAprobar && s.estado !== "aprobada" && s.fecha >= hoy && <button onClick={() => revisar(s, true)} className="gd-pulsable" style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 6, background: NIVEL.resuelto.color, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>✓ Aprobar</button>}
+          {puedeAprobar && s.estado !== "rechazada" && s.fecha >= hoy && <button onClick={() => revisar(s, false)} style={{ minHeight: 44, padding: "0 14px", border: `2px solid ${NIVEL.urgente.color}`, borderRadius: 6, background: C.white, color: NIVEL.urgente.color, cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>No aprobar</button>}
           {puedeEditar(s) && <>
             <button onClick={() => setForm({ ...s })} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Cambiar</button>
             <button onClick={() => quitar(s)} style={{ background: "none", border: "none", color: NIVEL.urgente.color, minHeight: 44, padding: "0 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 700 }}>Anular</button>
           </>}
         </div>
         {abiertaEsta && s.grupos.map(g => {
-          const info = grupoEnSalida([s], alumnos, g, s.fecha, s.horas[0]);
+          const info = repartoGrupo(s, alumnos, g);
           return (
             <div key={g} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, marginTop: 8 }}>
               <div style={{ background: R.azulClaro, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · van {info.van.length}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.van) || "Nadie"}</div></div>
@@ -9642,18 +9694,22 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
           {avisos.map(a => <div key={a} role="alert" style={{ ...caja(NIVEL.importante.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>⚠️ {a}</div>)}
           {!bloquea.length && ausPrevias.length > 0 && (
             <div style={{ ...caja(NIVEL.informativo.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>
-              ℹ️ Al guardar se registra la ausencia del profesorado acompañante para cubrir sus clases y guardias:
+              ℹ️ {puedeAprobar ? "Al guardar" : "Cuando Dirección la apruebe"} se registra la ausencia del profesorado acompañante para cubrir sus clases y guardias:
               <ul style={{ margin: "6px 0 0", paddingLeft: 22 }}>{ausPrevias.map(a => <li key={a.profesor}><b>{a.profesor}</b>: {a.horas.join(", ")}</li>)}</ul>
             </div>
           )}
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
             <button onClick={guardar} disabled={!listo} className="gd-pulsable"
-              style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }}>Guardar salida</button>
+              style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: listo ? R.azul : R.gris, color: listo ? "#fff" : R.petroleo, fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: listo ? "pointer" : "not-allowed" }}>{puedeAprobar ? "Guardar salida" : "Enviar a Jefatura y Dirección"}</button>
             <button onClick={() => setForm(null)} style={{ minHeight: 48, padding: "0 18px", border: `2px solid ${R.azul}`, borderRadius: 6, background: C.white, color: R.petroleo, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
           </div>
         </Card>
       )}
 
+      {pendientes.length > 0 && <>
+        <h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Pendientes de aprobación</h3>
+        {pendientes.map(tarjeta)}
+      </>}
       <h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Hoy</h3>
       {deHoy.length ? deHoy.map(tarjeta) : <div style={{ padding: "10px 14px", color: R.petroleo, background: R.gris, marginTop: 8 }}>Hoy no hay salidas.</div>}
       <h3 style={{ margin: "18px 0 0", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>Próximas</h3>
@@ -10853,6 +10909,10 @@ function AppInterna() {
       add(misReservas, misReservas === 1 ? "espacio reservado para hoy" : "espacios reservados para hoy", "espacios", "reservas", "horario");
     } else if (perfil.id === "jefatura") {
       add(sinLeerMios, sinLeerMios === 1 ? "mensaje sin leer en Rumbogram" : "mensajes sin leer en Rumbogram", "rumbochat", "mensajeria", "mensaje-sin-leer");
+      // Salidas pendientes de aprobar: para Dirección es importante; para Jefatura, informativo
+      const salPend = salidas.filter(x => x.estado === "pendiente" && x.fecha >= hoy).length;
+      if (salPend && (fx.direccion || fx.guardias)) lista.push({ id: "salidas-pendientes", n: salPend, txt: fx.direccion ? (salPend === 1 ? "salida por aprobar" : "salidas por aprobar") : (salPend === 1 ? "salida pendiente de aprobación" : "salidas pendientes de aprobación"),
+        modulo: "salidas", tab: "salidas", icono: "edificio", nivel: fx.direccion ? "importante" : "informativo" });
       if (fx.incidencias) {
         const sinLeer = partesHoy.filter(x => !misLeidas[x.id]), graves = sinLeer.filter(x => x.gravedad !== "leve").length, leves = sinLeer.length - graves;
         if (graves) lista.push({ id: "incidencias-graves", n: graves, txt: graves === 1 ? "parte grave o muy grave de hoy sin leer" : "partes graves o muy graves de hoy sin leer", modulo: "incidencias", tab: "incidencias_hoy", icono: "grave", nivel: "importante" });
@@ -10918,7 +10978,7 @@ function AppInterna() {
       });
       reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy)
         .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)}${r.grupo ? ` · ${r.grupo}` : ""}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
-      salidas.filter(x => x.fecha === hoy && x.acompanantes.includes(yo))
+      salidas.filter(x => x.fecha === hoy && aprobada(x) && x.acompanantes.includes(yo))
         .forEach(x => l.push({ hora: x.horas[0], txt: `Salida «${x.titulo}» con ${x.grupos.join(", ")}`, icono: "edificio", modulo: "salidas", tab: "salidas" }));
       Object.entries(clasesDelDia(horarios, yo, hoy)).forEach(([h, c]) => {
         const info = grupoEnSalida(salidas, alumnos, c.grupo, hoy, h);
@@ -10938,8 +10998,8 @@ function AppInterna() {
         l.push({ hora: horas[0] || a.horas[0], txt: `Falta ${a.profesor} (${horas.length} h) · ${sin ? `${sin} sin cubrir` : "todo cubierto"}`, icono: "profe-ausente",
           ...(fx.guardias ? { modulo: "guardias", tab: "coordinacion" } : {}) });
       });
-      salidas.filter(x => x.fecha === hoy).forEach(x => l.push({ hora: x.horas[0], icono: "edificio", modulo: "salidas", tab: "salidas",
-        txt: `Salida «${x.titulo}» · ${x.grupos.join(", ")} · ${alumnosSalida(x, alumnos).length} alumnos con ${x.acompanantes.join(", ")}` }));
+      salidas.filter(x => x.fecha === hoy && x.estado !== "rechazada").forEach(x => l.push({ hora: x.horas[0], icono: "edificio", modulo: "salidas", tab: "salidas",
+        txt: `Salida «${x.titulo}» · ${x.grupos.join(", ")} · ${alumnosSalida(x, alumnos).length} alumnos con ${x.acompanantes.join(", ")}${aprobada(x) ? "" : " · pendiente de aprobación"}` }));
       const nRes = reservasEspacios.filter(r => r.fecha === hoy).length;
       if (nRes) l.push({ hora: "Hoy", txt: `${nRes} ${nRes === 1 ? "reserva" : "reservas"} de espacios`, icono: "llave", modulo: "espacios", tab: "reservas" });
     } else if (perfil.id === "conserjeria") {
@@ -11667,7 +11727,8 @@ function AppInterna() {
         {tab === "calendario_escolar" && fx.guardias && <CalendarioEscolarAdmin cal={cal} setCal={setCalEscolar} />}
         {tab === "salidas" && (
           <Salidas salidas={salidas} setSalidas={setSalidas} setAusencias={setAusencias} alumnos={alumnos} cursos={cursos} profesores={profesores} horarios={horarios}
-            cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} puedeTodo={perfil.id === "jefatura"} setMensajes={setMensajes} />
+            cuadrante={cuadrante} examenes={examenes} cal={cal} usuario={fProfesor || usuario} puedeTodo={perfil.id === "jefatura"} setMensajes={setMensajes}
+            puedeAprobar={fx.direccion} jefaturaDireccion={profesores.filter(p => cargosIds(cuentas[p]).some(c => c === "jefatura" || c === "direccion"))} />
         )}
 
         {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}

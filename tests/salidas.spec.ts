@@ -1,12 +1,23 @@
 import { test, expect, type Page } from '@playwright/test'
-import { empezar, comoProfe, vigilarErrores, leer, pestaña } from './ayuda'
+import { empezar, comoProfe, vigilarErrores, leer, pestaña, salir } from './ayuda'
 
 // Salidas y excursiones: quién va, quién se queda, ausencia del acompañante y pasar lista
 
 type Clase = { grupo: string, materia?: string }
 const horarios = (page: Page) => leer(page, 'horarios_clase') as Promise<Record<string, Clase>>
+// Entra otra persona del claustro desde la portada; con «perfil» cambia después a ese perfil
+async function comoOtro(page: Page, nombre: string, perfil?: RegExp) {
+  await salir(page)
+  await page.locator('#gd-otro-profe').selectOption(nombre)
+  await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  if (perfil) {
+    await page.getByRole('button', { name: /Cambiar de perfil|Profesor\/a/ }).first().click()
+    await page.getByRole('option', { name: perfil }).click()
+    await expect(page.getByRole('region', { name: 'Avisos' })).toBeVisible()
+  }
+}
 
-test('Salidas: el profesorado del grupo ve quién se queda, al pasar lista salen «De salida» y se registra la ausencia del acompañante', async ({ page }) => {
+test('Salidas: Dirección la aprueba; entonces se registra la ausencia del acompañante, el grupo ve quién se queda y al pasar lista salen «De salida»', async ({ page }) => {
   const errores = vigilarErrores(page)
   await empezar(page)              // miércoles 7 de octubre de 2026, 5ª hora
   await comoProfe(page)            // Carmen López
@@ -26,20 +37,32 @@ test('Salidas: el profesorado del grupo ve quién se queda, al pasar lista salen
   await page.locator('[data-alumno-salida]').first().click()            // uno se queda
   await page.getByRole('button', { name: 'Carmen López', exact: true }).click()   // Carmen no va: se queda con su clase
   await page.getByRole('button', { name: acompanante, exact: true }).click()
-  await expect(page.getByText(/ℹ️ Al guardar se registra la ausencia/)).toBeVisible()
-  await page.getByRole('button', { name: 'Guardar salida' }).click()
-  await expect(page.getByRole('status').filter({ hasText: /Salida guardada: «Museo del Prado»/ })).toBeVisible()
+  await expect(page.getByText(/ℹ️ Cuando Dirección la apruebe se registra la ausencia/)).toBeVisible()
+  await page.getByRole('button', { name: 'Enviar a Jefatura y Dirección' }).click()
+  await expect(page.getByRole('status').filter({ hasText: /Salida enviada a Jefatura y Dirección: «Museo del Prado»/ })).toBeVisible()
 
-  const salida = (await leer(page, 'salidas'))[0]
-  expect(salida).toMatchObject({ titulo: 'Museo del Prado', grupos: [grupo], acompanantes: [acompanante], horas: [hora] })
+  let salida = (await leer(page, 'salidas'))[0]
+  expect(salida).toMatchObject({ titulo: 'Museo del Prado', grupos: [grupo], acompanantes: [acompanante], horas: [hora], estado: 'pendiente' })
   expect(salida.noVan).toHaveLength(1)
+  // Pendiente: todavía no hay ausencia del acompañante; Jefatura y Dirección tienen el aviso
+  expect((await leer(page, 'ausencias')).some((a: { salidaId?: number }) => a.salidaId === salida.id)).toBe(false)
+  const avisos = (await leer(page, 'mensajes')).filter((m: { texto: string }) => /pendiente de aprobación: «Museo del Prado»/.test(m.texto)).map((m: { destinatario: string }) => m.destinatario)
+  expect(avisos).toEqual(expect.arrayContaining(['Ana Jiménez', 'Luis García']))
+
+  // Dirección (Luis García) la aprueba
+  await comoOtro(page, 'Luis García', /Dirección · Convivencia/)
+  await expect(page.getByRole('region', { name: 'Avisos' })).toContainText('salida por aprobar')
+  await page.locator('.gd-modulos button').filter({ hasText: /^Salidas/ }).first().click()
+  await page.getByRole('button', { name: '✓ Aprobar' }).first().click()
+  salida = (await leer(page, 'salidas'))[0]
+  expect(salida).toMatchObject({ estado: 'aprobada', revision: expect.objectContaining({ por: 'Luis García' }) })
   // Ausencia del acompañante, con la consigna para la guardia
   const aus = (await leer(page, 'ausencias')).find((a: { salidaId?: number }) => a.salidaId === salida.id)
   expect(aus).toMatchObject({ profesor: acompanante, motivo: 'Salida o excursión', horas: [hora] })
   expect(aus.sesiones[hora].consigna).toMatch(/Museo del Prado/)
 
   // Escritorio de Carmen: su grupo, con quién se queda
-  await page.locator('.gd-modulos button').filter({ hasText: /^Escritorio/ }).first().click()
+  await comoOtro(page, 'Carmen López')
   await expect(page.getByRole('region', { name: 'Hoy' })).toContainText(`${grupo}:`)
   await expect(page.getByRole('region', { name: 'Hoy' })).toContainText('se quedan 1 contigo')
 
@@ -68,7 +91,7 @@ test('Salidas: no deja ponerlas en un día no lectivo y avisa si el grupo tiene 
   await page.locator('#gd-salida-titulo').fill('Teatro')
   await page.locator('#gd-salida-fecha').fill('2026-10-12')
   await expect(page.getByRole('alert').filter({ hasText: /no es lectivo/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Guardar salida' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Guardar salida|Enviar a Jefatura y Dirección/ })).toBeDisabled()
   // Un día con examen de un grupo
   const ex = (await leer(page, 'examenes'))[0]
   await page.locator('#gd-salida-fecha').fill(ex.fecha)
