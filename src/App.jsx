@@ -3928,6 +3928,16 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 // Se abre sola la primera vez que se entra en una pantalla (en ese dispositivo)
 // y después queda recogida en el botón «Cómo se usa».
 const AYUDAS = {
+  examenes_grupo: { titulo: "Calendario de exámenes", pasos: [
+    "Elige el grupo y el mes. En verde salen los festivos y vacaciones; en coral, otros días no lectivos.",
+    "Pulsa un día lectivo (o «Poner un examen») y rellena hora, materia y tipo. Si el grupo ya tiene examen ese día o se pasa del límite semanal, la app avisa; puedes guardarlo igualmente.",
+    "En días no lectivos no se pueden poner exámenes. Las entregas de trabajos y las exposiciones no cuentan para el límite.",
+  ] },
+  mis_examenes: { titulo: "Mis exámenes", pasos: ["Los exámenes que has puesto tú, de hoy en adelante. Desde aquí puedes cambiarlos o quitarlos."] },
+  calendario_escolar: { titulo: "Calendario escolar", pasos: [
+    "Viene cargado el calendario de la Comunidad de Madrid. Añade las fiestas locales de vuestro municipio.",
+    "Fija cuántos exámenes puede tener un grupo al día y a la semana: el calendario de exámenes avisará al pasarse.",
+  ] },
   incidencias_hoy: { titulo: "Incidencias de hoy", pasos: [
     "Aquí llegan solos los partes de hoy de todo el centro, el más reciente arriba. No hace falta recargar ni buscar.",
     "Los nuevos llevan «Nuevo · sin leer». Pulsa «Marcar como leída» o abre el parte para verlo en grande; también puedes marcarlas todas a la vez.",
@@ -9122,6 +9132,339 @@ function Escritorio({ usuario, avisos, pendientes, mensajes, hoy, conMensajes, c
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// CALENDARIO DE EXÁMENES POR GRUPO, sobre el calendario escolar del curso.
+// Avisa si un grupo ya tiene examen ese día o se pasa del límite semanal, y no deja
+// poner exámenes en días no lectivos.
+// ════════════════════════════════════════════════════════════════════════════
+// Días de lunes a viernes entre dos fechas, con el mismo tipo y texto
+const rangoDias = (desde, hasta, tipo, txt) => {
+  const l = [];
+  for (let d = parseISO(desde); isoLocal(d) <= hasta; d = sumarDias(d, 1)) if (d.getDay() % 6) l.push({ fecha: isoLocal(d), tipo, txt });
+  return l;
+};
+// Calendario escolar 2026-2027 de la Comunidad de Madrid para Secundaria, Bachillerato y FP (cuadro síntesis de la
+// Consejería). Faltan las fiestas locales del municipio: se añaden en Organización › Calendario escolar.
+const CALENDARIO_ESCOLAR_DEFECTO = {
+  curso: "2026-2027", inicio: "2026-09-08", fin: "2027-06-18", limites: { porDia: 1, porSemana: 3 },
+  // Propuesta: la 1ª hasta Navidad, la 2ª hasta Semana Santa y la 3ª hasta final de curso. Cada centro las cambia
+  evaluaciones: [
+    { nombre: "1ª evaluación", inicio: "2026-09-08", fin: "2026-12-22" },
+    { nombre: "2ª evaluación", inicio: "2027-01-11", fin: "2027-03-19" },
+    { nombre: "3ª evaluación", inicio: "2027-03-30", fin: "2027-06-18" },
+  ],
+  dias: [
+    { fecha: "2026-10-12", tipo: "festivo", txt: "Fiesta Nacional" },
+    { fecha: "2026-11-02", tipo: "festivo", txt: "Festivo" },
+    ...rangoDias("2026-12-07", "2026-12-08", "festivo", "Festivo"),
+    ...rangoDias("2026-12-23", "2027-01-06", "festivo", "Vacaciones de Navidad"),
+    ...rangoDias("2027-01-07", "2027-01-08", "no_lectivo", "No lectivo"),
+    { fecha: "2027-02-12", tipo: "no_lectivo", txt: "No lectivo" },
+    { fecha: "2027-02-15", tipo: "no_lectivo", txt: "No lectivo" },
+    { fecha: "2027-03-19", tipo: "festivo", txt: "San José" },
+    ...rangoDias("2027-03-22", "2027-03-26", "festivo", "Semana Santa"),
+    { fecha: "2027-03-29", tipo: "no_lectivo", txt: "No lectivo" },
+    { fecha: "2027-06-10", tipo: "evaluacion", txt: "Evaluación final ordinaria" },
+    ...rangoDias("2027-06-11", "2027-06-17", "repaso", "Repaso y actividades"),
+    { fecha: "2027-06-18", tipo: "ultimo", txt: "Último día lectivo" },
+  ],
+};
+// Tipos de día: los tres primeros no son lectivos
+const TIPOS_DIA = {
+  festivo:    { label: "Festivo o vacaciones", fondo: "#E3F5EC", borde: R.verde, lectivo: false },
+  no_lectivo: { label: "No lectivo",           fondo: NIVEL.importante.claro, borde: NIVEL.importante.color, lectivo: false },
+  local:      { label: "Fiesta local",         fondo: "#E3F5EC", borde: R.verdeOscuro, lectivo: false },
+  evaluacion: { label: "Evaluación",           fondo: R.moradoClaro, borde: R.morado, lectivo: true },
+  repaso:     { label: "Repaso",               fondo: R.crema, borde: R.mostaza, lectivo: true },
+  ultimo:     { label: "Último día lectivo",   fondo: R.moradoClaro, borde: R.morado, lectivo: true },
+};
+const TIPOS_EXAMEN = [
+  { id: "examen",       label: "Examen",             cuenta: true,  color: R.azul },
+  { id: "recuperacion", label: "Recuperación",       cuenta: true,  color: R.morado },
+  { id: "entrega",      label: "Entrega de trabajo", cuenta: false, color: R.verdeOscuro },
+  { id: "oral",         label: "Exposición oral",    cuenta: false, color: R.petroleo },
+];
+const tipoExamen = id => TIPOS_EXAMEN.find(t => t.id === id) || TIPOS_EXAMEN[0];
+// Qué es un día para el calendario escolar
+function infoDia(cal, fecha) {
+  const d = parseISO(fecha), especial = cal.dias.find(x => x.fecha === fecha);
+  if (d.getDay() % 6 === 0) return { lectivo: false, txt: "Fin de semana" };
+  if (fecha < cal.inicio || fecha > cal.fin) return { lectivo: false, txt: "Fuera del curso", fuera: true };
+  if (especial) return { lectivo: TIPOS_DIA[especial.tipo]?.lectivo ?? false, txt: especial.txt, tipo: especial.tipo };
+  return { lectivo: true };
+}
+const evaluacionDe = (cal, fecha) => (cal.evaluaciones || []).find(ev => fecha >= ev.inicio && fecha <= ev.fin);
+// Avisos al poner un examen: día no lectivo (no se puede) y límites por día y semana del grupo (avisa, pero deja)
+function avisosExamen(cal, examenes, e) {
+  const info = infoDia(cal, e.fecha), l = [];
+  if (!info.lectivo) return { bloquea: `El ${fmtD(e.fecha)} no es lectivo${info.txt ? `: ${info.txt.toLowerCase()}` : ""}.`, avisos: [] };
+  const delGrupo = examenes.filter(x => x.id !== e.id && x.grupo === e.grupo && tipoExamen(x.tipo).cuenta);
+  if (!tipoExamen(e.tipo).cuenta) return { avisos: l };
+  const ese = delGrupo.filter(x => x.fecha === e.fecha);
+  if (ese.length >= cal.limites.porDia) l.push(`${e.grupo} ya tiene ${ese.length === 1 ? "un examen" : `${ese.length} exámenes`} ese día (${ese.map(x => x.materia).join(", ")}).`);
+  const lunes = isoLocal(lunesDe(e.fecha)), semana = delGrupo.filter(x => isoLocal(lunesDe(x.fecha)) === lunes);
+  if (semana.length >= cal.limites.porSemana) l.push(`Esa semana ${e.grupo} ya tiene ${semana.length} exámenes (el límite del centro es ${cal.limites.porSemana}).`);
+  return { avisos: l };
+}
+// Exámenes de ejemplo para la demostración: varios grupos en las próximas semanas, con una semana cargada en un grupo
+function examenesEjemplo(cursos, profesores, cal, desde = new Date()) {
+  if (!cursos.length) return [];
+  const lectivos = [];
+  for (let d = parseISO(desde), n = 0; lectivos.length < 25 && n < 80; d = sumarDias(d, 1), n++) if (infoDia(cal, isoLocal(d)).lectivo) lectivos.push(isoLocal(d));
+  if (!lectivos.length) return [];
+  const plan = [[0, 1, 0, "examen"], [1, 2, 1, "examen"], [2, 3, 2, "entrega"], [0, 4, 3, "examen"], [3, 5, 4, "examen"], [1, 6, 5, "oral"],
+    [0, 7, 6, "examen"], [2, 8, 7, "recuperacion"], [4, 9, 8, "examen"], [3, 11, 9, "examen"], [1, 12, 10, "examen"], [0, 14, 11, "examen"]];
+  return plan.filter(([, di]) => lectivos[di]).map(([gi, di, mi, tipo], k) => ({
+    id: 900000 + k, fecha: lectivos[di], hora: HORAS.filter(h => h !== "Recreo")[k % 5], grupo: cursos[gi % cursos.length],
+    materia: MATERIAS_DEMO[mi % MATERIAS_DEMO.length], tipo, profesor: profesores[(k * 3) % profesores.length], nota: "", ts: new Date().toISOString() }));
+}
+
+// Curso completo: los meses del curso en pequeño, con los exámenes del grupo; al pulsar un mes se abre en grande
+function VistaCurso({ cal, examenes, grupo, hoy, onMes }) {
+  const meses = [];
+  for (let d = new Date(parseISO(cal.inicio).getFullYear(), parseISO(cal.inicio).getMonth(), 1); isoLocal(d) <= cal.fin; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) meses.push(d);
+  const cuentan = examenes.filter(e => tipoExamen(e.tipo).cuenta);
+  return (
+    <div>
+      <div className="gd-curso-examenes" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 14 }}>
+        {meses.map(d => {
+          const anio = d.getFullYear(), m = d.getMonth(), ultimo = isoLocal(new Date(anio, m + 1, 0)), semanas = [];
+          for (let l = lunesDe(d); isoLocal(l) <= ultimo; l = sumarDias(l, 7)) semanas.push([0, 1, 2, 3, 4].map(i => isoLocal(sumarDias(l, i))));
+          const nMes = cuentan.filter(e => e.fecha.slice(0, 7) === isoLocal(d).slice(0, 7)).length;
+          return (
+            <button key={m} onClick={() => onMes(isoLocal(d))} aria-label={`${MESES[m]} de ${anio}: ${nMes} exámenes. Abrir el mes`} className="gd-pulsable"
+              style={{ background: C.white, border: `3px solid ${R.turquesaClaro}`, borderRadius: 8, padding: 8, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", background: R.turquesa, color: R.noche, padding: "4px 8px", marginBottom: 4 }}>
+                <span style={{ fontWeight: 700, fontSize: 15, textTransform: "capitalize" }}>{MESES[m]} {anio}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{nMes ? `${nMes} ${nMes === 1 ? "examen" : "exámenes"}` : ""}</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}>
+                {["L", "M", "X", "J", "V"].map(x => <span key={x} style={{ fontSize: 12, fontWeight: 700, color: R.petroleo, textAlign: "center" }}>{x}</span>)}
+                {semanas.flat().map(f => {
+                  const delMes = parseISO(f).getMonth() === m, info = infoDia(cal, f), td = info.tipo && TIPOS_DIA[info.tipo];
+                  const ex = examenes.filter(e => e.fecha === f), fin = (cal.evaluaciones || []).some(ev => ev.fin === f);
+                  const fondo = !delMes ? "transparent" : ex.length ? tipoExamen(ex[0].tipo).color : td ? td.fondo : info.lectivo ? C.white : R.gris;
+                  return <span key={f} title={delMes ? [info.txt, ...ex.map(e => `${tipoExamen(e.tipo).label} de ${e.materia}`), fin && "Fin de evaluación"].filter(Boolean).join(" · ") : ""}
+                    style={{ fontSize: 12, lineHeight: "22px", textAlign: "center", borderRadius: 3, background: fondo, color: !delMes ? "transparent" : ex.length ? "#fff" : R.noche,
+                      fontWeight: ex.length || f === hoy ? 700 : 400, outline: delMes && (f === hoy || fin) ? `2px solid ${fin ? R.morado : R.azul}` : "none", outlineOffset: -2 }}>{parseISO(f).getDate()}</span>;
+                })}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 10, fontSize: 14, color: R.petroleo }}>
+        <span><span style={{ display: "inline-block", width: 14, height: 14, background: R.azul, verticalAlign: "middle", marginRight: 6 }} />Examen de {grupo}</span>
+        <span><span style={{ display: "inline-block", width: 14, height: 14, background: TIPOS_DIA.festivo.fondo, border: `1px solid ${R.verde}`, verticalAlign: "middle", marginRight: 6 }} />Festivo o vacaciones</span>
+        <span><span style={{ display: "inline-block", width: 14, height: 14, background: TIPOS_DIA.no_lectivo.fondo, border: `1px solid ${NIVEL.importante.color}`, verticalAlign: "middle", marginRight: 6 }} />Otros no lectivos</span>
+        <span><span style={{ display: "inline-block", width: 14, height: 14, outline: `2px solid ${R.morado}`, outlineOffset: -2, verticalAlign: "middle", marginRight: 6 }} />Fin de evaluación</span>
+        <span>Pulsa un mes para verlo en grande.</span>
+      </div>
+    </div>
+  );
+}
+// Por evaluaciones: fechas de cada evaluación, días lectivos y exámenes del grupo en cada una
+function VistaEvaluaciones({ cal, examenes, grupo, hoy, filaExamen }) {
+  const lectivos = ev => { let n = 0; for (let d = parseISO(ev.inicio); isoLocal(d) <= ev.fin; d = sumarDias(d, 1)) if (infoDia(cal, isoLocal(d)).lectivo) n++; return n; };
+  return (
+    <div>
+      {(cal.evaluaciones || []).map(ev => {
+        const ex = examenes.filter(e => e.fecha >= ev.inicio && e.fecha <= ev.fin).sort((a, b) => a.fecha.localeCompare(b.fecha));
+        const n = ex.filter(e => tipoExamen(e.tipo).cuenta).length, enCurso = hoy >= ev.inicio && hoy <= ev.fin;
+        return (
+          <section key={ev.nombre} aria-label={ev.nombre} style={{ marginBottom: 18 }}>
+            <div style={{ background: enCurso ? R.mostaza : R.turquesaClaro, color: R.noche, padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: "4px 16px", alignItems: "baseline" }}>
+              <span style={{ fontFamily: TITULO, fontSize: 22, color: R.petroleo }}>{ev.nombre}</span>
+              <span>Del {fmtD(ev.inicio)} al {fmtD(ev.fin)} · {lectivos(ev)} días lectivos</span>
+              <span style={{ marginLeft: "auto", fontWeight: 700 }}>{grupo}: {n} {n === 1 ? "examen" : "exámenes"}{enCurso ? " · en curso" : ""}</span>
+            </div>
+            {ex.length ? ex.map(filaExamen) : <div style={{ padding: "10px 14px", color: R.petroleo, background: R.gris }}>Sin exámenes de {grupo} en esta evaluación.</div>}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function CalendarioExamenes({ examenes, setExamenes, cal, cursos, usuario, horarios = {}, gruposPermitidos, puedeTodo, soloMios }) {
+  // Grupos y materias que da quien está dentro, según su horario
+  const misClases = Object.entries(horarios).filter(([k]) => k.split("|")[2] === usuario).map(([, c]) => c).filter(c => c?.grupo);
+  const misGrupos = [...new Set(misClases.map(c => c.grupo))].sort();
+  const grupos = gruposPermitidos?.length ? gruposPermitidos : cursos;
+  const hoy = isoLocal();
+  const [grupo, setGrupo] = useState(() => (gruposPermitidos?.[0]) || misGrupos.find(g => grupos.includes(g)) || grupos[0] || "");
+  const inicioMes = f => f.slice(0, 7) + "-01";
+  const [mes, setMes] = useState(() => inicioMes(hoy < cal.inicio ? cal.inicio : hoy > cal.fin ? cal.fin : hoy));
+  const vacio = { id: null, fecha: "", hora: HORAS[0], grupo, materia: "", tipo: "examen", nota: "" };
+  const [form, setForm] = useState(null);
+  const [hecho, setHecho] = useState("");
+  const [vista, setVista] = useState("mes"); // mes | curso | evaluaciones
+  const md = parseISO(mes), anio = md.getFullYear(), m = md.getMonth();
+  const cambiarMes = n => setMes(isoLocal(new Date(anio, m + n, 1)));
+  // Semanas del mes, de lunes a viernes
+  const semanas = [];
+  const ultimo = isoLocal(new Date(anio, m + 1, 0));
+  for (let l = lunesDe(new Date(anio, m, 1)); isoLocal(l) <= ultimo; l = sumarDias(l, 7)) semanas.push([0, 1, 2, 3, 4].map(i => isoLocal(sumarDias(l, i))));
+  const delGrupo = examenes.filter(e => e.grupo === grupo);
+  const lista = soloMios ? examenes.filter(e => e.profesor === usuario) : delGrupo;
+  const proximos = lista.filter(e => e.fecha >= hoy).sort((a, b) => a.fecha.localeCompare(b.fecha) || HORAS.indexOf(a.hora) - HORAS.indexOf(b.hora));
+  const comprobacion = form && form.fecha && form.grupo ? avisosExamen(cal, examenes, form) : { avisos: [] };
+  const materiasSug = [...new Set(misClases.filter(c => c.grupo === form?.grupo).map(c => c.materia).filter(Boolean))];
+  const guardar = () => {
+    if (!form.fecha || !form.grupo || !form.materia.trim() || comprobacion.bloquea) return;
+    const e = { ...form, materia: form.materia.trim(), nota: form.nota.trim(), id: form.id || Date.now(), profesor: form.profesor || usuario, ts: new Date().toISOString() };
+    setExamenes(prev => [...prev.filter(x => x.id !== e.id), e]);
+    setHecho(`Anotado: ${tipoExamen(e.tipo).label} de ${e.materia} · ${e.grupo} · ${fmtD(e.fecha)}`); setTimeout(() => setHecho(""), 4000);
+    setForm(null);
+  };
+  const puedeEditar = e => puedeTodo || e.profesor === usuario;
+  const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 4 };
+  const campo = { width: "100%", minHeight: 44, padding: "8px 10px", border: `3px solid ${R.turquesa}`, borderRadius: 6, fontFamily: "inherit", fontSize: 16, color: R.noche, background: C.white };
+  const filaExamen = e => (
+    <div key={e.id} data-examen={e.id} style={{ ...caja(tipoExamen(e.tipo).color), padding: "10px 14px", marginTop: 6, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ fontWeight: 700, color: R.petroleo, minWidth: 110 }}>{fmtD(e.fecha)} · {e.hora}</span>
+      <span style={{ flex: 1, minWidth: 180, color: R.noche }}><b>{tipoExamen(e.tipo).label}</b> de {e.materia} · {e.grupo}<span style={{ display: "block", fontSize: 14, color: R.petroleo }}>{e.profesor}{e.nota ? ` · ${e.nota}` : ""}</span></span>
+      {puedeEditar(e) && <>
+        <button onClick={() => setForm({ ...e })} style={{ background: "none", border: "none", color: R.azul, minHeight: 44, padding: "0 6px", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700 }}>Cambiar</button>
+        <button onClick={() => { if (window.confirm("¿Quitar este examen del calendario?")) setExamenes(prev => prev.filter(x => x.id !== e.id)); }} style={{ background: "none", border: "none", color: NIVEL.urgente.color, minHeight: 44, padding: "0 6px", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700 }}>Quitar</button>
+      </>}
+    </div>
+  );
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo={soloMios ? "Mis exámenes" : "Calendario de exámenes"} sub={soloMios ? "Los que has puesto tú, de hoy en adelante" : `Por grupo, sobre el calendario escolar ${cal.curso}`} icono="fecha" /></div>
+      {hecho && <div role="status" style={{ ...caja(R.verde), padding: "10px 14px", marginBottom: 12, fontWeight: 700, color: R.noche }}>✅ {hecho}</div>}
+      {!soloMios && <>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
+          <label style={{ minWidth: 180 }}><span style={etiqueta}>Grupo</span>
+            <select id="gd-examen-grupo" value={grupo} onChange={e => setGrupo(e.target.value)} style={campo}>{grupos.map(g => <option key={g} value={g}>{g}{misGrupos.includes(g) ? " · das clase" : ""}</option>)}</select>
+          </label>
+          <div style={{ display: vista === "mes" ? "flex" : "none", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+            <button onClick={() => cambiarMes(-1)} aria-label="Mes anterior" style={{ ...campo, width: 48, cursor: "pointer", fontWeight: 700 }}>‹</button>
+            <span style={{ minWidth: 170, textAlign: "center", fontFamily: TITULO, fontSize: 22, color: R.petroleo, textTransform: "capitalize" }}>{MESES[m]} {anio}</span>
+            <button onClick={() => cambiarMes(1)} aria-label="Mes siguiente" style={{ ...campo, width: 48, cursor: "pointer", fontWeight: 700 }}>›</button>
+          </div>
+          <button onClick={() => setForm({ ...vacio, grupo })} className="gd-pulsable" style={{ marginLeft: vista === "mes" ? 0 : "auto", minHeight: 44, padding: "0 18px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>+ Poner un examen</button>
+        </div>
+        <div role="tablist" aria-label="Vista del calendario" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {[["mes", "Mes"], ["curso", "Curso completo"], ["evaluaciones", "Por evaluaciones"]].map(([id, txt]) => (
+            <button key={id} role="tab" aria-selected={vista === id} onClick={() => setVista(id)} className="gd-pulsable"
+              style={{ minHeight: 44, padding: "0 16px", borderRadius: 999, border: `3px solid ${R.turquesa}`, background: vista === id ? R.turquesa : C.white, color: R.noche, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>{txt}</button>
+          ))}
+        </div>
+        {vista === "curso" && <VistaCurso cal={cal} examenes={delGrupo} grupo={grupo} hoy={hoy} onMes={f => { setMes(f); setVista("mes"); }} />}
+        {vista === "evaluaciones" && <VistaEvaluaciones cal={cal} examenes={delGrupo} grupo={grupo} hoy={hoy} filaExamen={filaExamen} />}
+        {vista === "mes" && <>
+        <div className="gd-cal-examenes" role="grid" aria-label={`Exámenes de ${grupo} en ${MESES[m]} de ${anio}`} style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 4, marginBottom: 8 }}>
+          {DIAS_SEMANA.map(d => <div key={d} role="columnheader" style={{ background: R.turquesa, color: R.noche, fontWeight: 700, fontSize: 14, textAlign: "center", padding: "6px 2px" }}>{d.slice(0, 3)}</div>)}
+          {semanas.flat().map(f => {
+            const info = infoDia(cal, f), td = info.tipo && TIPOS_DIA[info.tipo], delMes = parseISO(f).getMonth() === m;
+            const ex = delGrupo.filter(e => e.fecha === f);
+            return (
+              <div key={f} role="gridcell" data-dia={f} onClick={() => info.lectivo && setForm({ ...vacio, grupo, fecha: f })}
+                style={{ minHeight: 92, padding: 6, background: td ? td.fondo : info.lectivo ? C.white : R.gris, border: `2px solid ${f === hoy ? R.azul : td ? td.borde : R.turquesaClaro}`,
+                  opacity: delMes ? 1 : .45, cursor: info.lectivo ? "pointer" : "default", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                <span style={{ fontWeight: 700, fontSize: 15, color: R.petroleo }}>{parseISO(f).getDate()}</span>
+                {!info.lectivo && delMes && info.txt && !info.fuera && <span style={{ fontSize: 13, lineHeight: 1.2, color: R.noche }}>{info.txt}</span>}
+                {info.lectivo && info.txt && <span style={{ fontSize: 13, lineHeight: 1.2, color: R.noche }}>{info.txt}</span>}
+                {(cal.evaluaciones || []).filter(ev => ev.fin === f).map(ev => <span key={ev.nombre} style={{ fontSize: 13, lineHeight: 1.2, fontWeight: 700, color: R.morado }}>Fin de la {ev.nombre}</span>)}
+                {ex.map(e => <span key={e.id} title={`${tipoExamen(e.tipo).label} de ${e.materia} · ${e.hora} · ${e.profesor}`}
+                  style={{ fontSize: 13, lineHeight: 1.2, fontWeight: 700, color: "#fff", background: tipoExamen(e.tipo).color, borderRadius: 4, padding: "2px 5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.materia}</span>)}
+              </div>
+            );
+          })}
+        </div>
+        {/* Semanas que pasan del límite del centro */}
+        {semanas.map(s => { const n = delGrupo.filter(e => tipoExamen(e.tipo).cuenta && s.includes(e.fecha)).length;
+          return n > cal.limites.porSemana ? <div key={s[0]} style={{ ...caja(NIVEL.importante.color), padding: "8px 12px", marginTop: 4, color: R.noche }}>⚠️ Semana del {fmtD(s[0])}: {grupo} tiene {n} exámenes (límite del centro: {cal.limites.porSemana}).</div> : null; })}
+        <p style={{ fontSize: 14, color: R.petroleo, margin: "8px 0 16px" }}>{evaluacionDe(cal, mes) ? `${evaluacionDe(cal, mes).nombre}: del ${fmtD(evaluacionDe(cal, mes).inicio)} al ${fmtD(evaluacionDe(cal, mes).fin)}. ` : ""}Pulsa un día lectivo para poner un examen. En verde, festivos y vacaciones; en coral, otros días no lectivos. Límite del centro: {cal.limites.porDia} al día y {cal.limites.porSemana} a la semana por grupo (las entregas y exposiciones no cuentan).</p>
+        </>}
+      </>}
+
+      {form && (
+        <Card style={{ background: R.azulClaro }}>
+          <h3 style={{ margin: "0 0 12px", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>{form.id ? "Cambiar el examen" : "Poner un examen"}</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+            <label><span style={etiqueta}>Día</span><input id="gd-examen-fecha" type="date" value={form.fecha} min={cal.inicio} max={cal.fin} onChange={e => setForm({ ...form, fecha: e.target.value })} style={campo} /></label>
+            <label><span style={etiqueta}>Hora</span><select value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} style={campo}>{HORAS.filter(h => h !== "Recreo").map(h => <option key={h}>{h}</option>)}</select></label>
+            <label><span style={etiqueta}>Grupo</span><select value={form.grupo} onChange={e => setForm({ ...form, grupo: e.target.value })} style={campo}>{grupos.map(g => <option key={g}>{g}</option>)}</select></label>
+            <label><span style={etiqueta}>Materia</span><input id="gd-examen-materia" list="gd-examen-materias" value={form.materia} onChange={e => setForm({ ...form, materia: e.target.value })} placeholder="Por ejemplo, Lengua" style={campo} />
+              <datalist id="gd-examen-materias">{materiasSug.map(x => <option key={x} value={x} />)}</datalist></label>
+            <label><span style={etiqueta}>Tipo</span><select value={form.tipo} onChange={e => setForm({ ...form, tipo: e.target.value })} style={campo}>{TIPOS_EXAMEN.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select></label>
+            <label><span style={etiqueta}>Nota (opcional)</span><input value={form.nota} onChange={e => setForm({ ...form, nota: e.target.value })} placeholder="Temas 3 y 4" style={campo} /></label>
+          </div>
+          {comprobacion.bloquea && <div role="alert" style={{ ...caja(NIVEL.urgente.color), padding: "10px 14px", marginTop: 12, color: R.noche, fontWeight: 700 }}>⛔ {comprobacion.bloquea} Elige otro día.</div>}
+          {comprobacion.avisos.map(a => <div key={a} role="alert" style={{ ...caja(NIVEL.importante.color), padding: "10px 14px", marginTop: 12, color: R.noche }}>⚠️ {a}</div>)}
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+            <button onClick={guardar} disabled={!form.fecha || !form.materia.trim() || !!comprobacion.bloquea} className="gd-pulsable"
+              style={{ minHeight: 48, padding: "0 20px", border: "none", borderRadius: 6, background: (!form.fecha || !form.materia.trim() || comprobacion.bloquea) ? R.gris : R.azul, color: (!form.fecha || !form.materia.trim() || comprobacion.bloquea) ? R.petroleo : "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 700, cursor: "pointer" }}>
+              {comprobacion.avisos.length ? "Guardar igualmente" : "Guardar examen"}</button>
+            <button onClick={() => setForm(null)} style={{ minHeight: 48, padding: "0 18px", border: `2px solid ${R.azul}`, borderRadius: 6, background: C.white, color: R.petroleo, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+          </div>
+        </Card>
+      )}
+
+      {(soloMios || vista !== "evaluaciones") && <>
+        <h3 style={{ margin: "18px 0 4px", fontFamily: TITULO, fontWeight: 400, fontSize: 24, color: R.petroleo }}>{soloMios ? "Próximos" : `Próximos exámenes de ${grupo}`}</h3>
+        {proximos.length ? proximos.map(filaExamen) : <Card style={{ textAlign: "center", color: R.petroleo }}>{soloMios ? "No tienes exámenes puestos de hoy en adelante." : "Este grupo no tiene exámenes de hoy en adelante."}</Card>}
+      </>}
+    </div>
+  );
+}
+
+// Organización › Calendario escolar: inicio y fin del curso, días no lectivos (con las fiestas locales) y límites de exámenes
+function CalendarioEscolarAdmin({ cal, setCal }) {
+  const [nuevo, setNuevo] = useState({ fecha: "", tipo: "local", txt: "" });
+  const campo = { minHeight: 44, padding: "8px 10px", border: `3px solid ${R.turquesa}`, borderRadius: 6, fontFamily: "inherit", fontSize: 16, color: R.noche, background: C.white };
+  const etiqueta = { display: "block", fontSize: 15, fontWeight: 700, color: R.petroleo, marginBottom: 4 };
+  const poner = cambios => setCal({ ...cal, ...cambios });
+  const anadir = () => {
+    if (!nuevo.fecha || !nuevo.txt.trim()) return;
+    poner({ dias: [...cal.dias.filter(d => d.fecha !== nuevo.fecha), { ...nuevo, txt: nuevo.txt.trim() }].sort((a, b) => a.fecha.localeCompare(b.fecha)) });
+    setNuevo({ fecha: "", tipo: "local", txt: "" });
+  };
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}><TituloBloque titulo="Calendario escolar" sub={`Curso ${cal.curso}: lo usa el calendario de exámenes`} icono="fecha" /></div>
+      <p style={{ ...caja(R.mostaza), padding: "10px 14px", color: R.noche }}>Viene cargado el calendario escolar de la Comunidad de Madrid para Secundaria, Bachillerato y FP. <b>Añade las fiestas locales</b> de vuestro municipio (las publica el BOCM).</p>
+      <Card>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+          <label><span style={etiqueta}>Primer día lectivo</span><input type="date" value={cal.inicio} onChange={e => poner({ inicio: e.target.value })} style={{ ...campo, width: "100%" }} /></label>
+          <label><span style={etiqueta}>Último día lectivo</span><input type="date" value={cal.fin} onChange={e => poner({ fin: e.target.value })} style={{ ...campo, width: "100%" }} /></label>
+          <label><span style={etiqueta}>Exámenes por día y grupo</span><input id="gd-limite-dia" type="number" min={1} max={5} value={cal.limites.porDia} onChange={e => poner({ limites: { ...cal.limites, porDia: Math.max(1, Number(e.target.value) || 1) } })} style={{ ...campo, width: "100%" }} /></label>
+          <label><span style={etiqueta}>Exámenes por semana y grupo</span><input type="number" min={1} max={15} value={cal.limites.porSemana} onChange={e => poner({ limites: { ...cal.limites, porSemana: Math.max(1, Number(e.target.value) || 1) } })} style={{ ...campo, width: "100%" }} /></label>
+        </div>
+      </Card>
+      <Card>
+        <h3 style={{ margin: "0 0 10px", fontFamily: TITULO, fontWeight: 400, fontSize: 22, color: R.petroleo }}>Evaluaciones</h3>
+        {(cal.evaluaciones || []).map((ev, i) => (
+          <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", marginBottom: 8 }}>
+            <span style={{ minWidth: 130, fontWeight: 700, color: R.petroleo, paddingBottom: 12 }}>{ev.nombre}</span>
+            <label><span style={etiqueta}>Empieza</span><input type="date" aria-label={`Inicio de la ${ev.nombre}`} value={ev.inicio} onChange={e => poner({ evaluaciones: cal.evaluaciones.map((x, j) => j === i ? { ...x, inicio: e.target.value } : x) })} style={campo} /></label>
+            <label><span style={etiqueta}>Termina</span><input type="date" aria-label={`Fin de la ${ev.nombre}`} value={ev.fin} onChange={e => poner({ evaluaciones: cal.evaluaciones.map((x, j) => j === i ? { ...x, fin: e.target.value } : x) })} style={campo} /></label>
+          </div>
+        ))}
+        <p style={{ margin: "4px 0 0", fontSize: 14, color: R.petroleo }}>Vienen propuestas: la 1ª hasta Navidad, la 2ª hasta Semana Santa y la 3ª hasta final de curso. Cámbialas a las fechas de vuestro centro.</p>
+      </Card>
+      <Card style={{ background: R.azulClaro }}>
+        <h3 style={{ margin: "0 0 10px", fontFamily: TITULO, fontWeight: 400, fontSize: 22, color: R.petroleo }}>Añadir un día</h3>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+          <label><span style={etiqueta}>Día</span><input id="gd-dia-fecha" type="date" value={nuevo.fecha} onChange={e => setNuevo({ ...nuevo, fecha: e.target.value })} style={campo} /></label>
+          <label><span style={etiqueta}>Tipo</span><select value={nuevo.tipo} onChange={e => setNuevo({ ...nuevo, tipo: e.target.value })} style={campo}>{Object.entries(TIPOS_DIA).map(([id, t]) => <option key={id} value={id}>{t.label}</option>)}</select></label>
+          <label style={{ flex: 1, minWidth: 200 }}><span style={etiqueta}>Nombre</span><input id="gd-dia-txt" value={nuevo.txt} onChange={e => setNuevo({ ...nuevo, txt: e.target.value })} placeholder="Por ejemplo, San Isidro" style={{ ...campo, width: "100%" }} /></label>
+          <button onClick={anadir} disabled={!nuevo.fecha || !nuevo.txt.trim()} style={{ minHeight: 44, padding: "0 18px", border: "none", borderRadius: 6, background: R.azul, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer", opacity: (!nuevo.fecha || !nuevo.txt.trim()) ? .5 : 1 }}>Añadir</button>
+        </div>
+      </Card>
+      {cal.dias.map(d => (
+        <div key={d.fecha} style={{ ...caja(TIPOS_DIA[d.tipo]?.borde || R.turquesa), padding: "8px 12px", marginTop: 4, display: "flex", alignItems: "center", gap: 12, color: R.noche }}>
+          <span style={{ fontWeight: 700, minWidth: 100 }}>{fmtD(d.fecha)}</span><span style={{ flex: 1 }}>{d.txt} · <span style={{ color: R.petroleo }}>{TIPOS_DIA[d.tipo]?.label}</span></span>
+          <button onClick={() => poner({ dias: cal.dias.filter(x => x.fecha !== d.fecha) })} aria-label={`Quitar ${d.txt} del ${fmtD(d.fecha)}`} style={{ background: "none", border: "none", color: NIVEL.urgente.color, minHeight: 44, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700 }}>Quitar</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // INCIDENCIAS DE HOY: Jefatura y Dirección leen los partes del día según llegan,
 // sin buscarlos. Los nuevos salen arriba, sin leer, hasta que se marcan como leídos.
 // ════════════════════════════════════════════════════════════════════════════
@@ -9582,7 +9925,10 @@ function AppInterna() {
   const [profesores, setProfesores] = useState(DEMO_PROFESORES);
   const [partes, setPartes]       = useState([]);
   const [medidas, setMedidas]     = useState([]);
-  const [incLeidas, setIncLeidas] = useState({}); // { persona: { idParte: fecha } } — partes de hoy ya leídos en «Incidencias de hoy»
+  const [incLeidas, setIncLeidas] = useState({});
+  const [examenes, setExamenes]   = useState([]);   // calendario de exámenes por grupo
+  const [calEscolar, setCalEscolar] = useState(null); // null = el calendario escolar de la Comunidad de Madrid
+  const cal = calEscolar ? { ...CALENDARIO_ESCOLAR_DEFECTO, ...calEscolar, evaluaciones: calEscolar.evaluaciones || CALENDARIO_ESCOLAR_DEFECTO.evaluaciones } : CALENDARIO_ESCOLAR_DEFECTO; // { persona: { idParte: fecha } } — partes de hoy ya leídos en «Incidencias de hoy»
   DATOS_CENTRO.partes = partes;
   const [banos, setBanos]         = useState([]);
   // Conductas positivas: {id, alumnoId, alumno, curso, tipo, detalle, profesor, ts}
@@ -9732,6 +10078,10 @@ function AppInterna() {
       // Primera visita a la demostración: se cargan partes, baños y alertas de ejemplo
       const me = await sGet("medidas"); if (me) setMedidas(me);
       const il = await sGet("incidencias_leidas"); if (il) setIncLeidas(il);
+      const ce = await sGet("calendario_escolar"); if (ce) setCalEscolar(ce);
+      const exa = await sGet("examenes");
+      if (exa) setExamenes(exa);
+      else if (MODO_DEMO) setExamenes(examenesEjemplo([...new Set((al || datosEjemploConvivencia(DEMO_PROFESORES).alumnos).map(a => a.curso))].sort(), DEMO_PROFESORES, ce || CALENDARIO_ESCOLAR_DEFECTO));
       if (MODO_DEMO && !p) {
         const ej = datosEjemploConvivencia(DEMO_PROFESORES);
         setAlumnos(ej.alumnos); setPartes(ej.partes); setBanos(ej.banos); setAlertas(ej.alertas); setInformes(ej.informes); setTutores(ej.tutores);
@@ -9785,7 +10135,7 @@ function AppInterna() {
   // En red: lo que guardan los demás equipos llega aquí y se pone en pantalla
   useEffect(() => {
     const poner = {
-      partes: setPartes, medidas: setMedidas, incidencias_leidas: setIncLeidas, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
+      partes: setPartes, medidas: setMedidas, incidencias_leidas: setIncLeidas, examenes: setExamenes, calendario_escolar: setCalEscolar, banos: setBanos, positivas: setPositivas, alertas: setAlertas, compromisos: setCompromisos,
       notas_aula: setNotasAula, alertas_tempranas_vistas: setAlertasTempVistas, mensajes: setMensajes, alumnos: setAlumnos, tutores: setTutores,
       informes: setInformes, profesores: setProfesores, guardias: setGuardias, cuadrante: setCuadrante, coberturas_clase: setCoberturas,
       coberturas_propias: setCoberturasPropias, horarios_clase: setHorarios, ausencias: setAusencias, apoyos_guardia: setApoyosGuardia,
@@ -9804,6 +10154,8 @@ function AppInterna() {
   useEffect(() => { if (!loading) sSet("partes", partes); },     [partes, loading]);
   useEffect(() => { if (!loading) sSet("medidas", medidas); },   [medidas, loading]);
   useEffect(() => { if (!loading) sSet("incidencias_leidas", incLeidas); }, [incLeidas, loading]);
+  useEffect(() => { if (!loading) sSet("examenes", examenes); }, [examenes, loading]);
+  useEffect(() => { if (!loading && calEscolar) sSet("calendario_escolar", calEscolar); }, [calEscolar, loading]);
   useEffect(() => { if (!loading) sSet("banos", banos); },       [banos, loading]);
   useEffect(() => { POSITIVAS_PDF = positivas; if (!loading) sSet("positivas", positivas); }, [positivas, loading]);
   useEffect(() => { if (!loading) sSet("alertas", alertas); },   [alertas, loading]);
@@ -9906,6 +10258,7 @@ function AppInterna() {
     const ej = datosEjemploGuardias(DEMO_PROFESORES);
     setCuadrante(ej.cuadrante); setApoyosGuardia(ej.apoyos); setSustitutosGuardia(ej.sustitutos); setAusencias(ej.ausencias); setCoberturas(ej.coberturas); setCoberturasPropias(ej.propias);
     const hEj = horarioEjemplo(DEMO_PROFESORES, [...new Set(conv.alumnos.map(a => a.curso))].sort());
+    setExamenes(examenesEjemplo([...new Set(conv.alumnos.map(a => a.curso))].sort(), DEMO_PROFESORES, cal));
     setHorarios(hEj);
     setAsistenciaAl(asistenciaEjemplo(hEj, conv.alumnos)); setJustificantesAl(justificantesEjemplo(conv.alumnos, DEMO_PROFESORES)); setLimitesAsis(LIMITES_ASISTENCIA);
     setFirmas(ej.firmas); setListas([]);
@@ -10114,6 +10467,7 @@ function AppInterna() {
           { id: "asistencia_tutoria", label: "✅ Asistencia del grupo", color: R.azul },
           { id: "notas_aula",         label: "🗒 Notas de aula", color: R.azul },
           { id: "compromisos",        label: "🤝 Compromisos", color: R.azul },
+          { id: "examenes_grupo",     label: "Exámenes del grupo", color: R.azul },
         ]
     : moduloProfesor === "alumnos"
       ? [
@@ -10135,6 +10489,11 @@ function AppInterna() {
           { id: "notif_ausencia", label: "📢 Notificar Ausencia", color: "#ec4899" },
           { id: "guardias_ver",   label: "📄 Ver Guardias", color: "#63CBA1" },
           { id: "mis_coberturas", label: "📋 Mis Coberturas", color: R.morado },
+        ]
+      : moduloProfesor === "examenes"
+      ? [
+          { id: "examenes_grupo", label: "Calendario por grupo", color: R.azul },
+          { id: "mis_examenes",   label: "Mis exámenes", color: R.azul },
         ]
       : moduloProfesor === "espacios"
       ? [
@@ -10187,6 +10546,7 @@ function AppInterna() {
           { id: "horarios_aulas", label: "🗓 Horarios y aulas", color: R.azul },
           { id: "horario_zonas",  label: "⚙️ Horario y zonas", color: "#2B647E" },
           { id: "espacios_centro", label: "🔑 Espacios del centro", color: R.mostaza },
+          { id: "calendario_escolar", label: "Calendario escolar", color: R.azul },
           { id: "admin_profesores", label: "👨‍🏫 Profesorado", color: R.azul },
         ]
       : moduloJefatura === "espacios"
@@ -10218,8 +10578,8 @@ function AppInterna() {
     : []; // El resto de Secretaría no tiene pestañas, solo módulos
 
   // Módulos de cada perfil (franja turquesa o menú lateral)
-  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : "mensajeria"); };
-  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "incidencias" ? "incidencias_hoy" : id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
+  const irProfesor = (id) => { setModuloProfesor(id); setTab(id === "alumnos" ? "partes" : id === "guardias" ? "mi_guardia" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "asistencia" ? "pasar_lista" : id === "examenes" ? "examenes_grupo" : "mensajeria"); };
+  const irJefatura = (id) => { setModuloJefatura(id); setTab(id === "incidencias" ? "incidencias_hoy" : id === "examenes" ? "examenes_grupo" : id === "alumnos" ? "dashboard" : id === "guardias" ? "cuadrante" : id === "espacios" ? "reservas" : id === "material" ? "material_sesion" : id === "organizacion" ? "horarios_aulas" : "mensajeria"); };
   const irAdmin = (id) => { setModuloJefatura(id); setTab(id === "centro" ? "admin_panel" : id === "alumnos" ? "admin_alumnos" : id === "material" ? "material_avisos" : "admin_profesores"); };
   const modulosPerfil = perfil.id === "profesor" && esPerfilTutor
     ? [
@@ -10230,6 +10590,7 @@ function AppInterna() {
     ? [
         { id: "alumnos",  label: "👨‍🎓 Partes" },
         { id: "asistencia", label: "✅ Asistencia" },
+        { id: "examenes", label: "Exámenes" },
         { id: "guardias", label: "🔄 Guardias" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
@@ -10240,6 +10601,7 @@ function AppInterna() {
         ...(fx.incidencias ? [{ id: "incidencias", label: "Incidencias de hoy" }] : []),
         { id: "alumnos",  label: "📋 Partes & Alumnos" },
         ...(fx.guardias ? [{ id: "guardias", label: "🔄 Guardias & Ausencias" }, { id: "organizacion", label: "🗓 Organización" }] : []),
+        { id: "examenes", label: "Exámenes" },
         { id: "espacios", label: "🔑 Espacios" },
         { id: "material", label: "🖥 Material del centro" },
         { id: "rumbochat", label: "💬 Rumbogram" },
@@ -10352,6 +10714,8 @@ function AppInterna() {
       });
       reservasEspacios.filter(r => r.profesor === yo && r.fecha === hoy)
         .forEach(r => l.push({ hora: r.hora, txt: `${nombreEspacio(r)}${r.grupo ? ` · ${r.grupo}` : ""}`, icono: "llave", modulo: "espacios", tab: "reservas" }));
+      examenes.filter(e => e.profesor === yo && e.fecha === hoy)
+        .forEach(e => l.push({ hora: e.hora, txt: `${tipoExamen(e.tipo).label} de ${e.materia} · ${e.grupo}`, icono: "fecha", modulo: "examenes", tab: "mis_examenes" }));
     } else if (perfil.id === "jefatura") {
       // Partes de hoy; los de los últimos 15 minutos salen como «Nuevo»
       const GRAV = { leve: "Parte leve", grave: "Parte grave", muy_grave: "Parte muy grave" };
@@ -11079,6 +11443,16 @@ function AppInterna() {
         )}
 
         {/* ── Todos los Partes ── */}
+        {/* ── Calendario de exámenes por grupo ── */}
+        {tab === "examenes_grupo" && (
+          <CalendarioExamenes key="grupo" examenes={examenes} setExamenes={setExamenes} cal={cal} cursos={cursos} usuario={fProfesor || usuario} horarios={horarios}
+            gruposPermitidos={esPerfilTutor ? misGruposTutor : undefined} puedeTodo={perfil.id === "jefatura"} />
+        )}
+        {tab === "mis_examenes" && (
+          <CalendarioExamenes key="mios" soloMios examenes={examenes} setExamenes={setExamenes} cal={cal} cursos={cursos} usuario={fProfesor || usuario} horarios={horarios} />
+        )}
+        {tab === "calendario_escolar" && fx.guardias && <CalendarioEscolarAdmin cal={cal} setCal={setCalEscolar} />}
+
         {/* ── Incidencias de hoy (Jefatura y Dirección): los partes van llegando solos ── */}
         {tab === "incidencias_hoy" && fx.incidencias && (
           <IncidenciasHoy partes={partesHoy} leidas={misLeidas} medidas={medidas} enRed={RED.activa}
