@@ -110,3 +110,29 @@ test('Salidas: no deja ponerlas en un día no lectivo y avisa si el grupo tiene 
   await expect(page.getByRole('alert').filter({ hasText: new RegExp(`${ex.grupo} tiene .* de ${ex.materia}`) })).toBeVisible()
   expect(errores).toEqual([])
 })
+
+test('Salidas: alumnos sueltos de varios grupos; los grupos y quién se queda salen solos', async ({ page }) => {
+  const errores = vigilarErrores(page)
+  await empezar(page)
+  await comoProfe(page)
+  await page.locator('.gd-modulos button').filter({ hasText: /^Salidas/ }).first().click()
+  await page.getByRole('button', { name: '+ Nueva salida' }).click()
+  await page.locator('#gd-salida-titulo').fill('Concurso de coros')
+  await page.locator('#gd-salida-fecha').fill('2026-10-14')
+  await page.getByRole('button', { name: '4ª hora', exact: true }).click()
+  await page.getByRole('button', { name: 'Alumnos de varios grupos' }).click()
+  const alumnos: { id: number, nombre: string, curso: string }[] = await leer(page, 'alumnos')
+  const [a1, a2] = [alumnos.find(a => a.curso === '1º ESO A')!, alumnos.find(a => a.curso === '2º ESO B')!]
+  for (const a of [a1, a2]) {
+    await page.locator('#gd-salida-busca').fill(a.nombre)
+    await page.locator(`[data-alumno-elegir="${a.id}"]`).first().click()
+  }
+  await expect(page.getByText('Van 2 alumnos de 2 grupos: 1º ESO A, 2º ESO B')).toBeVisible()
+  await page.getByRole('button', { name: 'Enviar a Jefatura y Dirección' }).click()
+  const s = (await leer(page, 'salidas'))[0]
+  expect(s).toMatchObject({ titulo: 'Concurso de coros', modo: 'alumnos', grupos: ['1º ESO A', '2º ESO B'] })
+  const enGrupos = alumnos.filter(a => s.grupos.includes(a.curso))
+  expect(s.noVan).toHaveLength(enGrupos.length - 2)
+  expect(s.noVan).not.toContain(a1.id)
+  expect(errores).toEqual([])
+})

@@ -3931,7 +3931,7 @@ function FirmasYListas({ profesores, cuadrante, apoyosGuardia, sustitutosGuardia
 // y después queda recogida en el botón «Cómo se usa».
 const AYUDAS = {
   salidas: { titulo: "Salidas y excursiones", pasos: [
-    "Pulsa «Nueva salida»: actividad y lugar, día, horas, grupos y profesorado acompañante. Van todos los alumnos de los grupos; toca a quien no va.",
+    "Pulsa «Nueva salida»: actividad y lugar, día, horas y profesorado acompañante. Con «Grupos completos» van todos los de los grupos que elijas y tocas a quien no va; con «Alumnos de varios grupos» buscas y tocas a quien va.",
     "Al enviarla, Jefatura, Dirección y el Departamento de Actividades Extraescolares reciben el aviso y queda «Pendiente de aprobación». Dirección la aprueba o no; quien la organiza recibe la respuesta por Rumbogram.",
     "Con «Listado para Extraescolares (PDF)» sacas las listas de cada grupo: quién va y quién se queda.",
     "Cuando se aprueba, se registra la ausencia del profesorado acompañante en las horas en que tiene clase o guardia, para que se cubran. Si va un grupo entero, esa clase no se cubre.",
@@ -9563,8 +9563,9 @@ function avisosPasarLista(s, { alumnos, horarios, profesores }) {
 
 function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesores, horarios, cuadrante, examenes, cal, usuario, puedeTodo, puedeAprobar, jefaturaDireccion = [], extraescolares = [], setMensajes }) {
   const hoy = isoLocal();
-  const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
+  const vacio = { id: null, titulo: "", fecha: "", horas: [], grupos: [], noVan: [], modo: "grupos", acompanantes: [usuario].filter(Boolean), responsable: usuario, nota: "" };
   const [form, setForm] = useState(null);
+  const [busca, setBusca] = useState("");
   const [abierta, setAbierta] = useState(null);
   const [hecho, setHecho] = useState("");
   const horasClase = HORAS.filter(h => h !== "Recreo");
@@ -9585,7 +9586,7 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
   }
   const borrador = form && form.fecha && form.horas.length ? { ...form, id: form.id || 1, ts: "", grupos: form.grupos } : null;
   const ausPrevias = borrador ? ausenciasDeSalida(borrador, { alumnos, horarios, cuadrante }) : [];
-  const listo = form && form.titulo.trim() && form.fecha && form.horas.length && form.grupos.length && form.acompanantes.length && !bloquea.length;
+  const listo = form && form.titulo.trim() && form.fecha && form.horas.length && form.grupos.length && alumnosSalida(form, alumnos).length && form.acompanantes.length && !bloquea.length;
   // «desde» separa los identificadores cuando se envían dos avisos a la vez
   const avisar = (destinos, texto, desde = 0) => {
     const l = [...new Set(destinos)].filter(p => p && p !== usuario);
@@ -9678,7 +9679,7 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
           return (
             <div key={g} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10, marginTop: 8 }}>
               <div style={{ background: R.azulClaro, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · van {info.van.length}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.van) || "Nadie"}</div></div>
-              <div style={{ background: R.crema, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · se quedan {info.quedan.length}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.quedan) || "Nadie: va todo el grupo"}</div></div>
+              <div style={{ background: R.crema, padding: "10px 12px" }}><b style={{ color: R.petroleo }}>{g} · se quedan {info.quedan.length}{s.modo === "alumnos" ? " (el resto del grupo)" : ""}</b><div style={{ fontSize: 15, color: R.noche, marginTop: 4 }}>{nombresCortos(info.quedan) || "Nadie: va todo el grupo"}</div></div>
             </div>
           );
         })}
@@ -9705,25 +9706,57 @@ function Salidas({ salidas, setSalidas, setAusencias, alumnos, cursos, profesore
               {horasClase.map(h => chip(form.horas.includes(h), h, () => setForm({ ...form, horas: alterna(form.horas, h) })))}
             </div>
           </div>
-          <div style={{ marginTop: 12 }}><span style={etiqueta}>Grupos que van</span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{cursos.map(g => chip(form.grupos.includes(g), g, () => setForm({ ...form, grupos: alterna(form.grupos, g), noVan: form.noVan.filter(id => alumnos.find(a => a.id === id)?.curso !== g) })))}</div>
+          <div style={{ marginTop: 12 }}><span style={etiqueta}>¿Quién va?</span>
+            <div role="radiogroup" aria-label="Quién va" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {chip((form.modo || "grupos") === "grupos", "Grupos completos", () => setForm({ ...form, modo: "grupos" }), "m-grupos")}
+              {chip(form.modo === "alumnos", "Alumnos de varios grupos", () => setForm({ ...form, modo: "alumnos" }), "m-alumnos")}
+            </div>
           </div>
-          {form.grupos.map(g => {
-            const lista = alumnos.filter(a => a.curso === g).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-            const n = lista.filter(a => !form.noVan.includes(a.id)).length;
-            return (
-              <div key={g} style={{ marginTop: 12 }}>
-                <span style={etiqueta}>{g}: van {n} de {lista.length} · toca a quien no va</span>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 6 }}>
-                  {lista.map(a => { const va = !form.noVan.includes(a.id);
-                    return <button key={a.id} type="button" data-alumno-salida={a.id} aria-pressed={!va} onClick={() => setForm({ ...form, noVan: alterna(form.noVan, a.id) })}
-                      style={{ display: "flex", justifyContent: "space-between", gap: 8, minHeight: 44, padding: "6px 12px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 15, borderRadius: 6,
-                        border: `2px solid ${va ? R.turquesaClaro : R.noche}`, background: va ? C.white : R.crema, color: R.noche }}>
-                      <span>{a.nombre}</span><strong style={{ fontSize: 13, whiteSpace: "nowrap" }}>{va ? "🚌 Va" : "Se queda"}</strong></button>; })}
+          {(form.modo || "grupos") === "grupos" ? <>
+            <div style={{ marginTop: 12 }}><span style={etiqueta}>Grupos que van</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{cursos.map(g => chip(form.grupos.includes(g), g, () => setForm({ ...form, grupos: alterna(form.grupos, g), noVan: form.noVan.filter(id => alumnos.find(a => a.id === id)?.curso !== g) })))}</div>
+            </div>
+            {form.grupos.map(g => {
+              const lista = alumnos.filter(a => a.curso === g).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+              const n = lista.filter(a => !form.noVan.includes(a.id)).length;
+              return (
+                <div key={g} style={{ marginTop: 12 }}>
+                  <span style={etiqueta}>{g}: van {n} de {lista.length} · toca a quien no va</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(240px, 100%), 1fr))", gap: 6 }}>
+                    {lista.map(a => { const va = !form.noVan.includes(a.id);
+                      return <button key={a.id} type="button" data-alumno-salida={a.id} aria-pressed={!va} onClick={() => setForm({ ...form, noVan: alterna(form.noVan, a.id) })}
+                        style={{ display: "flex", justifyContent: "space-between", gap: 8, minHeight: 44, padding: "6px 12px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 15, borderRadius: 6,
+                          border: `2px solid ${va ? R.turquesaClaro : R.noche}`, background: va ? C.white : R.crema, color: R.noche }}>
+                        <span>{a.nombre}</span><strong style={{ fontSize: 13, whiteSpace: "nowrap" }}>{va ? "🚌 Va" : "Se queda"}</strong></button>; })}
+                  </div>
                 </div>
+              );
+            })}
+          </> : (() => {
+            // Alumnos sueltos: se toca a quien va; los grupos y quién se queda en cada uno salen solos
+            const van = alumnosSalida(form, alumnos), ids = van.map(a => a.id);
+            const elegir = id => {
+              const sel = ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id];
+              const grupos = [...new Set(alumnos.filter(a => sel.includes(a.id)).map(a => a.curso))].sort();
+              setForm({ ...form, grupos, noVan: alumnos.filter(a => grupos.includes(a.curso) && !sel.includes(a.id)).map(a => a.id) });
+            };
+            const q = busca.trim().toLowerCase();
+            const encontrados = q.length < 2 ? [] : alumnos.filter(a => `${a.nombre} ${a.curso}`.toLowerCase().includes(q)).sort((a, b) => a.curso.localeCompare(b.curso) || a.nombre.localeCompare(b.nombre, "es")).slice(0, 30);
+            const boton = a => { const va = ids.includes(a.id);
+              return <button key={a.id} type="button" data-alumno-elegir={a.id} aria-pressed={va} onClick={() => elegir(a.id)}
+                style={{ display: "flex", justifyContent: "space-between", gap: 8, minHeight: 44, padding: "6px 12px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 15, borderRadius: 6,
+                  border: `2px solid ${va ? R.turquesa : R.turquesaClaro}`, background: va ? R.azulClaro : C.white, color: R.noche }}>
+                <span>{a.nombre} <span style={{ color: R.petroleo }}>· {a.curso}</span></span><strong style={{ fontSize: 13, whiteSpace: "nowrap" }}>{va ? "🚌 Va" : "+ Añadir"}</strong></button>; };
+            return (
+              <div style={{ marginTop: 12 }}>
+                <label><span style={etiqueta}>Busca por nombre o grupo y toca a quien va</span>
+                  <input id="gd-salida-busca" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Por ejemplo, Lucía o 3º ESO" style={campo} /></label>
+                {encontrados.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 6, marginTop: 8 }}>{encontrados.map(boton)}</div>}
+                <span style={{ ...etiqueta, marginTop: 12 }}>Van {van.length} {van.length === 1 ? "alumno" : "alumnos"}{form.grupos.length ? ` de ${form.grupos.length} ${form.grupos.length === 1 ? "grupo" : "grupos"}: ${form.grupos.join(", ")}` : ""}</span>
+                {van.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 6 }}>{[...van].sort((a, b) => a.curso.localeCompare(b.curso) || a.nombre.localeCompare(b.nombre, "es")).map(boton)}</div>}
               </div>
             );
-          })}
+          })()}
           <div style={{ marginTop: 12 }}><span style={etiqueta}>Profesorado acompañante</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{[...profesores].sort((a, b) => a.localeCompare(b, "es")).map(p => chip(form.acompanantes.includes(p), p, () => setForm({ ...form, acompanantes: alterna(form.acompanantes, p) })))}</div>
           </div>
